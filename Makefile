@@ -3,15 +3,16 @@ NAME	:= webserv
 CC		:= c++
 FLAGS	:= -Wextra -Wall -Werror
 
-OBJ_DIR := Objects
+OBJ_DIR := ./src/Objects
+SRCS_DIR = ./src
 
-SRCS	:= main.cpp 
+SRCS	:= $(SRCS_DIR)/main.cpp $(SRCS_DIR)/HttpServer.cpp
 		
-OBJS	:= $(addprefix $(OBJ_DIR)/, ${SRCS:.cpp=.o})
+OBJS	:= $(addprefix $(OBJ_DIR)/, $(notdir ${SRCS:.cpp=.o}))
 
 all: $(NAME)
 
-$(OBJ_DIR)/%.o: %.cpp | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: $(SRCS_DIR)/%.cpp | $(OBJ_DIR)
 	@$(CC) -o $@ -c $< $(FLAGS) && printf "Compiling: $(notdir $<)\n"
 			
 $(NAME): $(OBJS)
