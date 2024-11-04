@@ -6,7 +6,7 @@
 /*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 09:52:16 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/04 10:21:04 by clundber         ###   ########.fr       */
+/*   Updated: 2024/11/04 10:27:59 by clundber         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,8 +22,8 @@ int	main(int argc, char **argv)
 	
 	/*start server class, calls the socket creation function in constructor, closes the socket in
 	the destructor.
-	
 	*/
+	HttpServer server();
 
 
 	//exit
