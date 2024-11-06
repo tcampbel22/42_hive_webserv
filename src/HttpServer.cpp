@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpServer.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
+/*   By: tcampbel <tcampbel@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 10:18:33 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/04 16:03:15 by clundber         ###   ########.fr       */
+/*   Updated: 2024/11/06 12:24:12 by tcampbel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,14 +21,19 @@ void HttpServer::startServer()
 	std::cout << _socket << std::endl;
 	
 	//store socket addr info
-	_socketInfo.sin_family = AF_INET;
-	_socketInfo.sin_port = htons(_port);
-	_socketInfo.sin_addr.s_addr = inet_addr(_ipAdress.c_str());
+	_socketInfo.sin_family = AF_INET; //macro for IPV4
+	_socketInfo.sin_port = htons(_port); //converts port number to network byte order
+	_socketInfo.sin_addr.s_addr = inet_addr(_ipAddress.c_str()); //converts ip address from string to uint
 
 	//bind socket to port
 	if (bind(_socket, (sockaddr *)&_socketInfo, sizeof(_socketInfo)) < 0)
-		return ; //change later and remember to cloase all fds
+		return ; //change later and remember to close all fds
 	
+	epollFd = epoll_create1(0);
+	_events.events = EPOLLIN;
+	_events.data.fd = _socket;
+	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _socket, &_events) < 0)
+		return ; //change later
 }
 
 void HttpServer::startListening()
@@ -39,16 +44,46 @@ void HttpServer::startListening()
 	}
 	std::cout << "Server listening on port " << _port << std::endl;
 	
-	socklen_t _sockLen = sizeof(_socketInfo);
-	_clientSocket = accept(_socket, (sockaddr *)&_socketInfo, &_sockLen);
-	if (_clientSocket < 0)
-		return ; //change later..
+	while (true)
+	{
+		numEvents = epoll_wait(epollFd, _eventsArr, MAX_EVENTS, 0);
+		if (numEvents < 0)
+		{
+			//print error
+			break ;
+		}
 	
-
-
-
-
+		for (int i = 0; i < numEvents; i++)
+		{
+			if (_eventsArr[i].data.fd == _socket)
+			{
+				socklen_t _sockLen = sizeof(_socketInfo);
+				_clientSocket = accept(_socket, (sockaddr *)&_socketInfo, &_sockLen);
+				if (_clientSocket < 0) 
+				{
+					//print error
+					continue;		
+				}
+			}	
+			int	flag = fcntl(_clientSocket, F_GETFL, 0); //retrieves flags/settings from socket
+			fcntl(_clientSocket, F_SETFL, flag | O_NONBLOCK); //Sets socket to be nonblocking
+			
+			epoll_event _clientEvents;
+			_clientEvents.events = EPOLLIN | EPOLLOUT | EPOLLET;
+			_clientEvents.data.fd = _clientSocket;
+			
+			if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_clientEvents) < 0)
+			{
+				close (_clientSocket);
+				//print error message
+				continue;
+			}
+			std::cout << "New client connected: " << _clientSocket << std::endl;
+		}
+	}
+	
 	close (_clientSocket);
+	close (epollFd);
 	
 
 }
@@ -65,7 +100,7 @@ HttpServer::~HttpServer()
 HttpServer::HttpServer(const std::string _ip, uint _newPort)
 {
 	_port = _newPort;
-	_ipAdress = _ip;
+	_ipAddress = _ip;
 	startServer();
 	
 };
