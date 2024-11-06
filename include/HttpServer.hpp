@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpServer.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcampbel <tcampbel@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 10:14:15 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/06 12:15:01 by tcampbel         ###   ########.fr       */
+/*   Updated: 2024/11/06 14:32:50 by clundber         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,15 +28,15 @@
 class HttpServer
 {
 private:
-	std::string _ipAddress;
-	int			_port;
-	int			_socket;
-	int			_clientSocket;
-	sockaddr_in _socketInfo; //reusable
-	int			epollFd;
-	epoll_event	_events;
-	epoll_event	_eventsArr[MAX_EVENTS];
-	int			numEvents;
+	std::string 	_ipAddress;
+	int				_port;
+	int				_socket;
+	std::vector<int>_clientSocket;
+	sockaddr_in 	_socketInfo; //reusable
+	int				epollFd;
+	epoll_event		_events;
+	epoll_event		_eventsArr[MAX_EVENTS];
+	int				numEvents;
 	
 	
 public:
