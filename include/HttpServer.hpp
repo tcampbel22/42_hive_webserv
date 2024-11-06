@@ -6,7 +6,7 @@
 /*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 10:14:15 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/06 15:23:24 by clundber         ###   ########.fr       */
+/*   Updated: 2024/11/06 17:28:52 by clundber         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,7 @@ class HttpServer
 private:
 	std::string 	_ipAddress;
 	int				_port;
-	int				_socket;
+	int				_serverFd;
 	int 			_clientSocket;
 	sockaddr_in 	_socketInfo; //reusable
 	int				epollFd;
