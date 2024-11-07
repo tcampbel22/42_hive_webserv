@@ -6,7 +6,7 @@
 /*   By: tcampbel <tcampbel@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 10:18:33 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/07 11:30:31 by tcampbel         ###   ########.fr       */
+/*   Updated: 2024/11/07 12:10:50 by tcampbel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,22 +76,22 @@ void HttpServer::startListening()
 				std::cout << "New client connected: " << _clientSocket << std::endl;
 				setNonBlocking(_clientSocket);
             	
-				_events.events = EPOLLIN | EPOLLOUT | EPOLLET;
+				_events.events = EPOLLIN | EPOLLOUT;
                 _events.data.fd = _clientSocket;
 				
 				epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events); //guard later
 			}
-			else	
+			else if (_eventsArr[i].events & EPOLLOUT)
 			{	
 				int _fd_out = _eventsArr[i].data.fd;
-				std::cout << "out fd =" << _fd_out << std::endl;
 				if (_fd_out % 2 == 0)
 					send(_fd_out, response.c_str(), response.size(), 0);
 				else
 					send(_fd_out, response2.c_str(), response2.size(), 0);
-				continue;
+				_events.events = EPOLLIN;
+                _events.data.fd = _fd_out;
+				epoll_ctl(epollFd, EPOLL_CTL_MOD, _fd_out, &_events); //guard later
 			}
-			
 		}
 		
 	}
