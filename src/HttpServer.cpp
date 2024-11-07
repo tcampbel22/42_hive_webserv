@@ -6,7 +6,7 @@
 /*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 10:18:33 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/06 17:58:32 by clundber         ###   ########.fr       */
+/*   Updated: 2024/11/07 10:58:19 by clundber         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,7 @@ void HttpServer::startListening()
 	// int	flag = fcntl(_serverFd, F_GETFL, 0); //retrieves flags/settings from socket
 	// fcntl(_serverFd, F_SETFL, flag | O_NONBLOCK); //Sets socket to be nonblocking
 	_events.data.fd = _serverFd;
-	 _events.events = EPOLLIN | EPOLLET;
+	 _events.events = EPOLLIN;
 	epoll_ctl(epollFd, EPOLL_CTL_ADD, _serverFd, &_events); //maybe protect
 
 	while (true)
