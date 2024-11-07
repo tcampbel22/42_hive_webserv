@@ -6,7 +6,7 @@ FLAGS	:= -Wextra -Wall -Werror
 OBJ_DIR := ./src/Objects
 SRCS_DIR = ./src
 
-SRCS	:= $(SRCS_DIR)/main.cpp $(SRCS_DIR)/HttpServer.cpp
+SRCS	:= $(SRCS_DIR)/main.cpp $(SRCS_DIR)/HttpServer.cpp $(SRCS_DIR)/HttpParser.cpp
 		
 OBJS	:= $(addprefix $(OBJ_DIR)/, $(notdir ${SRCS:.cpp=.o}))
 

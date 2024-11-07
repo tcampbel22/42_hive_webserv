@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpServer.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
+/*   By: tcampbel <tcampbel@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 10:14:15 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/06 17:28:52 by clundber         ###   ########.fr       */
+/*   Updated: 2024/11/07 15:14:37 by tcampbel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 # include <string>
 # include <sys/socket.h>
 # include <iostream>
-// # include <stdlib.h>
+# include <stdlib.h>
 # include <unistd.h>
 # include <netinet/in.h>
 # include <sstream>
@@ -22,6 +22,8 @@
 # include <vector>
 # include <sys/epoll.h>
 # include <fcntl.h>
+# include <sys/sendfile.h>
+# include "../include/HttpParser.hpp"
 
 # define MAX_EVENTS 20 //Can define this in config file or create a funct based on cpu load or leave it
 

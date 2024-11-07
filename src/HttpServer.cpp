@@ -6,7 +6,7 @@
 /*   By: tcampbel <tcampbel@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 10:18:33 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/07 12:10:50 by tcampbel         ###   ########.fr       */
+/*   Updated: 2024/11/07 15:15:07 by tcampbel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,6 @@ void	setNonBlocking(int socket)
 	int	flag = fcntl(socket, F_GETFL, 0); //retrieves flags/settings from socket
 	fcntl(socket, F_SETFL, flag | O_NONBLOCK); //Sets socket to be nonblocking
 }
-
 
 void HttpServer::startListening()
 {
@@ -84,16 +83,13 @@ void HttpServer::startListening()
 			else if (_eventsArr[i].events & EPOLLOUT)
 			{	
 				int _fd_out = _eventsArr[i].data.fd;
-				if (_fd_out % 2 == 0)
-					send(_fd_out, response.c_str(), response.size(), 0);
-				else
-					send(_fd_out, response2.c_str(), response2.size(), 0);
-				_events.events = EPOLLIN;
+				HttpParser::bigSend(_fd_out, "../assets/response.html");
+				// send(_fd_out, response.c_str(), response.size(), 0);
+				_events.events = EPOLLIN; 
                 _events.data.fd = _fd_out;
 				epoll_ctl(epollFd, EPOLL_CTL_MOD, _fd_out, &_events); //guard later
 			}
 		}
-		
 	}
 	std::cout << "outofloop" << std::endl;
 	//close (_clientSocket);
