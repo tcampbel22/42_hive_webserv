@@ -6,7 +6,7 @@
 /*   By: tcampbel <tcampbel@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/07 14:52:49 by tcampbel          #+#    #+#             */
-/*   Updated: 2024/11/07 15:22:21 by tcampbel         ###   ########.fr       */
+/*   Updated: 2024/11/07 15:34:26 by tcampbel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,15 +17,18 @@ void	HttpParser::bigSend(int out_fd, std::string path)
 {
 	std::string			buf;
 	std::ostringstream	stream;
-	std::ifstream ifs;
+	std::fstream 		infile;
 
-	ifs.open(path, std::ifstream::in);
-	// if (ifs.is_open() == 0)
-	// 	return ;
-	stream << ifs.rdbuf();
+	infile.open(path);
+	if (!infile.is_open())
+	{
+		std::cerr << "File failed to open\n";
+		return ;
+	}
+	stream << infile.rdbuf();
 	buf = stream.str();
 	std::cout << buf << " Buffer\n";
-	ifs.close();
-	// if (buf.find("GET"))
+	infile.close();
+	if (buf.find("GET"))
 		send(out_fd, buf.c_str(), buf.size(), 0);
 }

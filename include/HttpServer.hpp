@@ -6,7 +6,7 @@
 /*   By: tcampbel <tcampbel@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 10:14:15 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/07 15:14:37 by tcampbel         ###   ########.fr       */
+/*   Updated: 2024/11/07 15:51:19 by tcampbel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,8 @@
 # include <fcntl.h>
 # include <sys/sendfile.h>
 # include "../include/HttpParser.hpp"
+#include <errno.h>
+#include <string.h>
 
 # define MAX_EVENTS 20 //Can define this in config file or create a funct based on cpu load or leave it
 
