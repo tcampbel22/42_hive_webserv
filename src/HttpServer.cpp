@@ -6,7 +6,7 @@
 /*   By: tcampbel <tcampbel@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 10:18:33 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/07 17:23:53 by tcampbel         ###   ########.fr       */
+/*   Updated: 2024/11/07 17:27:20 by tcampbel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,6 +88,7 @@ void HttpServer::startListening()
                 // _events.data.fd = _fd_out;
 				epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events); //guard later
 				close (_fd_out); //needs to be handled in http parsing, client will send whether to close connection or not
+			
 			}
 		}
 	}
