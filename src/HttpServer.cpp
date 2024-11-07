@@ -6,7 +6,7 @@
 /*   By: tcampbel <tcampbel@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 10:18:33 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/07 12:10:50 by tcampbel         ###   ########.fr       */
+/*   Updated: 2024/11/07 16:18:56 by tcampbel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,6 @@ void	setNonBlocking(int socket)
 	fcntl(socket, F_SETFL, flag | O_NONBLOCK); //Sets socket to be nonblocking
 }
 
-
 void HttpServer::startListening()
 {
 	std::cout << "Server listening on port " << _port << std::endl;
@@ -70,7 +69,7 @@ void HttpServer::startListening()
 				_clientSocket = accept(_serverFd, (sockaddr *)&_socketInfo, &_sockLen);
 				if (_clientSocket < 0) 
 				{
-					std::cout << "accept failed\n";
+					std::cerr << "accept failed\n" << strerror(errno) << '\n';
 					continue;
 				}
 				std::cout << "New client connected: " << _clientSocket << std::endl;
@@ -84,16 +83,13 @@ void HttpServer::startListening()
 			else if (_eventsArr[i].events & EPOLLOUT)
 			{	
 				int _fd_out = _eventsArr[i].data.fd;
-				if (_fd_out % 2 == 0)
-					send(_fd_out, response.c_str(), response.size(), 0);
-				else
-					send(_fd_out, response2.c_str(), response2.size(), 0);
-				_events.events = EPOLLIN;
-                _events.data.fd = _fd_out;
-				epoll_ctl(epollFd, EPOLL_CTL_MOD, _fd_out, &_events); //guard later
+				HttpParser::bigSend(_fd_out, "./assets/response.html");
+				// _events.events = EPOLLIN; 
+                // _events.data.fd = _fd_out;
+				epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events); //guard later
+				close (_fd_out); //needs to be handled in http parsing, client will send whether to close connection or not
 			}
 		}
-		
 	}
 	std::cout << "outofloop" << std::endl;
 	//close (_clientSocket);
