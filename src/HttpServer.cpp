@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpServer.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcampbel <tcampbel@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: eagbomei <eagbomei@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 10:18:33 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/07 16:18:56 by tcampbel         ###   ########.fr       */
+/*   Updated: 2024/11/07 21:39:23 by eagbomei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,7 +74,7 @@ void HttpServer::startListening()
 				}
 				std::cout << "New client connected: " << _clientSocket << std::endl;
 				setNonBlocking(_clientSocket);
-            	
+				
 				_events.events = EPOLLIN | EPOLLOUT;
                 _events.data.fd = _clientSocket;
 				
@@ -83,7 +83,7 @@ void HttpServer::startListening()
 			else if (_eventsArr[i].events & EPOLLOUT)
 			{	
 				int _fd_out = _eventsArr[i].data.fd;
-				HttpParser::bigSend(_fd_out, "./assets/response.html");
+				HttpParser::bigSend(_fd_out);
 				// _events.events = EPOLLIN; 
                 // _events.data.fd = _fd_out;
 				epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events); //guard later
