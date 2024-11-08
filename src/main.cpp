@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
+/*   By: eagbomei <eagbomei@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 09:52:16 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/04 16:00:08 by clundber         ###   ########.fr       */
+/*   Updated: 2024/11/08 13:02:29 by eagbomei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,8 +23,12 @@ int	main(void)
 	/*start server class, calls the socket creation function in constructor, closes the socket in
 	the destructor.
 	*/
-	HttpServer server("127.0.0.1", 8000);
-	server.startListening();
+	// HttpServer server("127.0.0.1", 8000);
+	// server.startListening();
+	int fd = open("./test.txt", O_RDONLY);
+	HttpParser parser;
+	parser.bigSend(fd);
+	
 
 	//exit
 

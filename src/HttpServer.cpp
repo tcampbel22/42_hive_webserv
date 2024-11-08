@@ -6,7 +6,7 @@
 /*   By: eagbomei <eagbomei@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 10:18:33 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/07 21:39:23 by eagbomei         ###   ########.fr       */
+/*   Updated: 2024/11/08 12:36:44 by eagbomei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,14 +80,14 @@ void HttpServer::startListening()
 				
 				epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events); //guard later
 			}
-			else if (_eventsArr[i].events & EPOLLOUT)
+			else if (_eventsArr[i].events & EPOLLIN)
 			{	
 				int _fd_out = _eventsArr[i].data.fd;
 				HttpParser::bigSend(_fd_out);
 				// _events.events = EPOLLIN; 
                 // _events.data.fd = _fd_out;
-				epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events); //guard later
-				close (_fd_out); //needs to be handled in http parsing, client will send whether to close connection or not
+				epoll_ctl(epollFd, EPOLL_CTL_MOD, _fd_out, &_events); //guard later
+				//close (_fd_out); //needs to be handled in http parsing, client will send whether to close connection or not
 			}
 		}
 	}
