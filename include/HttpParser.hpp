@@ -6,7 +6,7 @@
 /*   By: eagbomei <eagbomei@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/07 14:43:31 by tcampbel          #+#    #+#             */
-/*   Updated: 2024/11/08 16:54:31 by eagbomei         ###   ########.fr       */
+/*   Updated: 2024/11/13 14:43:21 by eagbomei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,13 @@
 # include <map>
 
 
+struct HttpRequest {
+	std::string method;
+	std::string path;
+	std::map<std::string, std::string> headers;
+	std::string body;
+};
+
 class HttpParser
 {
 protected:
@@ -28,11 +35,12 @@ public:
 	HttpParser();
 	~HttpParser();
 	static void	bigSend(int out_fd);
-	void parseClientRequest(const std::vector<char>& clientData);
-	void recieveData(int out_fd);
+	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request);
+	void recieveRequest(int out_fd);
+	bool isValidRequestline(std::string);
+	
 
 
 
-
-	std::string trim(const std::string& str);
+	//std::string trim(const std::string& str);
 };
