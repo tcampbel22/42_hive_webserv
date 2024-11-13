@@ -6,12 +6,13 @@
 /*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/13 10:36:09 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/13 14:00:04 by clundber         ###   ########.fr       */
+/*   Updated: 2024/11/13 16:28:46 by clundber         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 #include <iostream>
+// #include <vector>
 
 class Response
 {
@@ -20,14 +21,25 @@ private:
 	std::string _contentType;
 	uint _contentLength;
 	//possibly Date
-	std::string _body;
-
+	std::string _body; //could also be vector
+	bool _closeConnection = false;
 
 public:	
 	Response();
 	~Response(){};
-	
+
+	//Setters
+	void setResponseCode(uint _code);
+	void setContentType(std::string _content);
+	void setContentLength(uint _length);
+	void set_body(std::string _body);
+	void setCloseConnection(bool _close);
+
 	//Methods
+	std::string getContentLength();
+	std::string getContentType();
+	std::string getResponseCode();
+	std::string makeDate();
 	void sendResponse(int fd);
 };
 
