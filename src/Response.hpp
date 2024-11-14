@@ -6,13 +6,12 @@
 /*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/13 10:36:09 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/13 16:28:46 by clundber         ###   ########.fr       */
+/*   Updated: 2024/11/14 12:05:40 by clundber         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 #include <iostream>
-// #include <vector>
 
 class Response
 {
@@ -20,7 +19,6 @@ private:
 	uint _responseCode;
 	std::string _contentType;
 	uint _contentLength;
-	//possibly Date
 	std::string _body; //could also be vector
 	bool _closeConnection = false;
 
@@ -41,12 +39,6 @@ public:
 	std::string getResponseCode();
 	std::string makeDate();
 	void sendResponse(int fd);
+	std::string makeDay(int day);
+	std::string makeMonth(int _month);
 };
-
-
-
-// A Status-line
-// Zero or more header (General|Response|Entity) fields followed by CRLF
-// An empty line (i.e., a line with nothing preceding the CRLF) 
-// indicating the end of the header fields
-// Optionally a message-body

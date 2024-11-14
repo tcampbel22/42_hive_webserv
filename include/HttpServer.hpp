@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpServer.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcampbel <tcampbel@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 10:14:15 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/07 15:51:19 by tcampbel         ###   ########.fr       */
+/*   Updated: 2024/11/14 11:26:27 by clundber         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@
 # include "../include/HttpParser.hpp"
 #include <errno.h>
 #include <string.h>
+#include "../src/Response.hpp"
 
 # define MAX_EVENTS 20 //Can define this in config file or create a funct based on cpu load or leave it
 
