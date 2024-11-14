@@ -12,19 +12,26 @@
 
 #pragma once
 
+#include <vector>
+#include <unordered_map>
+#include <variant>
 #include <iostream>
-#include <poll.h> //poll
-#include <sys/socket.h> //socket
-#include <string>
 
+class ConfigParser
+{
+private:
+	std::unordered_map<std::string, std::variant<std::string, uint, std::vector<std::string>, std::unordered_map<std::string, std::string>>> server_settings;
+	// Unordered map that can hold string vector, string, int and unordered map with string key and string value
 
-// Everything in C++ 98.
-// execve, dup, dup2, pipe, strerror, gai_strerror,
-// errno, dup, dup2, fork, socketpair, htons, htonl,
-// ntohs, ntohl, select, poll, epoll (epoll_create,
-// epoll_ctl, epoll_wait), kqueue (kqueue, kevent),
-// socket, accept, listen, send, recv, chdir bind,
-// connect, getaddrinfo, freeaddrinfo, setsockopt,
-// getsockname, getprotobyname, fcntl, close, read,
-// write, waitpid, kill, signal, access, stat, open,
-// opendir, readdir and closedir.
+public:
+	ConfigParser();
+	~ConfigParser();
+	uint		getPort();
+	std::string	getHost();
+	std::string getServerName();
+	uint		getMaxClientBody();
+	std::vector<std::string> get404Error();
+	std::vector<std::string> get500Error();
+	
+
+};
