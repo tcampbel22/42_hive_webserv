@@ -6,13 +6,13 @@
 /*   By: eagbomei <eagbomei@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/07 14:52:49 by tcampbel          #+#    #+#             */
-/*   Updated: 2024/11/13 15:58:49 by eagbomei         ###   ########.fr       */
+/*   Updated: 2024/11/14 16:15:23 by eagbomei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/HttpParser.hpp"
 
-HttpParser::HttpParser() : _clientDataBuffer(0) {}
+HttpParser::HttpParser()  {}
 
 HttpParser::~HttpParser() {}
 
@@ -23,7 +23,7 @@ void	HttpParser::recieveRequest(int out_fd)
 	ssize_t infoSize = 1;
 	ssize_t bytesRead = 0;
 	
-	_clientDataBuffer.resize(infoSize);
+	//_clientDataBuffer.resize(infoSize);
 	while(true)
 	{
 		_clientDataBuffer.resize(_clientDataBuffer.size() + infoSize);
@@ -49,10 +49,11 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
     std::string data(clientData.begin(), clientData.end());
     std::istringstream requestStream(data);
     std::string line;
+
     //Parse the requestline and store the relevant stuff:
     if (!std::getline(requestStream, line) || !isValidRequestline(line)) {
-		//error shit in here if first line is bad: ERROR 400 according to
-		std::cout << "got here since the request line was wack\n";
+		//error shit in here if first line is bad: ERROR 400 according to RFC
+		std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl;
 		exit(0);
 	}
 	std::cout << "got here since the request line was mint\n";
@@ -62,40 +63,54 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
         
     //     }
 }
-
+//*RL = request line
 bool HttpParser::isValidRequestline(std::string rLine)
 {
 	std::string tmp;
+	size_t startPos;
 	
-	size_t spPos = rLine.find(' ');
-	if (spPos == std::string::npos)
+	size_t spPos = rLine.find(' ');    //find the first space in the RL and check that it's either GET, POST or DELETE request. Anything else it's false
+	std::cout << spPos << std::endl;
+	if (spPos == std::string::npos) {
+		//response message (error 404 bad request)
 		return false;
+	}
 
-	tmp = rLine.substr(0, spPos);
-	std::cout << "tmp for type: " << tmp << std::endl;
+	tmp = rLine.substr(0, rLine.find(' '));
+	std::cout << "tmp for type: '" << tmp << "'\n";
 	
-	if (tmp != "GET" && tmp != "POST" && tmp != "DELETE") 
-        return false;
-	
-	size_t startPos = spPos + 1;
-	spPos = rLine.find(' ', startPos);
-	if (spPos == std::string::npos)
+	static const std::unordered_set<std::string> validMethods = {"GET", "POST", "DELETE"}; //trying out containers not sure if this is allowed
+	if (validMethods.find(tmp) == validMethods.end()) {
+		//error response here (error 404 bad request or 500 internal server error)
 		return false;
-	
-	tmp = rLine.substr(startPos, spPos - startPos);
-	std::cout << "tmp for path: " << tmp << std::endl;
-	if (tmp.empty() ||  tmp[0] != '/') // probably needs more checking for the path, but that is the most important check atleast :D. will come back to this.
-		return false;
-
-		
+	}
 	startPos = spPos + 1;
-	tmp = rLine.substr(startPos, spPos - startPos);
-	std::cout << "tmp for version: " << tmp << std::endl;
-	if (tmp != "HTTP/1.1")
+	// if (tmp == "GET" || tmp == "POST" || tmp == "DELETE") { -->*This would be the substitute for the container 
+	// startPos = spPos + 1;
+    // }
+	// else {
+	// 	return false;
+	// }
+	spPos = rLine.find(' ', startPos);  //check that the path is syntaxly correct.
+	if (spPos == std::string::npos)     //if true no space found
 		return false;
-
-		
-	return (true);
+	
+	tmp = rLine.substr(startPos, spPos - startPos);
+	std::cout << "tmp for Path: '" << tmp << "'\n"; 
+	if (tmp.empty() ||  tmp[0] != '/') { // probably needs more checking for the path, but that is the most important check atleast :D. will come back to this.
+		//if Path is incorrect: error handling here(HTTP Status 400 or HTTP Status 404).
+		return false;
+	} 
+	
+	startPos = spPos + 1;
+	tmp = rLine.substr(startPos, spPos - startPos);     //Version detection, has to be *HTTP/1.1\r*
+	std::cout << "tmp for Version: '" << tmp << "'\n";
+	if (tmp != "HTTP/1.1\r") {
+		//error shit here if version wrong(HTTP 505 - HTTP Version Not Supported)
+		return false;
+	}
+	
+	return true;
 }
 
 
@@ -132,11 +147,11 @@ void	HttpParser::bigSend(int out_fd)
 	HttpRequest request;
 	parser.recieveRequest(out_fd);
 	parser.parseClientRequest(parser._clientDataBuffer, request);
-	std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
-    std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
-	 for (const auto& pair : parser._requestMap) {
-        std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
-    }
+	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
+    // std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
+	//  for (const auto& pair : parser._requestMap) {
+    //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
+    // }
 	
 	// std::ifstream ifs("./assets/response.html");
 	// if (!ifs.is_open())
@@ -147,13 +162,12 @@ void	HttpParser::bigSend(int out_fd)
 	// 	send(out_fd, buf.c_str(), buf.size(), 0);
 }
 
-//util function to trim off the white spaces and delimit the read when making key value pair
-// std::string HttpParser::trim(const std::string& str) {
-//     size_t first = str.find_first_not_of(" \t");
-//     if (first == std::string::npos) return "";
-//     size_t last = str.find_last_not_of(" \t");
-//     return str.substr(first, (last - first + 1));
-// }
+// util function to trim off the white spaces and delimit the read when making key value pair
+std::string HttpParser::trim(const std::string& str) {
+    size_t first = str.find_first_not_of(" \t\n\r\f\v");
+    size_t last = str.find_last_not_of(" \t\n\r\f\v");
+    return (first == std::string::npos) ? "" : str.substr(first, (last - first + 1));
+}
 
 
 // void HttpParser::parseClientRequest(const std::vector<char>& clientData)

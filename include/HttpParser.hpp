@@ -6,7 +6,7 @@
 /*   By: eagbomei <eagbomei@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/07 14:43:31 by tcampbel          #+#    #+#             */
-/*   Updated: 2024/11/13 14:43:21 by eagbomei         ###   ########.fr       */
+/*   Updated: 2024/11/14 15:59:52 by eagbomei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 # include <sstream>
 # include <fstream>
 # include <map>
+# include <unordered_set>
 
 
 struct HttpRequest {
@@ -42,5 +43,5 @@ public:
 
 
 
-	//std::string trim(const std::string& str);
+	std::string trim(const std::string& str);
 };
