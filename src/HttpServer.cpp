@@ -12,6 +12,18 @@
 
 #include "../include/HttpServer.hpp"
 
+
+void testSend(int fd)
+{
+	Response newResponse;
+	newResponse.setResponseCode(200);
+	newResponse.setContentType("text/html");
+	newResponse.setContentLength(137);
+	newResponse.setCloseConnection(false);
+	newResponse.set_body("<!DOCTYPE html>\n<html>\n<head>\n    <title>Simple C++ Web Server</title>\n</head>\n<body>\n    <h1>Hello from a C++ web server!</h1>\n</body>\n</html>\n");
+	newResponse.sendResponse(fd);
+}
+
 void HttpServer::startServer()
 {
 	//make socket
@@ -83,7 +95,8 @@ void HttpServer::startListening()
 			else if (_eventsArr[i].events & EPOLLOUT)
 			{	
 				int _fd_out = _eventsArr[i].data.fd;
-				HttpParser::bigSend(_fd_out, "./assets/response.html");
+				testSend(_fd_out);
+				//HttpParser::bigSend(_fd_out, "./assets/response.html");
 				// _events.events = EPOLLIN; 
                 // _events.data.fd = _fd_out;
 				epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events); //guard later

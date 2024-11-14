@@ -26,6 +26,7 @@
 # include "../include/HttpParser.hpp"
 #include <errno.h>
 #include <string.h>
+#include "../src/Response.hpp"
 
 # define MAX_EVENTS 20 //Can define this in config file or create a funct based on cpu load or leave it
 
