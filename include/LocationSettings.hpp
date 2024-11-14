@@ -13,8 +13,8 @@
 #pragma once
 
 #include <unordered_map>
-#include <iostream>
 #include <stdbool>
+#include <iostream>
 
 class LocationSettings
 {
