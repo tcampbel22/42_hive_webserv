@@ -6,7 +6,7 @@
 /*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/13 11:34:22 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/14 12:21:55 by clundber         ###   ########.fr       */
+/*   Updated: 2024/11/14 14:20:12 by clundber         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -167,6 +167,6 @@ void Response::sendResponse(int fd)
 		_buffer += _body;
 	
 	//uncomment this in order to see the response in the terminal
-	//std::cout <<  _buffer << std::endl;
+	std::cout <<  _buffer << std::endl;
 	send(fd, _buffer.c_str(), _buffer.size(), 0);
 }
