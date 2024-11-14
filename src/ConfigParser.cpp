@@ -10,32 +10,8 @@
 /**             W E B S E R V                  **/
 /************************************************/
 
-#include "../include/webserv.hpp"
-#include "../include/HttpServer.hpp"
+#include "ConfigParser.hpp"
 
+ConfigParser::ConfigParser() {}
 
-void	ft_perror(std::string str)
-{
-	std::cerr << "webserv: " << str << std::endl;
-}
-
-int	main(int ac, char **av)
-{
-	if (ac != 2)
-	{
-		ft_perror("expecting only configuration file as argument");
-		return 1;
-	}
-	std::string confFile = av[1];
-	//parsing
-	
-	/*start server class, calls the socket creation function in constructor, closes the socket in
-	the destructor.
-	*/
-	HttpServer server("127.0.0.1", 8000);
-	server.startListening();
-
-	//exit
-
-	return (0);
-}
+ConfigParser::~ConfigParser() {}
