@@ -13,13 +13,14 @@
 #pragma once
 
 #include <unordered_map>
-#include <stdbool>
 #include <iostream>
+#include <variant>
+#include <vector>
 
 class LocationSettings
 {
 private:
-	std::unordered_map<std::string, std::variant<std::string, bool, > location_settings;
+	std::unordered_map<std::string, std::variant<std::string, bool, uint, std::vector<std::string>>> location_settings;
 public:
 	LocationSettings();
 	~LocationSettings();
