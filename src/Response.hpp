@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Response.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
+/*   By: casimirri <clundber@student.hive.fi>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/13 10:36:09 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/14 12:05:40 by clundber         ###   ########.fr       */
+/*   Updated: 2024/11/15 18:19:46 by casimirri        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,8 @@ public:
 	//Methods
 	std::string getContentLength();
 	std::string getContentType();
-	std::string getResponseCode();
+	uint getResponseCode();
+	std::string getResponseCodeStr();	
 	std::string makeDate();
 	void sendResponse(int fd);
 	std::string makeDay(int day);

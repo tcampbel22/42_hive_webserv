@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerHandler.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
+/*   By: casimirri <clundber@student.hive.fi>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 13:56:56 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/14 15:15:01 by clundber         ###   ########.fr       */
+/*   Updated: 2024/11/15 17:34:41 by casimirri        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,10 +37,11 @@ private:
 
 
 public:
-	ServerHandler();//(InputinformationClass& Eromon)
+	ServerHandler(int fd);//(InputinformationClass& Eromon)
 	void executeInput();
 	void doPost();
 	void doDelete();
 	void doGet();
 	void doError();
+	void getFile(std::string path);
 };

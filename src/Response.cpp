@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Response.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
+/*   By: casimirri <clundber@student.hive.fi>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/13 11:34:22 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/14 14:20:12 by clundber         ###   ########.fr       */
+/*   Updated: 2024/11/15 18:20:20 by casimirri        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,9 @@ void Response::set_body(std::string _newBody){_body = _newBody;}
 
 void Response::setCloseConnection(bool _close){_closeConnection = _close;}
 
-std::string Response::getResponseCode()
+uint Response::getResponseCode(){return (_responseCode);}
+
+std::string Response::getResponseCodeStr()
 {
 	std::string status = "HTTP/1.1 ";
 	switch (_responseCode)
@@ -69,7 +71,7 @@ std::string Response::getContentType()
 
 std::string Response::getContentLength()
 {
-	std::string _length = "Content-TLength: ";
+	std::string _length = "Content-Length: ";
 	_length += std::to_string(_contentLength) + '\n';
 	return (_length);
 }
@@ -151,7 +153,7 @@ std::string Response::makeDate()
 
 void Response::sendResponse(int fd)
 {
-	std::string _buffer = getResponseCode();
+	std::string _buffer = getResponseCodeStr();
 	
 	if (!_contentType.empty())
 	{

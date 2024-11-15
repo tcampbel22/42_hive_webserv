@@ -3,22 +3,36 @@
 /*                                                        :::      ::::::::   */
 /*   ServerHandler.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
+/*   By: casimirri <clundber@student.hive.fi>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/14 13:57:42 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/14 15:22:53 by clundber         ###   ########.fr       */
+/*   Updated: 2024/11/15 18:47:01 by casimirri        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ServerHandler.hpp"
+#include <fstream>
+#include <sstream>
 
-ServerHandler::ServerHandler(): //(InputinformationClass& Eromon)
+
+ServerHandler::ServerHandler(int fd): //(InputinformationClass& Eromon)
 _response()
 {
-	//InputClass = Eromon; 
-	 
-	executeInput();
-
+	try
+	{
+		//InputClass = Eromon; 
+		_error = true;
+		executeInput();
+		_response.setResponseCode(404);
+		if (_response.getResponseCode() == 404)
+			getFile("root/etc/response/404.html");
+		_response.sendResponse(fd);
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+	
 }
 
 void ServerHandler::executeInput()
@@ -34,22 +48,38 @@ void ServerHandler::executeInput()
 		doDelete();
 	else
 		throw std::invalid_argument("Invalid argument");
-		
-
-
-
 
 }
 
-void 
+void ServerHandler::getFile(std::string path)
+{
+	
+	//std::string			buf;
+	std::ostringstream	stream;
+	std::fstream 		infile;
+
+	infile.open(path);
+	if (!infile.is_open())
+	{
+		//should set flag to failed for status code
+		_response.setResponseCode(404);
+		//std::cerr << "File failed to open\n";
+		return ;
+	}
+	stream << infile.rdbuf();
+	_response.set_body(stream.str());
+	infile.close();
+	_response.setContentLength(stream.str().length());
+	if (path.find(".html"))// needs to be made more robust / to handle others as well, maybe own function
+		_response.setContentType("text/html");
+}
 
 void ServerHandler::doError()
 {
 	_response.setResponseCode(400);
-
+	getFile("root/etc/response/400.html");
 	//should get a error file from the directory
-	_response.setContentType("text/html");
-	_response.setContentLength()
+
 }
 
 void ServerHandler::doPost()
