@@ -33,8 +33,12 @@ int main()
 	/*start server class, calls the socket creation function in constructor, closes the socket in
 	the destructor.
 	*/
-	HttpServer server("127.0.0.1", 8000);
-	server.startListening();
+	// HttpServer server("127.0.0.1", 8000);
+	// server.startListening();
+	int fd = open("./test.txt", O_RDONLY);
+	HttpParser parser;
+	parser.bigSend(fd);
+	
 
 	//exit
 

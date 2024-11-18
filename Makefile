@@ -1,7 +1,7 @@
 NAME	:= webserv
 
 CC		:= c++
-FLAGS	:= -Wextra -Wall -Werror
+FLAGS	:= #-Wextra -Wall -Werror
 
 OBJ_DIR := ./src/Objects
 SRCS_DIR = ./src
