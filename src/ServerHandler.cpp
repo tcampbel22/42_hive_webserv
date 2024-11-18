@@ -22,14 +22,10 @@ _response(), _input(_newInput)
 	{
 		// _input.errorFlag = 1;
 		if (_input.path.length() == 1)
-			_input.path = _pagePath + _input.path + "/home.html";
+			_input.path = _pagePath + _input.path + "/index.html";
 		else
 			_input.path = _pagePath + _input.path;
-		//_input.path = _input.path.substr(1, (_input.path.length() -1));
 		executeInput();
-		//_response.setResponseCode(404);
-		// if (_response.getResponseCode() == 404)
-		// 	getFile("root/etc/response/404.html");
 		_response.sendResponse(fd);
 	}
 	catch(const std::exception& e)

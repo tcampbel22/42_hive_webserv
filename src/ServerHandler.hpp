@@ -23,7 +23,7 @@ private:
 	HttpRequest& _input;
 	Response _response;
 	std::string _responsePath;
-	std::string _pagePath = "root/var/www/html";
+	std::string _pagePath = "root/var/html";
 // struct HttpRequest {
 // 	std::string method;
 // 	std::string path;
