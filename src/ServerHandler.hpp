@@ -11,18 +11,20 @@
 /************************************************/
 
 #pragma once
-# include <iostream>
+#include <iostream>
 #include "Response.hpp"
+#include "../include/HttpParser.hpp"
 
-// class Response;
+struct HttpRequest;
 
 class ServerHandler
 {
 private:
+	HttpRequest& _input;
 	//InputinformationClass& Eromon;	
 	// std::string _accept[20];
-	std::string _type = "POST";
-	bool	_error = false;
+	// std::string _type = "POST";
+	// bool	_error = false;
 	Response _response;
 	// std::string _body;
 	// bool	_connection:
@@ -30,7 +32,7 @@ private:
 
 
 public:
-	ServerHandler(int fd);//(InputinformationClass& Eromon)
+	ServerHandler(int fd, HttpRequest& _newInput);//(InputinformationClass& Eromon)
 	void executeInput();
 	void doPost();
 	void doDelete();

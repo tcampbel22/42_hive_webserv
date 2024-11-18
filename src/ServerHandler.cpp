@@ -15,13 +15,12 @@
 #include <sstream>
 
 
-ServerHandler::ServerHandler(int fd): //(InputinformationClass& Eromon)
-_response()
+ServerHandler::ServerHandler(int fd, HttpRequest& _newInput):
+_response(), _input(_newInput)
 {
 	try
 	{
-		//InputClass = Eromon; 
-		_error = true;
+		_input.errorFlag = 1;
 		executeInput();
 		_response.setResponseCode(404);
 		if (_response.getResponseCode() == 404)
@@ -38,13 +37,13 @@ _response()
 void ServerHandler::executeInput()
 {
 	
-	if (_error == true)
+	if (_input.errorFlag == true)
 		doError();
-	else if (_type == "POST")
+	else if (_input.method == "POST")
 		doPost();
-	else if (_type == "GET")
+	else if (_input.method == "GET")
 		doGet();
-	else if (_type == "DELETE")
+	else if (_input.method == "DELETE")
 		doDelete();
 	else
 		throw std::invalid_argument("Invalid argument");
