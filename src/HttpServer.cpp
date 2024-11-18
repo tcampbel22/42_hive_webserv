@@ -95,8 +95,10 @@ void HttpServer::startListening()
 			else if (_eventsArr[i].events & EPOLLIN)
 			{	
 				int _fd_out = _eventsArr[i].data.fd;
-				testSend(_fd_out);
-				//HttpParser::bigSend(_fd_out, "./assets/response.html");
+				//testSend(_fd_out);
+
+				//ServerHandler handle_request(_fd_out, );
+				HttpParser::bigSend(_fd_out);
 				// _events.events = EPOLLIN; 
                 // _events.data.fd = _fd_out;
 				epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events); //guard later

@@ -7,7 +7,7 @@ OBJ_DIR := ./src/Objects
 SRCS_DIR = ./src
 
 SRCS	:= $(SRCS_DIR)/main.cpp $(SRCS_DIR)/HttpServer.cpp $(SRCS_DIR)/HttpParser.cpp \
-			$(SRCS_DIR)/Response.cpp
+			$(SRCS_DIR)/Response.cpp $(SRCS_DIR)/ServerHandler.cpp
 		
 OBJS	:= $(addprefix $(OBJ_DIR)/, $(notdir ${SRCS:.cpp=.o}))
 

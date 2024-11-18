@@ -1,14 +1,14 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   Response.cpp                                       :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/11/13 11:34:22 by clundber          #+#    #+#             */
-/*   Updated: 2024/11/14 12:21:55 by clundber         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+/************************************************/
+/** __          __  _                          **/
+/** \ \        / / | |                         **/
+/**  \ \  /\  / /__| |__  ___  ___ _ ____   __ **/
+/**   \ \/  \/ / _ \ '_ \/ __|/ _ \ '__\ \ / / **/
+/**    \  /\  /  __/ |_) \__ \  __/ |   \ V /  **/
+/**     \/  \/ \___|_.__/|___/\___|_|    \_/   **/
+/**                                            **/
+/**                                            **/
+/**             W E B S E R V                  **/
+/************************************************/
 
 #include "Response.hpp"
 #include <iomanip>
@@ -30,7 +30,9 @@ void Response::set_body(std::string _newBody){_body = _newBody;}
 
 void Response::setCloseConnection(bool _close){_closeConnection = _close;}
 
-std::string Response::getResponseCode()
+uint Response::getResponseCode(){return (_responseCode);}
+
+std::string Response::getResponseCodeStr()
 {
 	std::string status = "HTTP/1.1 ";
 	switch (_responseCode)
@@ -69,7 +71,7 @@ std::string Response::getContentType()
 
 std::string Response::getContentLength()
 {
-	std::string _length = "Content-TLength: ";
+	std::string _length = "Content-Length: ";
 	_length += std::to_string(_contentLength) + '\n';
 	return (_length);
 }
@@ -151,7 +153,7 @@ std::string Response::makeDate()
 
 void Response::sendResponse(int fd)
 {
-	std::string _buffer = getResponseCode();
+	std::string _buffer = getResponseCodeStr();
 	
 	if (!_contentType.empty())
 	{
@@ -167,6 +169,6 @@ void Response::sendResponse(int fd)
 		_buffer += _body;
 	
 	//uncomment this in order to see the response in the terminal
-	//std::cout <<  _buffer << std::endl;
+	// std::cout <<  _buffer << std::endl;
 	send(fd, _buffer.c_str(), _buffer.size(), 0);
 }
