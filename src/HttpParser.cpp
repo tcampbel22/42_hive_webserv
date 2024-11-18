@@ -6,7 +6,7 @@
 /*   By: eagbomei <eagbomei@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/07 14:52:49 by tcampbel          #+#    #+#             */
-/*   Updated: 2024/11/18 11:14:25 by eagbomei         ###   ########.fr       */
+/*   Updated: 2024/11/18 11:27:02 by eagbomei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,7 +83,7 @@ bool HttpParser::isValidRequestline(std::string rLine, HttpRequest& request)
 	
 	size_t spPos = rLine.find(' ');    //find the first space in the RL and check that it's either GET, POST or DELETE request. Anything else it's false
 	if (spPos == std::string::npos) {
-		//response message (error 404 bad request)
+		request.errorFlag = 1;
 		return false;
 	}
 
@@ -93,6 +93,7 @@ bool HttpParser::isValidRequestline(std::string rLine, HttpRequest& request)
 	static const std::unordered_set<std::string> validMethods = {"GET", "POST", "DELETE"}; //trying out containers not sure if this is allowed
 	if (validMethods.find(tmp) == validMethods.end()) {
 		//error response here (error 404 bad request or 500 internal server error)
+		request.errorFlag = 1;
 		return false;
 	}
 	request.method = tmp;
@@ -106,6 +107,7 @@ bool HttpParser::isValidRequestline(std::string rLine, HttpRequest& request)
 	std::cout << "tmp for Path: '" << tmp << "'\n"; 
 	if (tmp.empty() ||  tmp[0] != '/') { // probably needs more checking for the path, but that is the most important check atleast :D. will come back to this.
 		//if Path is incorrect: error handling here(HTTP Status 400 or HTTP Status 404).
+		request.errorFlag = 1;
 		return false;
 	}
 	request.path = tmp;
@@ -115,6 +117,7 @@ bool HttpParser::isValidRequestline(std::string rLine, HttpRequest& request)
 	std::cout << "tmp for Version: '" << tmp << "'\n";
 	if (tmp != "HTTP/1.1\r") {
 		//error shit here if version wrong(HTTP 505 - HTTP Version Not Supported)
+		request.errorFlag = 1;
 		return false;
 	}
 	
@@ -125,27 +128,6 @@ bool HttpParser::isValidRequestline(std::string rLine, HttpRequest& request)
 // {
 // 	auto key = request.headers;
 // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

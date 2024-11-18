@@ -6,7 +6,7 @@
 /*   By: eagbomei <eagbomei@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/07 14:43:31 by tcampbel          #+#    #+#             */
-/*   Updated: 2024/11/18 11:10:43 by eagbomei         ###   ########.fr       */
+/*   Updated: 2024/11/18 11:25:30 by eagbomei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ struct HttpRequest {
 	std::string body;
 	std::string connection;
 	std::string host;
-	bool errorFlag;
+	int errorFlag;
 };
 
 class HttpParser
