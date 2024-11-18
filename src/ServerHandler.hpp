@@ -21,14 +21,18 @@ class ServerHandler
 {
 private:
 	HttpRequest& _input;
-	//InputinformationClass& Eromon;	
-	// std::string _accept[20];
-	// std::string _type = "POST";
-	// bool	_error = false;
 	Response _response;
-	// std::string _body;
-	// bool	_connection:
-	
+	std::string _responsePath;
+	std::string _pagePath = "root/var/html";
+// struct HttpRequest {
+// 	std::string method;
+// 	std::string path;
+// 	std::map<std::string, std::string> headers;
+// 	std::string body;
+// 	std::string connection;
+// 	std::string host;
+// 	int errorFlag;
+// };
 
 
 public:
@@ -38,5 +42,5 @@ public:
 	void doDelete();
 	void doGet();
 	void doError();
-	void getFile(std::string path);
+	int getFile(std::string path);
 };

@@ -20,11 +20,12 @@ _response(), _input(_newInput)
 {
 	try
 	{
-		_input.errorFlag = 1;
+		// _input.errorFlag = 1;
+		if (_input.path.length() == 1)
+			_input.path = _pagePath + _input.path + "/index.html";
+		else
+			_input.path = _pagePath + _input.path;
 		executeInput();
-		_response.setResponseCode(404);
-		if (_response.getResponseCode() == 404)
-			getFile("root/etc/response/404.html");
 		_response.sendResponse(fd);
 	}
 	catch(const std::exception& e)
@@ -50,10 +51,9 @@ void ServerHandler::executeInput()
 
 }
 
-void ServerHandler::getFile(std::string path)
+
+int ServerHandler::getFile(std::string path)
 {
-	
-	//std::string			buf;
 	std::ostringstream	stream;
 	std::fstream 		infile;
 
@@ -62,8 +62,9 @@ void ServerHandler::getFile(std::string path)
 	{
 		//should set flag to failed for status code
 		_response.setResponseCode(404);
+		getFile("root/etc/response/404.html");
 		//std::cerr << "File failed to open\n";
-		return ;
+		return (1);
 	}
 	stream << infile.rdbuf();
 	_response.set_body(stream.str());
@@ -71,6 +72,12 @@ void ServerHandler::getFile(std::string path)
 	_response.setContentLength(stream.str().length());
 	if (path.find(".html"))// needs to be made more robust / to handle others as well, maybe own function
 		_response.setContentType("text/html");
+	else if (path.find(".webp"))
+		_response.setContentType("text/webp");
+	else if (path.find(".jpg"))
+		_response.setContentType("text/jpg");
+		
+	return (0);
 }
 
 void ServerHandler::doError()
@@ -78,7 +85,6 @@ void ServerHandler::doError()
 	_response.setResponseCode(400);
 	getFile("root/etc/response/400.html");
 	//should get a error file from the directory
-
 }
 
 void ServerHandler::doPost()
@@ -88,7 +94,9 @@ void ServerHandler::doPost()
 
 void ServerHandler::doGet()
 {
-	
+	if (getFile(_input.path) == 1)
+		return ;
+	_response.setResponseCode(200);
 }
 
 void ServerHandler::doDelete()

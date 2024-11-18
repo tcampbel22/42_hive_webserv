@@ -6,7 +6,7 @@
 /*   By: clundber < clundber@student.hive.fi>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/07 14:52:49 by tcampbel          #+#    #+#             */
-/*   Updated: 2024/11/18 13:28:59 by clundber         ###   ########.fr       */
+/*   Updated: 2024/11/18 14:36:24 by clundber         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -138,13 +138,13 @@ void	HttpParser::bigSend(int out_fd)
 	HttpRequest request;
 	parser.recieveRequest(out_fd);
 	parser.parseClientRequest(parser._clientDataBuffer, request);
+	
+	
+	std::cout << request.method << '\n' << request.path << std::endl;
 
 	ServerHandler handle_request(out_fd, request);
 	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
     // std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
-	//  for (const auto& pair : request.headers) {
-    //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
-    // }
 	
 	// std::ifstream ifs("./assets/response.html");
 	// if (!ifs.is_open())
