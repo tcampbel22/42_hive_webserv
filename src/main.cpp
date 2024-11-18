@@ -21,12 +21,12 @@ void	ft_perror(std::string str)
 
 int	main(int ac, char **av)
 {
-	if (ac != 2)
-	{
-		ft_perror("expecting only configuration file as argument");
-		return 1;
-	}
-	std::string confFile = av[1];
+// 	if (ac != 2)
+// 	{
+// 		ft_perror("expecting only configuration file as argument");
+// 		return 1;
+// 	}
+// 	std::string confFile = av[1];
 	//parsing
 	
 	/*start server class, calls the socket creation function in constructor, closes the socket in

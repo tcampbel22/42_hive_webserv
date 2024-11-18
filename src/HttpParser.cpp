@@ -1,14 +1,14 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   HttpParser.cpp                                     :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: eagbomei <eagbomei@student.hive.fi>        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/11/07 14:52:49 by tcampbel          #+#    #+#             */
-/*   Updated: 2024/11/18 11:43:56 by eagbomei         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+/************************************************/
+/** __          __  _                          **/
+/** \ \        / / | |                         **/
+/**  \ \  /\  / /__| |__  ___  ___ _ ____   __ **/
+/**   \ \/  \/ / _ \ '_ \/ __|/ _ \ '__\ \ / / **/
+/**    \  /\  /  __/ |_) \__ \  __/ |   \ V /  **/
+/**     \/  \/ \___|_.__/|___/\___|_|    \_/   **/
+/**                                            **/
+/**                                            **/
+/**             W E B S E R V                  **/
+/************************************************/
 
 #include "../include/HttpParser.hpp"
 
@@ -54,7 +54,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl;
 	}
 	/*
-		TODO: parse path and method according to config file instructions.
+		TODO: parse path and method according to config file instructions. //requires information from config file
 	
 	
 	
@@ -68,12 +68,21 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
             std::string value = line.substr(colonPos + 1);
             request.headers[key] = value;
         }
+		else 
+			break;
 	}
-	//findKeys(request);
-	/* TODO BODY PARSING HERE
-	
-	
-	*/
+	if (requestStream.eof() == true)
+		exit(0);
+	findKeys(request);
+	if (request.method == "GET" && requestStream.eof() != true) {
+		//error here (Optional tho, but we can regard GET request with body as a error)
+		request.errorFlag = 1;
+	}
+	else {
+		while (std::getline(requestStream, line)) {
+				request.body.append(line + '\n');
+		}
+	}
 }
 //*RL = request line
 bool HttpParser::isValidRequestline(std::string rLine, HttpRequest& request)
@@ -104,7 +113,6 @@ bool HttpParser::isValidRequestline(std::string rLine, HttpRequest& request)
 		return false;
 	
 	tmp = rLine.substr(startPos, spPos - startPos);
-	std::cout << "tmp for Path: '" << tmp << "'\n"; 
 	if (tmp.empty() ||  tmp[0] != '/') { // probably needs more checking for the path, but that is the most important check atleast :D. will come back to this.
 		//if Path is incorrect: error handling here(HTTP Status 400 or HTTP Status 404).
 		request.errorFlag = 1;
@@ -114,20 +122,24 @@ bool HttpParser::isValidRequestline(std::string rLine, HttpRequest& request)
 	
 	startPos = spPos + 1;
 	tmp = rLine.substr(startPos, spPos - startPos);     //Version detection, has to be *HTTP/1.1\r*
-	std::cout << "tmp for Version: '" << tmp << "'\n";
 	if (tmp != "HTTP/1.1\r") {
 		//error shit here if version wrong(HTTP 505 - HTTP Version Not Supported)
 		request.errorFlag = 1;
 		return false;
 	}
-	
 	return true;
 }
 
-// void HttpParser::findKeys(HttpRequest& request)
-// {
-// 	auto key = request.headers;
-// }
+void HttpParser::findKeys(HttpRequest& request)
+{
+	auto it = request.headers.at("Connection");
+	if (it.compare("keep-alive"))
+		request.connection = false;
+	request.host.append(request.headers.at("Host"));
+	/* Something here for accept
+	
+	*/
+}
 
 
 
@@ -143,9 +155,9 @@ void	HttpParser::bigSend(int out_fd)
 	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
     // std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
 	//  for (const auto& pair : request.headers) {
-    //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
+    //     std::cout << "Key: " << pair.first << " Value:" << pair.second << std::endl;
     // }
-	
+	//
 	// std::ifstream ifs("./assets/response.html");
 	// if (!ifs.is_open())
 	// 	std::cerr << "Can't open file\n";
