@@ -6,7 +6,7 @@
 /*   By: eagbomei <eagbomei@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/07 14:43:31 by tcampbel          #+#    #+#             */
-/*   Updated: 2024/11/14 16:54:00 by eagbomei         ###   ########.fr       */
+/*   Updated: 2024/11/18 11:10:43 by eagbomei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,8 @@ struct HttpRequest {
 	std::map<std::string, std::string> headers;
 	std::string body;
 	std::string connection;
+	std::string host;
+	bool errorFlag;
 };
 
 class HttpParser
@@ -40,7 +42,7 @@ public:
 	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request);
 	void recieveRequest(int out_fd);
 	bool isValidRequestline(std::string, HttpRequest&);
-	
+	void findKeys(HttpRequest& request);
 
 
 

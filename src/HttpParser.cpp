@@ -6,7 +6,7 @@
 /*   By: eagbomei <eagbomei@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/07 14:52:49 by tcampbel          #+#    #+#             */
-/*   Updated: 2024/11/14 17:20:22 by eagbomei         ###   ########.fr       */
+/*   Updated: 2024/11/18 11:14:25 by eagbomei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,17 +17,15 @@ HttpParser::HttpParser()  {}
 HttpParser::~HttpParser() {}
 
 
-//Reads the client request and stores it in a vector<char> // STILL BIG TODO
+//Reads the client request and stores it in a vector<char>
 void	HttpParser::recieveRequest(int out_fd)
 {
-	ssize_t infoSize = 1;
 	ssize_t bytesRead = 0;
 	
-	//_clientDataBuffer.resize(infoSize);
 	while(true)
 	{
-		_clientDataBuffer.resize(_clientDataBuffer.size() + infoSize);
-		bytesRead = read(out_fd, &_clientDataBuffer[_clientDataBuffer.size() - infoSize], infoSize);
+		_clientDataBuffer.resize(_clientDataBuffer.size() + 1);
+		bytesRead = read(out_fd, &_clientDataBuffer[_clientDataBuffer.size() - 1], 1);
 		if (bytesRead < 0) {
 			// if (errno == EAGAIN || errno == EWOULDBLOCK) {
             //     std::cout << "Everything read succesfully to the vector" << std::endl;
@@ -41,7 +39,7 @@ void	HttpParser::recieveRequest(int out_fd)
 			break ;
 		}
 	}
-	_clientDataBuffer.resize(_clientDataBuffer.size() - (infoSize + bytesRead));
+	_clientDataBuffer.resize(_clientDataBuffer.size() - (1 + bytesRead));
 }
 //Empty the vector to the requestMap, needs to be parsed in the response.
 void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request)
@@ -50,18 +48,17 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
     std::istringstream requestStream(data);
     std::string line;
 
-    //Parse the requestline and store the relevant stuff:
+    //Parse the requestline and store the relevant stuff (path and method)
     if (!std::getline(requestStream, line) || !isValidRequestline(line, request)) {
 		//error shit in here if first line is bad: ERROR 400 according to RFC
 		std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl;
 	}
 	/*
-	TODO: parse path and method according to config file instructions.
+		TODO: parse path and method according to config file instructions.
 	
 	
 	
 	*/
-
 
     // //Parse headers and add them to a map
     while (std::getline(requestStream, line)) {
@@ -72,6 +69,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
             request.headers[key] = value;
         }
 	}
+	//findKeys(request);
 	/* TODO BODY PARSING HERE
 	
 	
@@ -123,7 +121,10 @@ bool HttpParser::isValidRequestline(std::string rLine, HttpRequest& request)
 	return true;
 }
 
-
+// void HttpParser::findKeys(HttpRequest& request)
+// {
+// 	auto key = request.headers;
+// }
 
 
 
@@ -159,9 +160,9 @@ void	HttpParser::bigSend(int out_fd)
 	parser.parseClientRequest(parser._clientDataBuffer, request);
 	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
     // std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
-	 for (const auto& pair : request.headers) {
-        std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
-    }
+	//  for (const auto& pair : request.headers) {
+    //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
+    // }
 	
 	// std::ifstream ifs("./assets/response.html");
 	// if (!ifs.is_open())
