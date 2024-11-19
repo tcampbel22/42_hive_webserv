@@ -23,7 +23,7 @@ int	checkConfName(std::string file)
 {
 	int pos = file.find('.');
 	std::string suffix = file.substr(pos, file.length());
-	if (suffix.compare(".conf"))
+	if (suffix.compare(".conf") != 0)
 		return 1;
 	return 0;
 }
@@ -52,14 +52,12 @@ void	ConfigParser::readConfigFile(std::string file)
 	stream << infile.rdbuf();
 	configFileStr = stream.str();
 	infile.close();
-	
 }
 
 void		ConfigParser::parseConfigFile() 
 {
 	initialParse();
-	global.parseGlobalSettings(configFileStr);
-	// locations.parseLocations(configFileStr);
+	settings[0].parseServerSettings(configFileStr);
 }
 
 void	ConfigParser::removeComments()

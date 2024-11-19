@@ -13,7 +13,7 @@
 #include "../include/webserv.hpp"
 #include "../include/HttpServer.hpp"
 #include "../include/ConfigParser.hpp"
-#include "../include/GlobalSettings.hpp"
+#include "../include/ServerSettings.hpp"
 
 
 void	ft_perror(std::string str) //need to make as logger instead
@@ -28,17 +28,22 @@ int	main(int ac, char **av)
 		ft_perror("expecting only configuration file as argument");
 		return 1;
 	}
-	ConfigParser settings((std::string)av[1]);
-	settings.parseConfigFile();
-	std::cout << settings.getGlobal<std::string>("host") << std::endl;
-	std::cout << settings.getGlobal<int>("port") << std::endl;
-	//parsing
-	
+	//Program will exit if an error is found with the config file
+	ConfigParser master_settings((std::string)av[1]);
+	try {
+		master_settings.parseConfigFile();
+		std::cout << master_settings.settings[0].getLocationPath("\\") << '\n';
+		std::cout << master_settings.settings[0].getLocationPath("\\static") << '\n';
+	}
+	catch (std::exception& e) {
+		std::cerr << e.what() << '\n';
+		exit (1);
+	}
 	/*start server class, calls the socket creation function in constructor, closes the socket in
 	the destructor.
 	*/
-	HttpServer server(settings.getGlobal<std::string>("host"), settings.getGlobal<int>("port"));
-	server.startListening();
+	// HttpServer server(master_settings.settings[0].getHost(), master_settings.settings[0].getPort());
+	// server.startListening();
 
 	//exit
 
