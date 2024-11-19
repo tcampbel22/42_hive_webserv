@@ -21,11 +21,12 @@ HttpParser::~HttpParser() {}
 void	HttpParser::recieveRequest(int out_fd)
 {
 	ssize_t bytesRead = 0;
+	size_t bytes = 1024;
 	
 	while(true)
 	{
-		_clientDataBuffer.resize(_clientDataBuffer.size() + 1);
-		bytesRead = read(out_fd, &_clientDataBuffer[_clientDataBuffer.size() - 1], 1);
+		_clientDataBuffer.resize(_clientDataBuffer.size() + bytes);
+		bytesRead = recv(out_fd, &_clientDataBuffer[_clientDataBuffer.size() - bytes], bytes, 0);
 		if (bytesRead < 0) {
 			// if (errno == EAGAIN || errno == EWOULDBLOCK) {
             //     std::cout << "Everything read succesfully to the vector" << std::endl;
@@ -39,7 +40,7 @@ void	HttpParser::recieveRequest(int out_fd)
 			break ;
 		}
 	}
-	_clientDataBuffer.resize(_clientDataBuffer.size() - (1 + bytesRead));
+	_clientDataBuffer.resize(_clientDataBuffer.size() - (bytes + bytesRead));
 }
 //Empty the vector to the requestMap, needs to be parsed in the response.
 void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request)
@@ -71,14 +72,15 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		else 
 			break;
 	}
-	if (requestStream.eof() == true)
-		exit(0);
 	findKeys(request);
-	if (request.method == "GET" && requestStream.eof() != true) {
+	if (request.method == "GET" && this->_contentLength != 0) {
 		//error here (Optional tho, but we can regard GET request with body as a error)
 		request.errorFlag = 1;
 	}
 	else {
+		if (request.headers.at("Transfer-Encoding") == " chunked") {
+				handleChunkedBody(request, requestStream);
+		}
 		while (std::getline(requestStream, line)) {
 				request.body.append(line + '\n');
 		}
@@ -135,11 +137,52 @@ void HttpParser::findKeys(HttpRequest& request)
 	auto it = request.headers.at("Connection");
 	if (it.compare("keep-alive"))
 		request.connection = false;
-	request.host.append(request.headers.at("Host"));
-	/* Something here for accept
-	
-	*/
+	request.host.append(request.headers.at("Host")); //not sure if needed
+	try
+	{
+		_contentLength = std::stoi(request.headers.at("Content-Length"));
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
 }
+
+int HttpParser::hexToInt(std::string line) {
+	int 	val;
+	ssize_t Pos = line.find("\r\n");
+	if (Pos != std::string::npos)
+	{
+		val = std::stoi(line.substr(line.begin(), Pos), 10);
+	}
+}
+
+void HttpParser::handleChunkedBody(HttpRequest& request, std::istringstream& stream) 
+{
+	std::string line;
+	while (getline(stream, line))
+	{
+		int bytesize = hexToInt(line);
+	}
+	
+	
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

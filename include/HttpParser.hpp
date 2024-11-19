@@ -35,6 +35,8 @@ class HttpParser
 protected:
 	//std::map<std::string, std::string> _requestMap;
 	std::vector<char> _clientDataBuffer;
+	int _contentLength = 0;
+	bool _fullyRead = true; 
 public:
 	HttpParser();
 	~HttpParser();
@@ -43,8 +45,8 @@ public:
 	void recieveRequest(int out_fd);
 	bool isValidRequestline(std::string, HttpRequest&);
 	void findKeys(HttpRequest& request);
-
-
+	void handleChunkedBody(HttpRequest&, std::istringstream&);
+	int hexToInt(std::string);
 
 	//std::string trim(const std::string& str);
 };
