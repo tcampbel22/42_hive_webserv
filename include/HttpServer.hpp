@@ -1,14 +1,14 @@
-/************************************************/
-/** __          __  _                          **/
-/** \ \        / / | |                         **/
-/**  \ \  /\  / /__| |__  ___  ___ _ ____   __ **/
-/**   \ \/  \/ / _ \ '_ \/ __|/ _ \ '__\ \ / / **/
-/**    \  /\  /  __/ |_) \__ \  __/ |   \ V /  **/
-/**     \/  \/ \___|_.__/|___/\___|_|    \_/   **/
-/**                                            **/
-/**                                            **/
-/**             W E B S E R V                  **/
-/************************************************/
+/**********************************************************************************/
+/** __          __  _                                                            **/
+/** \ \        / / | |                                by:                        **/
+/**  \ \  /\  / /__| |__  ___  ___ _ ____   __                                   **/
+/**   \ \/  \/ / _ \ '_ \/ __|/ _ \ '__\ \ / /        Eromon Agbomeirele         **/
+/**    \  /\  /  __/ |_) \__ \  __/ |   \ V /         Casimir Lundberg           **/
+/**     \/  \/ \___|_.__/|___/\___|_|    \_/          Tim Campbell               **/
+/**                                                                              **/
+/**                                                                              **/
+/**                                W E B S E R V                                 **/
+/**********************************************************************************/
 
 #pragma once
 # include <string>
@@ -24,9 +24,11 @@
 # include <fcntl.h>
 # include <sys/sendfile.h>
 # include "../include/HttpParser.hpp"
+# include "../include/ServerSettings.hpp"
 #include <errno.h>
 #include <string.h>
 #include "../src/Response.hpp"
+#include <memory>
 #include "../src/ServerHandler.hpp"
 
 # define MAX_EVENTS 20 //Can define this in config file or create a funct based on cpu load or leave it
@@ -43,11 +45,12 @@ private:
 	epoll_event		_events;
 	epoll_event		_eventsArr[MAX_EVENTS];
 	int				numEvents;
+	std::shared_ptr<ServerSettings> settings;
 	
 	
 public:
 	//constructors & destructors
-	HttpServer(const std::string _ip, uint _port);
+	HttpServer(std::shared_ptr<ServerSettings> _settings);
 	~HttpServer();
 	//operator overloads
 	
