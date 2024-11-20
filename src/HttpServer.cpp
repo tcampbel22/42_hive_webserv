@@ -12,6 +12,7 @@
 
 #include "../include/HttpServer.hpp"
 
+HttpServer* HttpServer::_instance = nullptr;
 
 void testSend(int fd)
 {
@@ -24,6 +25,13 @@ void testSend(int fd)
 	newResponse.sendResponse(fd);
 }
 
+void HttpServer::signalHandler(int signal)
+{
+	std::cout <<  "\nExit signal received, server shutting down.. Good night" << std::endl;
+	_instance->closeServer();
+	exit(0);
+}
+
 void HttpServer::startServer()
 {
 	//make socket
@@ -33,6 +41,8 @@ void HttpServer::startServer()
 	//std::cout << _serverFd << std::endl;
 	
 	//store socket addr info
+	int optionValue = 1;
+	setsockopt(_serverFd, SOL_SOCKET, SO_REUSEADDR, &optionValue, sizeof(optionValue));
 	_socketInfo.sin_family = AF_INET; //macro for IPV4
 	_socketInfo.sin_port = htons(_port); //converts port number to network byte order
 	_socketInfo.sin_addr.s_addr = inet_addr(_ipAddress.c_str()); //converts ip address from string to uint
@@ -55,7 +65,12 @@ void	setNonBlocking(int socket)
 
 void HttpServer::startListening()
 {
+
+	std::signal(SIGINT, signalHandler);
+	//std::cout << "Server listening on port " << _port << std::endl;
+
 	std::cout << "Server listening on " << settings->getPort() << std::endl;
+
 	
 	std::string response = "HTTP/1.1 200 OK\nContent-Type: text/html; charset=UTF-8\nContent-Length: 137\n\n<!DOCTYPE html>\n<html>\n<head>\n    <title>Simple C++ Web Server</title>\n</head>\n<body>\n    <h1>Hello from a C++ web server!</h1>\n</body>\n</html>\n";
 
@@ -114,15 +129,18 @@ void HttpServer::startListening()
 
 void HttpServer::closeServer()
 {
+	close(epollFd);
 	close(_serverFd);
 }
 
 HttpServer::~HttpServer()
 {
 	closeServer();
+
 };
 HttpServer::HttpServer(std::shared_ptr<ServerSettings> _settings)
 {
+  this->_instance = this;
 	settings = _settings;
 	_port = settings->getPort();
 	_ipAddress = settings->getHost();

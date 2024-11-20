@@ -38,7 +38,12 @@ _response(), _input(_newInput)
 void ServerHandler::executeInput()
 {
 	
-	if (_input.errorFlag == true)
+	if (_input.path.find("..") != std::string::npos)
+	{
+		_response.setResponseCode(403);
+		getFile("root/etc/response/403.html");
+	}
+	else if (_input.errorFlag == true)
 		doError();
 	else if (_input.method == "POST")
 		doPost();
@@ -76,6 +81,8 @@ int ServerHandler::getFile(std::string path)
 		_response.setContentType("text/webp");
 	else if (path.find(".jpg"))
 		_response.setContentType("text/jpg");
+	else
+		_response.setContentType("text");
 		
 	return (0);
 }
@@ -89,7 +96,7 @@ void ServerHandler::doError()
 
 void ServerHandler::doPost()
 {
-	
+
 }
 
 void ServerHandler::doGet()
