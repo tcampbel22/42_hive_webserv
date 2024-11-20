@@ -1,37 +1,41 @@
-/************************************************/
-/** __          __  _                          **/
-/** \ \        / / | |                         **/
-/**  \ \  /\  / /__| |__  ___  ___ _ ____   __ **/
-/**   \ \/  \/ / _ \ '_ \/ __|/ _ \ '__\ \ / / **/
-/**    \  /\  /  __/ |_) \__ \  __/ |   \ V /  **/
-/**     \/  \/ \___|_.__/|___/\___|_|    \_/   **/
-/**                                            **/
-/**                                            **/
-/**             W E B S E R V                  **/
-/************************************************/
+/**********************************************************************************/
+/** __          __  _                                                            **/
+/** \ \        / / | |                                by:                        **/
+/**  \ \  /\  / /__| |__  ___  ___ _ ____   __                                   **/
+/**   \ \/  \/ / _ \ '_ \/ __|/ _ \ '__\ \ / /        Eromon Agbomeirele         **/
+/**    \  /\  /  __/ |_) \__ \  __/ |   \ V /         Casimir Lundberg           **/
+/**     \/  \/ \___|_.__/|___/\___|_|    \_/          Tim Campbell               **/
+/**                                                                              **/
+/**                                                                              **/
+/**                                W E B S E R V                                 **/
+/**********************************************************************************/
 
 #pragma once
 
+#include "../include/webserv.hpp"
+#include "../include/ServerSettings.hpp"
+#include "../include/LocationSettings.hpp"
 #include <vector>
 #include <unordered_map>
-#include <variant>
 #include <iostream>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sstream>
+#include <fstream>
 
 class ConfigParser
 {
 private:
-	std::unordered_map<std::string, std::variant<std::string, uint, std::vector<std::string>, std::unordered_map<std::string, std::string>>> server_settings;
-	// Unordered map that can hold string vector, string, int and unordered map with string key and string value
-
+	std::string	configFileStr;
 public:
+	std::vector<ServerSettings> settings;
 	ConfigParser();
+	ConfigParser(std::string file);
 	~ConfigParser();
-	uint		getPort();
-	std::string	getHost();
-	std::string getServerName();
-	uint		getMaxClientBody();
-	std::vector<std::string> get404Error();
-	std::vector<std::string> get500Error();
+	void		readConfigFile(std::string);
+	void		parseConfigFile();
+	void		initialParse();
+	void		removeComments();
+	std::string	getConfigFileStr();
 	
-
 };

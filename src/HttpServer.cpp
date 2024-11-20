@@ -1,14 +1,14 @@
-/************************************************/
-/** __          __  _                          **/
-/** \ \        / / | |                         **/
-/**  \ \  /\  / /__| |__  ___  ___ _ ____   __ **/
-/**   \ \/  \/ / _ \ '_ \/ __|/ _ \ '__\ \ / / **/
-/**    \  /\  /  __/ |_) \__ \  __/ |   \ V /  **/
-/**     \/  \/ \___|_.__/|___/\___|_|    \_/   **/
-/**                                            **/
-/**                                            **/
-/**             W E B S E R V                  **/
-/************************************************/
+/**********************************************************************************/
+/** __          __  _                                                            **/
+/** \ \        / / | |                                by:                        **/
+/**  \ \  /\  / /__| |__  ___  ___ _ ____   __                                   **/
+/**   \ \/  \/ / _ \ '_ \/ __|/ _ \ '__\ \ / /        Eromon Agbomeirele         **/
+/**    \  /\  /  __/ |_) \__ \  __/ |   \ V /         Casimir Lundberg           **/
+/**     \/  \/ \___|_.__/|___/\___|_|    \_/          Tim Campbell               **/
+/**                                                                              **/
+/**                                                                              **/
+/**                                W E B S E R V                                 **/
+/**********************************************************************************/
 
 #include "../include/HttpServer.hpp"
 
@@ -65,8 +65,12 @@ void	setNonBlocking(int socket)
 
 void HttpServer::startListening()
 {
+
 	std::signal(SIGINT, signalHandler);
-	std::cout << "Server listening on port " << _port << std::endl;
+	//std::cout << "Server listening on port " << _port << std::endl;
+
+	std::cout << "Server listening on " << settings->getPort() << std::endl;
+
 	
 	std::string response = "HTTP/1.1 200 OK\nContent-Type: text/html; charset=UTF-8\nContent-Length: 137\n\n<!DOCTYPE html>\n<html>\n<head>\n    <title>Simple C++ Web Server</title>\n</head>\n<body>\n    <h1>Hello from a C++ web server!</h1>\n</body>\n</html>\n";
 
@@ -132,15 +136,14 @@ void HttpServer::closeServer()
 HttpServer::~HttpServer()
 {
 	closeServer();
-}
 
-
-HttpServer::HttpServer(const std::string _ip, uint _newPort)
+};
+HttpServer::HttpServer(std::shared_ptr<ServerSettings> _settings)
 {
-	this->_instance = this;
-	_port = _newPort;
-	_ipAddress = _ip;
+  this->_instance = this;
+	settings = _settings;
+	_port = settings->getPort();
+	_ipAddress = settings->getHost();
 	_clientSocket = -1;
 	startServer();
-	
-}
+};
