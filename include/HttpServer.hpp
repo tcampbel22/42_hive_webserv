@@ -29,6 +29,7 @@
 #include <string.h>
 #include "../src/Response.hpp"
 #include <memory>
+#include "../src/ServerHandler.hpp"
 
 # define MAX_EVENTS 20 //Can define this in config file or create a funct based on cpu load or leave it
 

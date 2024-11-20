@@ -86,17 +86,19 @@ void HttpServer::startListening()
 				}
 				std::cout << "New client connected: " << _clientSocket << std::endl;
 				setNonBlocking(_clientSocket);
-            	
+				
 				_events.events = EPOLLIN | EPOLLOUT;
                 _events.data.fd = _clientSocket;
 				
 				epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events); //guard later
 			}
-			else if (_eventsArr[i].events & EPOLLOUT)
+			else if (_eventsArr[i].events & EPOLLIN)
 			{	
 				int _fd_out = _eventsArr[i].data.fd;
-				testSend(_fd_out);
-				//HttpParser::bigSend(_fd_out, "./assets/response.html");
+				//testSend(_fd_out);
+
+				//ServerHandler handle_request(_fd_out, );
+				HttpParser::bigSend(_fd_out);
 				// _events.events = EPOLLIN; 
                 // _events.data.fd = _fd_out;
 				epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events); //guard later

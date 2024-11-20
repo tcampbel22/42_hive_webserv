@@ -30,7 +30,9 @@ void Response::set_body(std::string _newBody){_body = _newBody;}
 
 void Response::setCloseConnection(bool _close){_closeConnection = _close;}
 
-std::string Response::getResponseCode()
+uint Response::getResponseCode(){return (_responseCode);}
+
+std::string Response::getResponseCodeStr()
 {
 	std::string status = "HTTP/1.1 ";
 	switch (_responseCode)
@@ -69,7 +71,7 @@ std::string Response::getContentType()
 
 std::string Response::getContentLength()
 {
-	std::string _length = "Content-TLength: ";
+	std::string _length = "Content-Length: ";
 	_length += std::to_string(_contentLength) + '\n';
 	return (_length);
 }
@@ -151,7 +153,7 @@ std::string Response::makeDate()
 
 void Response::sendResponse(int fd)
 {
-	std::string _buffer = getResponseCode();
+	std::string _buffer = getResponseCodeStr();
 	
 	if (!_contentType.empty())
 	{
@@ -167,6 +169,8 @@ void Response::sendResponse(int fd)
 		_buffer += _body;
 	
 	//uncomment this in order to see the response in the terminal
-	//std::cout <<  _buffer << std::endl;
+	// std::cout <<  _buffer << std::endl;
 	send(fd, _buffer.c_str(), _buffer.size(), 0);
+	//if (_closeConnection == true)
+		//close(fd);
 }

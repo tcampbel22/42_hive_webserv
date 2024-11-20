@@ -21,7 +21,8 @@ void	ft_perror(std::string str) //need to make as logger instead
 	std::cerr << "webserv: " << str << std::endl;
 }
 
-int	main(int ac, char **av)
+// int	main(int ac, char **av)
+int main()
 {
 	if (ac != 2)
 	{
@@ -33,9 +34,9 @@ int	main(int ac, char **av)
 	std::shared_ptr<ServerSettings> settings = std::make_shared<ServerSettings>(); 
 	// try {
 		config.parseConfigFile();
-		std::cout << config.settings[0].getHost() << '\n';
-		std::cout << config.settings[0].getLocationRoot("/docs") << '\n';
-		std::cout << config.settings[0].getLocationPath("/static") << '\n';
+		//std::cout << config.settings[0].getHost() << '\n';
+		//std::cout << config.settings[0].getLocationRoot("/docs") << '\n';
+		//std::cout << config.settings[0].getLocationPath("/static") << '\n';
 	// }
 	// catch (std::exception& e) {
 	// 	std::cerr << e.what() << '\n';
@@ -46,6 +47,10 @@ int	main(int ac, char **av)
 	*/
 	HttpServer server(settings);
 	server.startListening();
+	// int fd = open("./test.txt", O_RDONLY);
+	// HttpParser parser;
+	// parser.bigSend(fd);
+	
 
 	//exit
 

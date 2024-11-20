@@ -36,7 +36,8 @@ public:
 	//Methods
 	std::string getContentLength();
 	std::string getContentType();
-	std::string getResponseCode();
+	uint getResponseCode();
+	std::string getResponseCodeStr();	
 	std::string makeDate();
 	void sendResponse(int fd);
 	std::string makeDay(int day);
