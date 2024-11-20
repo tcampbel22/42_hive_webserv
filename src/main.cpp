@@ -21,8 +21,7 @@ void	ft_perror(std::string str) //need to make as logger instead
 	std::cerr << "webserv: " << str << std::endl;
 }
 
-// int	main(int ac, char **av)
-int main()
+int	main(int ac, char **av)
 {
 	if (ac != 2)
 	{
@@ -45,8 +44,8 @@ int main()
 	/*start server class, calls the socket creation function in constructor, closes the socket in
 	the destructor.
 	*/
-	HttpServer server(settings);
-	server.startListening();
+	// HttpServer server(settings);
+	// server.startListening();
 	// int fd = open("./test.txt", O_RDONLY);
 	// HttpParser parser;
 	// parser.bigSend(fd);

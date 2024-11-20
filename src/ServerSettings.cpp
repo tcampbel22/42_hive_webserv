@@ -15,7 +15,7 @@
 
 ServerSettings::ServerSettings()
 {
-	isDefault = true;
+	isDefault = false;
 	host =  "127.0.0.1";
 	port = 8000;
 	max_client_body_size =  5;
@@ -28,7 +28,6 @@ ServerSettings::~ServerSettings() {}
 
 void		ServerSettings::parseServerSettings(std::string config) 
 {
-	// std::regex host("[Hh][o][s][t]");
 	std::regex location("location\\s+[^\\{]*\\{[^\\}]*\\}");
 	std::smatch match;
 	std::sregex_iterator begin(config.begin(), config.end(), location);
