@@ -12,7 +12,7 @@
 
 #include "../include/HttpParser.hpp"
 
-HttpParser::HttpParser()  {}
+HttpParser::HttpParser() : _fullyRead(true), _contentLength(0) {}
 
 HttpParser::~HttpParser() {}
 
@@ -26,7 +26,7 @@ void	HttpParser::recieveRequest(int out_fd)
 	while(true)
 	{
 		_clientDataBuffer.resize(_clientDataBuffer.size() + bytes);
-		bytesRead = recv(out_fd, &_clientDataBuffer[_clientDataBuffer.size() - bytes], bytes, 0);
+		bytesRead = read(out_fd, &_clientDataBuffer[_clientDataBuffer.size() - bytes], bytes);
 		if (bytesRead < 0) {
 			// if (errno == EAGAIN || errno == EWOULDBLOCK) {
             //     std::cout << "Everything read succesfully to the vector" << std::endl;
@@ -78,13 +78,16 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		request.errorFlag = 1;
 	}
 	else {
-		if (request.headers.at("Transfer-Encoding") == " chunked") {
+		if (request.headers.at("Transfer-Encoding").compare(" chunked")) {
 				handleChunkedBody(request, requestStream);
 		}
-		while (std::getline(requestStream, line)) {
-				request.body.append(line + '\n');
+		else {
+			while (std::getline(requestStream, line)) {
+					request.body.append(line + '\n');
+			}
 		}
 	}
+	std::cout << request.body << std::endl;
 }
 //*RL = request line
 bool HttpParser::isValidRequestline(std::string rLine, HttpRequest& request)
@@ -137,6 +140,8 @@ void HttpParser::findKeys(HttpRequest& request)
 	auto it = request.headers.at("Connection");
 	if (it.compare("keep-alive"))
 		request.connection = false;
+	else
+		request.connection = true;
 	request.host.append(request.headers.at("Host")); //not sure if needed
 	try
 	{
@@ -150,11 +155,15 @@ void HttpParser::findKeys(HttpRequest& request)
 
 int HttpParser::hexToInt(std::string line) {
 	int 	val;
-	ssize_t Pos = line.find("\r\n");
-	if (Pos != std::string::npos)
+	try
 	{
-		val = std::stoi(line.substr(line.begin(), Pos), 10);
+		val = std::stoi(line, nullptr, 16);
 	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+	return val;
 }
 
 void HttpParser::handleChunkedBody(HttpRequest& request, std::istringstream& stream) 
@@ -162,10 +171,21 @@ void HttpParser::handleChunkedBody(HttpRequest& request, std::istringstream& str
 	std::string line;
 	while (getline(stream, line))
 	{
-		int bytesize = hexToInt(line);
+		if (!line.empty() && line.back() == '\r')
+            line.pop_back();
+		int chunkSize = hexToInt(line);
+		if (chunkSize == 0)
+			break ;
+		// std::string chunk(chunkSize, '\0');   //not sure if we can use this, since everytime you read you should go through poll
+        // stream.read(&chunk[0], chunkSize);
+		// std::cout << chunk << std::endl;
+        // request.body += chunk;
+		getline(stream, line);
+		for (int i = 0; i < chunkSize; i++) {
+			request.body += line[i]; 
+		}
+		//stream.ignore(2);
 	}
-	
-	
 }
 
 
@@ -194,9 +214,9 @@ void	HttpParser::bigSend(int out_fd)
 	HttpParser parser;
 	HttpRequest request;
 	parser.recieveRequest(out_fd);
+	//std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
+  //  std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
 	parser.parseClientRequest(parser._clientDataBuffer, request);
-	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
-    // std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
 	//  for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value:" << pair.second << std::endl;
     // }
