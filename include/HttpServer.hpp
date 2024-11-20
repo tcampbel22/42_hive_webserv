@@ -28,12 +28,14 @@
 #include <string.h>
 #include "../src/Response.hpp"
 #include "../src/ServerHandler.hpp"
+#include <csignal>
 
 # define MAX_EVENTS 20 //Can define this in config file or create a funct based on cpu load or leave it
 
 class HttpServer
 {
 private:
+	static HttpServer *_instance;
 	std::string 	_ipAddress;
 	int				_port;
 	int				_serverFd;
@@ -52,6 +54,7 @@ public:
 	//operator overloads
 	
 	//methods
+	static void signalHandler(int signal);
 	void startServer();
 	void closeServer();
 	void startListening();
