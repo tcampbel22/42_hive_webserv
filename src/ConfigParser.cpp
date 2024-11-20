@@ -14,7 +14,7 @@
 
 ConfigParser::ConfigParser() {}
 
-ConfigParser::ConfigParser(std::string file) 
+ConfigParser::ConfigParser(std::string file)
 {
 	readConfigFile(file);
 }
@@ -35,18 +35,12 @@ void	ConfigParser::readConfigFile(std::string file)
 	if (checkConfName(file))
 	{
 		std::cout << "invalid config file\n";
-		std::cout << "reverting to default server\n...\n";
-		sleep(1);
-		std::cout << "default server configured\n";
 		return ;
 	}
 	infile.open(file);
 	if (!infile.is_open())
 	{
 		std::cout << "failed to open config file\n";
-		std::cout << "reverting to default server\n...\n";
-		sleep(1);
-		std::cout << "default server configured\n";
 		return ;
 	}
 	stream << infile.rdbuf();
@@ -56,7 +50,8 @@ void	ConfigParser::readConfigFile(std::string file)
 
 void		ConfigParser::parseConfigFile() 
 {
-	initialParse();
+	initialParse(); //need to check how many servers there are, then create that many instances
+	settings.push_back(ServerSettings());
 	settings[0].parseServerSettings(configFileStr);
 }
 

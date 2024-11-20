@@ -24,9 +24,11 @@
 # include <fcntl.h>
 # include <sys/sendfile.h>
 # include "../include/HttpParser.hpp"
+# include "../include/ServerSettings.hpp"
 #include <errno.h>
 #include <string.h>
 #include "../src/Response.hpp"
+#include <memory>
 
 # define MAX_EVENTS 20 //Can define this in config file or create a funct based on cpu load or leave it
 
@@ -42,11 +44,12 @@ private:
 	epoll_event		_events;
 	epoll_event		_eventsArr[MAX_EVENTS];
 	int				numEvents;
+	std::shared_ptr<ServerSettings> settings;
 	
 	
 public:
 	//constructors & destructors
-	HttpServer(const std::string _ip, uint _port);
+	HttpServer(std::shared_ptr<ServerSettings> _settings);
 	~HttpServer();
 	//operator overloads
 	

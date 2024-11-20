@@ -20,7 +20,6 @@ LocationSettings::LocationSettings()
 	setMethods("POST");
 	setMethods("GET");
 	autoindex = false;
-	std::cout << path << "\n";
 }
 
 LocationSettings::LocationSettings(const std::string& new_path)

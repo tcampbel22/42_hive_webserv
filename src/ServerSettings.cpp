@@ -13,15 +13,15 @@
 #include "../include/ServerSettings.hpp"
 #include "../include/ConfigParser.hpp"
 
-ServerSettings::ServerSettings() : locations()
+ServerSettings::ServerSettings()
 {
 	isDefault = true;
 	host =  "127.0.0.1";
 	port = 8000;
 	max_client_body_size =  5;
 	addServerName("www.example.com");
-	addErrorPage(404, "/root/var/www/html/404.html");
-	addErrorPage(500, "/root/var/www/html/404.html");
+	addErrorPage(404, "/root/var/html/404.html");
+	addErrorPage(500, "/root/var/html/404.html");
 }
 
 ServerSettings::~ServerSettings() {}
@@ -50,8 +50,7 @@ void	ServerSettings::parseLocationSettings(std::string_view location)
 	int start = location.find_first_of('/');
 	int end = location.find_first_of('{') - 1;
 	const std::string key(location.substr(start, end - start));
-	locations.insert({key, LocationSettings()});
-	// setLocationSettings(key);
+	setLocationSettings(key);
 }
 
 void	ServerSettings::addServerName(std::string name)
@@ -66,10 +65,9 @@ void	ServerSettings::addErrorPage(int status, std::string path)
 
 void	ServerSettings::setLocationSettings(const std::string& key)
 {
-	locations[key] = LocationSettings();
-	// auto it = locations.insert({key, LocationSettings(key)});
-	// if (!it.second)
-	// 	throw std::runtime_error("Duplicate key " + key);
+	auto it = locations.insert({key, LocationSettings(key)});
+	if (!it.second)
+		throw std::runtime_error("Duplicate key " + key);
 }
 
 bool		ServerSettings::isDefaultServer() { return isDefault; }
@@ -78,7 +76,7 @@ int			ServerSettings::getPort() { return port; }
 
 std::string	ServerSettings::getHost() { return host; }
 
-std::vector<std::string> ServerSettings::getServerNames() { return server_names; }
+std::vector<std::string> ServerSettings::getServerNames() { return server_names; } //retuns vector containing all server names
 
 int		ServerSettings::getMaxClientBody() {return max_client_body_size; } //in megabytes
 
@@ -90,38 +88,37 @@ std::vector<std::string> ServerSettings::getErrorPages(int status)
 		return it->second;
 	}
 	else 
-		throw std::runtime_error(status + "status not found");
-	
+		throw std::runtime_error("status not found");
 }
 
 
 
-std::string 				ServerSettings::getLocationPath(std::string key) 
+std::string	ServerSettings::getLocationPath(std::string key) 
 {
 	auto it = locations.find(key);
 	if (it != locations.end())
 		return locations[key].getPath();
 	else
-		return "key not found\n";
+		return "key not found";
 }
 
-std::string 				ServerSettings::getLocationRoot(std::string key) 
+std::string	ServerSettings::getLocationRoot(std::string key) 
 {
 	auto it = locations.find(key);
 	if (it != locations.end())
 		return locations[key].getRoot();
 	else
-		return "key not found\n";
+		return "key not found";
 }
-std::string 				ServerSettings::getLocationDefaultFile(std::string key)
+std::string	ServerSettings::getLocationDefaultFile(std::string key)
 {
 	auto it = locations.find(key);
 	if (it != locations.end())
 		return locations[key].getDefaultFilePath();
 	else
-		return "key not found\n";
+		return "key not found";
 }
-bool 						ServerSettings::getLocationAutoIndex(std::string key)
+bool	ServerSettings::getLocationAutoIndex(std::string key)
 {
 	auto it = locations.find(key);
 	if (it != locations.end())

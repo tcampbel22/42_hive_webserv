@@ -29,21 +29,23 @@ int	main(int ac, char **av)
 		return 1;
 	}
 	//Program will exit if an error is found with the config file
-	ConfigParser master_settings((std::string)av[1]);
-	try {
-		master_settings.parseConfigFile();
-		std::cout << master_settings.settings[0].getLocationPath("\\") << '\n';
-		std::cout << master_settings.settings[0].getLocationPath("\\static") << '\n';
-	}
-	catch (std::exception& e) {
-		std::cerr << e.what() << '\n';
-		exit (1);
-	}
+	ConfigParser config((std::string)av[1]);
+	std::shared_ptr<ServerSettings> settings = std::make_shared<ServerSettings>(); 
+	// try {
+		config.parseConfigFile();
+		std::cout << config.settings[0].getHost() << '\n';
+		std::cout << config.settings[0].getLocationRoot("/docs") << '\n';
+		std::cout << config.settings[0].getLocationPath("/static") << '\n';
+	// }
+	// catch (std::exception& e) {
+	// 	std::cerr << e.what() << '\n';
+	// 	exit (1);
+	// }
 	/*start server class, calls the socket creation function in constructor, closes the socket in
 	the destructor.
 	*/
-	// HttpServer server(master_settings.settings[0].getHost(), master_settings.settings[0].getPort());
-	// server.startListening();
+	HttpServer server(settings);
+	server.startListening();
 
 	//exit
 
