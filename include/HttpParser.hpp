@@ -13,6 +13,7 @@
 #pragma once 
 
 # include "../include/HttpServer.hpp"
+# include "../src/ServerHandler.hpp"
 # include <iostream>
 # include <sstream>
 # include <fstream>
