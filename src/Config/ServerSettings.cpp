@@ -10,8 +10,8 @@
 /**                                W E B S E R V                                 **/
 /**********************************************************************************/
 
-#include "../include/ServerSettings.hpp"
-#include "../include/ConfigParser.hpp"
+#include "ServerSettings.hpp"
+#include "ConfigParser.hpp"
 
 ServerSettings::ServerSettings()
 {

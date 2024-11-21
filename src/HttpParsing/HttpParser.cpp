@@ -1,16 +1,16 @@
-/************************************************/
-/** __          __  _                          **/
-/** \ \        / / | |                         **/
-/**  \ \  /\  / /__| |__  ___  ___ _ ____   __ **/
-/**   \ \/  \/ / _ \ '_ \/ __|/ _ \ '__\ \ / / **/
-/**    \  /\  /  __/ |_) \__ \  __/ |   \ V /  **/
-/**     \/  \/ \___|_.__/|___/\___|_|    \_/   **/
-/**                                            **/
-/**                                            **/
-/**             W E B S E R V                  **/
-/************************************************/
+/**********************************************************************************/
+/** __          __  _                                                            **/
+/** \ \        / / | |                                by:                        **/
+/**  \ \  /\  / /__| |__  ___  ___ _ ____   __                                   **/
+/**   \ \/  \/ / _ \ '_ \/ __|/ _ \ '__\ \ / /        Eromon Agbomeirele         **/
+/**    \  /\  /  __/ |_) \__ \  __/ |   \ V /         Casimir Lundberg           **/
+/**     \/  \/ \___|_.__/|___/\___|_|    \_/          Tim Campbell               **/
+/**                                                                              **/
+/**                                                                              **/
+/**                                W E B S E R V                                 **/
+/**********************************************************************************/
 
-#include "../include/HttpParser.hpp"
+#include "HttpParser.hpp"
 
 HttpParser::HttpParser() : _fullyRead(true), _contentLength(0) {}
 
@@ -22,6 +22,7 @@ void	HttpParser::recieveRequest(int out_fd)
 {
 	ssize_t bytesRead = 0;
 	size_t bytes = 1024;
+	_fullyRead = true; //Added so it would compile
 	
 	while(true)
 	{
@@ -32,7 +33,7 @@ void	HttpParser::recieveRequest(int out_fd)
             //     std::cout << "Everything read succesfully to the vector" << std::endl;
             //     break;
 			// }
-            std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
+            // std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
             break ;
         }
 		else if (bytesRead == 0) {
@@ -45,49 +46,54 @@ void	HttpParser::recieveRequest(int out_fd)
 //Empty the vector to the requestMap, needs to be parsed in the response.
 void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request)
 {
-    std::string data(clientData.begin(), clientData.end());
-    std::istringstream requestStream(data);
-    std::string line;
-
-    //Parse the requestline and store the relevant stuff (path and method)
-    if (!std::getline(requestStream, line) || !isValidRequestline(line, request)) {
-		//error shit in here if first line is bad: ERROR 400 according to RFC
-		std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl;
-	}
-	/*
-		TODO: parse path and method according to config file instructions. //requires information from config file
-	
-	
-	
-	*/
-
-    // //Parse headers and add them to a map
-    while (std::getline(requestStream, line)) {
-		ssize_t colonPos = line.find(':');
-        if ((size_t)colonPos != std::string::npos) {
-            std::string key = line.substr(0, colonPos);
-            std::string value = line.substr(colonPos + 1);
-            request.headers[key] = value;
-        }
-		else 
-			break;
-	}
-	findKeys(request);
-	if (request.method == "GET" && this->_contentLength != 0) {
-		//error here (Optional tho, but we can regard GET request with body as a error)
-		request.errorFlag = 1;
-	}
-	else {
-		if (request.headers.at("Transfer-Encoding").compare(" chunked")) {
-				handleChunkedBody(request, requestStream);
+    try{
+		std::string data(clientData.begin(), clientData.end());
+    	std::istringstream requestStream(data);
+    	std::string line;
+		//Parse the requestline and store the relevant stuff (path and method)
+		if (!std::getline(requestStream, line) || !isValidRequestline(line, request)) {
+			//error shit in here if first line is bad: ERROR 400 according to RFC
+			std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl;
 		}
-		else {
-			while (std::getline(requestStream, line)) {
-					request.body.append(line + '\n');
+		/*
+			TODO: parse path and method according to config file instructions. //requires information from config file
+		
+		
+		
+		*/
+
+		// //Parse headers and add them to a map
+		while (std::getline(requestStream, line)) {
+			ssize_t colonPos = line.find(':');
+			if ((size_t)colonPos != std::string::npos) {
+				std::string key = line.substr(0, colonPos);
+				std::string value = line.substr(colonPos + 1);
+				request.headers[key] = value;
 			}
+			else 
+				break;
 		}
+		findKeys(request);
+		if (request.method == "GET" && this->_contentLength != 0) {
+			//error here (Optional tho, but we can regard GET request with body as a error)
+			request.errorFlag = 1;
+		}
+		// else {
+		// 	if (request.headers.at("Transfer-Encoding").compare(" chunked")) {
+		// 			handleChunkedBody(request, requestStream);
+		// 	}
+		// 	else {
+		// 		while (std::getline(requestStream, line)) {
+		// 				request.body.append(line + '\n');
+		// 		}
+		// 	}
+		// }
+		// std::cout << request.body << std::endl;
+	
+	} catch (std::exception& e) {
+		std::cerr << e.what() << '\n';
 	}
-	std::cout << request.body << std::endl;
+
 }
 //*RL = request line
 bool HttpParser::isValidRequestline(std::string rLine, HttpRequest& request)
@@ -149,7 +155,8 @@ void HttpParser::findKeys(HttpRequest& request)
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << e.what() << '\n';
+		_contentLength = 0;
+		//std::cerr << e.what() << '\n';
 	}
 }
 
@@ -214,13 +221,14 @@ void	HttpParser::bigSend(int out_fd)
 	HttpParser parser;
 	HttpRequest request;
 	parser.recieveRequest(out_fd);
-	//std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
-  //  std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
+	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
+   	// std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
 	parser.parseClientRequest(parser._clientDataBuffer, request);
 	//  for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value:" << pair.second << std::endl;
     // }
 	//
+	ServerHandler response(out_fd, request);
 	// std::ifstream ifs("./assets/response.html");
 	// if (!ifs.is_open())
 	// 	std::cerr << "Can't open file\n";

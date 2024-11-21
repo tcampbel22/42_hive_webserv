@@ -10,7 +10,7 @@
 /**                                W E B S E R V                                 **/
 /**********************************************************************************/
 
-#include "../include/ConfigParser.hpp"
+#include "ConfigParser.hpp"
 
 ConfigParser::ConfigParser() {}
 

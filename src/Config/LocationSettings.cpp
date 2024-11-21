@@ -10,7 +10,7 @@
 /**                                W E B S E R V                                 **/
 /**********************************************************************************/
 
-#include "../include/LocationSettings.hpp"
+#include "LocationSettings.hpp"
 
 LocationSettings::LocationSettings()
 {

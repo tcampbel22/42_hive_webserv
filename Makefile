@@ -6,15 +6,15 @@ FLAGS	:= -Wextra -Wall -Werror -std=c++17 #-fsanitize=address -g
 OBJ_DIR := ./src/Objects
 SRCS_DIR = ./src
 
-SRCS	:= $(SRCS_DIR)/main.cpp $(SRCS_DIR)/HttpServer.cpp $(SRCS_DIR)/HttpParser.cpp \
-			$(SRCS_DIR)/Response.cpp $(SRCS_DIR)/ConfigParser.cpp $(SRCS_DIR)/ServerSettings.cpp \
-			$(SRCS_DIR)/LocationSettings.cpp $(SRCS_DIR)/ServerHandler.cpp
+SRCS	:= $(SRCS_DIR)/Server/main.cpp $(SRCS_DIR)/Server/HttpServer.cpp $(SRCS_DIR)/HttpParsing/HttpParser.cpp \
+			$(SRCS_DIR)/Response/Response.cpp $(SRCS_DIR)/Config/ConfigParser.cpp $(SRCS_DIR)/Config/ServerSettings.cpp \
+			$(SRCS_DIR)/Config/LocationSettings.cpp $(SRCS_DIR)/Response/ServerHandler.cpp
 		
 OBJS	:= $(addprefix $(OBJ_DIR)/, $(notdir ${SRCS:.cpp=.o}))
 
 all: $(NAME)
 
-$(OBJ_DIR)/%.o: $(SRCS_DIR)/%.cpp | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: $(SRCS_DIR)/*/%.cpp | $(OBJ_DIR)
 	@$(CC) -o $@ -c $< $(FLAGS) && printf "Compiling: $(notdir $<)\n"
 			
 $(NAME): $(OBJS)

@@ -10,10 +10,10 @@
 /**                                W E B S E R V                                 **/
 /**********************************************************************************/
 
-#include "../include/webserv.hpp"
-#include "../include/HttpServer.hpp"
-#include "../include/ConfigParser.hpp"
-#include "../include/ServerSettings.hpp"
+#include "../../include/webserv.hpp"
+#include "../Server/HttpServer.hpp"
+#include "../Config/ConfigParser.hpp"
+#include "../Config/ServerSettings.hpp"
 
 
 void	ft_perror(std::string str) //need to make as logger instead
@@ -31,18 +31,10 @@ int	main(int ac, char **av)
 	//Program will exit if an error is found with the config file
 	ConfigParser config((std::string)av[1]);
 	std::shared_ptr<ServerSettings> settings = std::make_shared<ServerSettings>(); 
-	// try {
-		config.parseConfigFile();
-	// }
-	// catch (std::exception& e) {
-	// 	std::cerr << e.what() << '\n';
-	// 	exit (1);
-	// }
-	/*start server class, calls the socket creation function in constructor, closes the socket in
-	the destructor.
-	*/
-	// HttpServer server(settings);
-	// server.startListening();
+	config.parseConfigFile();
+	//start server class, calls the socket creation function in constructor, closes the socket in the destructor.
+	HttpServer server(settings);
+	server.startListening();
 	// int fd = open("./test.txt", O_RDONLY);
 	// HttpParser parser;
 	// parser.bigSend(fd);

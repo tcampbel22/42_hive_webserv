@@ -12,9 +12,9 @@
 
 #pragma once
 
-#include "../include/webserv.hpp"
-#include "../include/ServerSettings.hpp"
-#include "../include/LocationSettings.hpp"
+#include "../../include/webserv.hpp"
+#include "ServerSettings.hpp"
+#include "LocationSettings.hpp"
 #include <vector>
 #include <unordered_map>
 #include <iostream>
