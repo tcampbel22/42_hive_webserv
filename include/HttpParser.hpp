@@ -19,6 +19,7 @@
 # include <fstream>
 # include <map>
 # include <unordered_set>
+# include <string>
 
 
 struct HttpRequest {
@@ -26,16 +27,18 @@ struct HttpRequest {
 	std::string path;
 	std::map<std::string, std::string> headers;
 	std::string body;
-	std::string connection;
 	std::string host;
+	bool connection;
 	int errorFlag;
 };
 
 class HttpParser
 {
-protected:
+private:
 	//std::map<std::string, std::string> _requestMap;
 	std::vector<char> _clientDataBuffer;
+	int _contentLength;
+	bool _fullyRead;
 public:
 	HttpParser();
 	~HttpParser();
@@ -44,8 +47,8 @@ public:
 	void recieveRequest(int out_fd);
 	bool isValidRequestline(std::string, HttpRequest&);
 	void findKeys(HttpRequest& request);
-
-
+	void handleChunkedBody(HttpRequest&, std::istringstream&);
+	int hexToInt(std::string);
 
 	//std::string trim(const std::string& str);
 };
