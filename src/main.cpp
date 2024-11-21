@@ -33,9 +33,6 @@ int	main(int ac, char **av)
 	std::shared_ptr<ServerSettings> settings = std::make_shared<ServerSettings>(); 
 	// try {
 		config.parseConfigFile();
-		//std::cout << config.settings[0].getHost() << '\n';
-		//std::cout << config.settings[0].getLocationRoot("/docs") << '\n';
-		//std::cout << config.settings[0].getLocationPath("/static") << '\n';
 	// }
 	// catch (std::exception& e) {
 	// 	std::cerr << e.what() << '\n';
