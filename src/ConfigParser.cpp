@@ -51,7 +51,8 @@ void	ConfigParser::readConfigFile(std::string file)
 void		ConfigParser::parseConfigFile() 
 {
 	initialParse(); //need to check how many servers there are, then create that many instances
-	settings.push_back(ServerSettings());
+	for (int i = 0; i < server_count; i++)
+		settings.push_back(ServerSettings());
 	settings[0].parseServerSettings(configFileStr);
 }
 
@@ -72,9 +73,19 @@ void	ConfigParser::removeComments()
 	}
 }
 
+void	ConfigParser::countServers() 
+{
+	std::regex servers("server\\s+[^\\{]*\\{[^\\}]");
+	std::sregex_iterator begin(configFileStr.begin(), configFileStr.end(), servers);
+	std::sregex_iterator end;
+	server_count = std::distance(begin, end);
+}
+
 void	ConfigParser::initialParse()
 {
 	removeComments();
+	countServers();
+
 }
 
 std::string	ConfigParser::getConfigFileStr() { return configFileStr; }

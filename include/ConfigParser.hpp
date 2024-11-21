@@ -27,6 +27,7 @@ class ConfigParser
 {
 private:
 	std::string	configFileStr;
+	int			server_count;
 public:
 	std::vector<ServerSettings> settings;
 	ConfigParser();
@@ -37,5 +38,5 @@ public:
 	void		initialParse();
 	void		removeComments();
 	std::string	getConfigFileStr();
-	
+	void		countServers();	
 };
