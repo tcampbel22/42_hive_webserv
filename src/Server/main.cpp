@@ -32,8 +32,12 @@ int	main(int ac, char **av)
 	ConfigParser config((std::string)av[1]);
 	std::shared_ptr<ServerSettings> settings = std::make_shared<ServerSettings>(); 
 	config.parseConfigFile();
+	std::cout << config.settings[0].getLocationPath("/") << '\n'; 
+	std::cout << config.settings[0].getLocationPath("/var") << '\n';
+	std::cout << config.settings[0].getLocationPath("/html") << '\n';
 	//start server class, calls the socket creation function in constructor, closes the socket in the destructor.
 	HttpServer server(settings);
+	settings->getLocationPath("/");
 	server.startListening();
 	// int fd = open("./test.txt", O_RDONLY);
 	// HttpParser parser;
