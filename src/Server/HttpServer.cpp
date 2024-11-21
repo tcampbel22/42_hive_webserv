@@ -10,7 +10,7 @@
 /**                                W E B S E R V                                 **/
 /**********************************************************************************/
 
-#include "../include/HttpServer.hpp"
+#include "HttpServer.hpp"
 
 HttpServer* HttpServer::_instance = nullptr;
 
@@ -27,7 +27,13 @@ void testSend(int fd)
 
 void HttpServer::signalHandler(int signal)
 {
-	std::cout <<  "\nExit signal received, server shutting down.. Good night" << std::endl;
+	(void)signal;
+	std::cout <<  "\nExit signal received, server shutting down.. " << std::endl;
+	std::cout << "...\n";
+	sleep(1);
+	std::cout << "...\n";
+	sleep(1);
+	std::cout << "Good night\n";
 	_instance->closeServer();
 	exit(0);
 }

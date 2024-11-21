@@ -23,13 +23,13 @@
 # include <sys/epoll.h>
 # include <fcntl.h>
 # include <sys/sendfile.h>
-# include "../include/HttpParser.hpp"
-# include "../include/ServerSettings.hpp"
+# include "../HttpParsing/HttpParser.hpp"
+# include "../Config/ServerSettings.hpp"
 #include <errno.h>
 #include <string.h>
-#include "../src/Response.hpp"
+#include "../Response/Response.hpp"
 #include <memory>
-#include "../src/ServerHandler.hpp"
+#include "../Response/ServerHandler.hpp"
 #include <csignal>
 
 # define MAX_EVENTS 20 //Can define this in config file or create a funct based on cpu load or leave it
