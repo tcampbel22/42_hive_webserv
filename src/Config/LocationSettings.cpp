@@ -20,6 +20,7 @@ LocationSettings::LocationSettings()
 	setMethods("POST");
 	setMethods("GET");
 	autoindex = false;
+	redirect = false;
 }
 
 LocationSettings::LocationSettings(const std::string& new_path)
@@ -30,6 +31,7 @@ LocationSettings::LocationSettings(const std::string& new_path)
 	setMethods("POST");
 	setMethods("GET");
 	autoindex = false;
+	redirect = false;
 }
 
 LocationSettings::~LocationSettings() {}

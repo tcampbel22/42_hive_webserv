@@ -24,6 +24,7 @@ private:
 	std::vector<std::string>	methods; //allowed methods
 	std::string					default_file; //eg index.html
 	bool						autoindex; //enable or disable directory listing
+	bool						redirect;
 public:
 	LocationSettings();
 	LocationSettings(const std::string& new_path);

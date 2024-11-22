@@ -53,7 +53,7 @@ void		ConfigParser::parseConfigFile()
 	initialParse(); //need to check how many servers there are, then create that many instances
 	for (int i = 0; i < server_count; i++)
 		settings.push_back(ServerSettings());
-	settings[0].parseServerSettings(configFileStr);
+	settings[0].parseServerSettings(tokens);
 }
 
 void	ConfigParser::removeComments()
@@ -81,36 +81,36 @@ void	ConfigParser::countServers()
 	server_count = std::distance(begin, end);
 }
 
-// void	ConfigParser::tokenise(const std::string& config)
-// {
-// 	std::string token;
+void	ConfigParser::tokenise(const std::string& config)
+{
+	std::string token;
 
-// 	// for (char c : config)
-// 	// {
-// 		// if (isspace(c) || c == '{' || c == '}' || c = ';')
-// 		// {
-// 		// 	if (!token.empty())
-// 		// 	{
-// 		// 		tokens.push_back(token);
-// 		// 		token.clear();
-// 		// 	}
-// 	// 	if (c == '{' || c == '}' || c == ';')
-// 	// 		tokens.push_back(std::string(1, c));
-// 	// 	}
-// 	// 	else
-// 	// 		token += c;
-// 	// }
-// 	if (!token.empty())
-// 		tokens.push_back(token);
-// }
+	for (char c : config)
+	{
+		if (isspace(c) || c == '{' || c == '}' || c == ';')
+		{
+			if (!token.empty())
+			{
+				tokens.push_back(token);
+				token.clear();
+			}
+		if (c == '{' || c == '}' || c == ';')
+			tokens.push_back(std::string(1, c));
+		}
+		else
+			token += c;
+	}
+	if (!token.empty())
+		tokens.push_back(token);
+}
 
 void	ConfigParser::initialParse()
 {
 	removeComments();
 	countServers();
-	// tokenise(configFileStr);
-	// for (auto it = tokens.begin(); it != tokens.end(); it++)
-	// 	std::cout << *it << '\n';
+	tokenise(configFileStr);
+	for (auto it = tokens.begin(); it != tokens.end(); it++)
+		std::cout << *it << '\n';
 }
 
 std::string	ConfigParser::getConfigFileStr() { return configFileStr; }

@@ -39,8 +39,9 @@ private:
 public:
 	ServerSettings();
 	~ServerSettings();
-	void						parseServerSettings(std::string config);
+	void						parseServerSettings(std::vector<std::string> tokens);
 	void						parseLocationSettings(std::string_view location);
+	void						parseServerBlock(std::vector<std::string> serverBlock);
 	void						cycleLocations(std::string config);
 	void						addErrorPage(int status, std::string path);
 	void						addServerName(std::string name);

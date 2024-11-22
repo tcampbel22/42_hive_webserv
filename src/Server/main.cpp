@@ -30,22 +30,20 @@ int	main(int ac, char **av)
 	}
 	//Program will exit if an error is found with the config file
 	ConfigParser config((std::string)av[1]);
-	config.parseConfigFile();
+	try {
+		config.parseConfigFile();
+	}
+	catch (std::exception& e)
+	{
+		ft_perror(e.what());
+		exit(1);
+	}
 	std::shared_ptr<ServerSettings> setting = std::make_shared<ServerSettings>(config.settings[0]);
 	//start server class, calls the socket creation function in constructor, closes the socket in the destructor.
 	HttpServer server(setting);
-	// LocationSettings *block = setting->getLocationBlock("/l");
-	// if (block)
-	// 	std::cout << block->getRoot() << '\n';
-	// else
-	// 	std::cout << "returned NULL\n";
-	server.startListening();
+	// server.startListening();
 	// int fd = open("./test.txt", O_RDONLY);
 	// HttpParser parser;
 	// parser.bigSend(fd);
-	
-
-	//exit
-
 	return (0);
 }

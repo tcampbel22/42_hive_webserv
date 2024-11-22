@@ -27,23 +27,31 @@ ServerSettings::ServerSettings()
 ServerSettings::~ServerSettings() {}
 
 
-void		ServerSettings::parseServerSettings(std::string config) 
+void	ServerSettings::parseServerBlock(std::vector<std::string> serverBlock)
 {
-	// std::regex servers("server\\s+[^\\{]*\\{[^\\}]");
-	// std::smatch match;
-	// std::sregex_iterator begin(config.begin(), config.end(), servers);
-	// std::sregex_iterator end;
-	// for (std::sregex_iterator it = begin; it != end; it++)
-	// {
-	// 	match = *it;
-	// 	std::string_view matched_string(config.data() + match.position(), match.length());
-	// }
+	for (auto it = serverBlock.begin(); it != serverBlock.end(); it++)
+	{
+		std::string directives[6] = {"host", "port", "server_names", "client_max_body_size", "location", "error_pages"};
+		//check host
+		//check port
+		//check servernames
+		//check error pages
+		//check client body size
+		//Check for duplicates, missing semi colons, uneven brackets, non directives 
+		//call locations cycle locations within current vector
+	}
+}
 
-// 	if (std::regex_search(config, match, host))
-// 	{
-// 		//do something
-// 	}
-	cycleLocations(config);
+void		ServerSettings::parseServerSettings(std::vector<std::string> tokens) 
+{
+	if (tokens.begin()->compare("server"))
+		throw std::runtime_error("Configuration file should start with server block");
+	//splitServerBlocks() //Need to create map of vectors of server blocks
+	for (auto it = tokens.begin(); it != tokens.end(); it++)
+	{
+		// parseServerBlock(serverBlock);
+	}		
+	// cycleLocations(config);
 }
 
 void	ServerSettings::parseLocationSettings(std::string_view location)
