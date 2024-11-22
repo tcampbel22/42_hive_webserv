@@ -62,21 +62,11 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		
 		*/
 
-		// //Parse headers and add them to a map
-		while (std::getline(requestStream, line)) {
-			ssize_t colonPos = line.find(':');
-			if ((size_t)colonPos != std::string::npos) {
-				std::string key = line.substr(0, colonPos);
-				std::string value = line.substr(colonPos + 1);
-				request.headers[key] = value;
-			}
-			else 
-				break;
-		}
-		findKeys(request);
+		// //Parse headers and add them to a map, findkeys to store key that casi needs the most for now.
+		HttpHeaderParser::parseHeaders(requestStream, request);
+		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (request.method == "GET" && this->_contentLength != 0) {
-			//error here (Optional tho, but we can regard GET request with body as a error)
-			request.errorFlag = 1;
+			request.errorFlag = 404;
 		}
 		// else {
 		// 	if (request.headers.at("Transfer-Encoding").compare(" chunked")) {
@@ -197,25 +187,6 @@ void HttpParser::handleChunkedBody(HttpRequest& request, std::istringstream& str
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void	HttpParser::bigSend(int out_fd) 
 {
 	HttpParser parser;
@@ -227,16 +198,27 @@ void	HttpParser::bigSend(int out_fd)
 	//  for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value:" << pair.second << std::endl;
     // }
-	//
 	ServerHandler response(out_fd, request);
-	// std::ifstream ifs("./assets/response.html");
-	// if (!ifs.is_open())
-	// 	std::cerr << "Can't open file\n";
-	// std::string buf((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-	// ifs.close();
-	// if (buf.find("GET"))
-	// 	send(out_fd, buf.c_str(), buf.size(), 0);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // util function to trim off the white spaces and delimit the read when making key value pair
 // std::string HttpParser::trim(const std::string& str) {
