@@ -47,10 +47,10 @@ private:
 	epoll_event		_events;
 	epoll_event		_eventsArr[MAX_EVENTS];
 	int				numEvents;
-	std::shared_ptr<ServerSettings> settings;
 	
 	
 public:
+	std::shared_ptr<ServerSettings> settings;
 	//constructors & destructors
 	HttpServer(std::shared_ptr<ServerSettings> _settings);
 	~HttpServer();

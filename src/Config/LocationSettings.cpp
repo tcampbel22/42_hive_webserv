@@ -25,8 +25,8 @@ LocationSettings::LocationSettings()
 LocationSettings::LocationSettings(const std::string& new_path)
 {
 	path = new_path;
-	root = "var\\html";
-	default_file = "var\\html\\index.html";
+	root = "/var/html";
+	default_file = "var/html/index.html";
 	setMethods("POST");
 	setMethods("GET");
 	autoindex = false;
@@ -42,7 +42,7 @@ void	LocationSettings::setDefaultFile(std::string new_filepath) { default_file =
 void	LocationSettings::setAutoIndex(bool val) { autoindex = val; }
 
 //GETTERS
-std::string					LocationSettings::getPath() { return path;}
+std::string					LocationSettings::getPath() { return path; }
 std::string					LocationSettings::getRoot() { return root; }
 std::string					LocationSettings::getDefaultFilePath() { return default_file; }
 std::vector<std::string>	LocationSettings::getMethods() { return methods; }

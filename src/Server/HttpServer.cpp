@@ -29,11 +29,6 @@ void HttpServer::signalHandler(int signal)
 {
 	(void)signal;
 	std::cout <<  "\nExit signal received, server shutting down.. " << std::endl;
-	std::cout << "...\n";
-	sleep(1);
-	std::cout << "...\n";
-	sleep(1);
-	std::cout << "Good night\n";
 	_instance->closeServer();
 	exit(0);
 }
@@ -77,7 +72,6 @@ void HttpServer::startListening()
 
 	std::cout << "Server listening on " << settings->getPort() << std::endl;
 
-	
 	std::string response = "HTTP/1.1 200 OK\nContent-Type: text/html; charset=UTF-8\nContent-Length: 137\n\n<!DOCTYPE html>\n<html>\n<head>\n    <title>Simple C++ Web Server</title>\n</head>\n<body>\n    <h1>Hello from a C++ web server!</h1>\n</body>\n</html>\n";
 
 	std::string response2 = "HTTP/1.1 200 OK\nContent-Type: text/html; charset=UTF-8\nContent-Length: 137\n\n<!DOCTYPE html>\n<html>\n<head>\n    <title>Simple C++ Web Server</title>\n</head>\n<body>\n    <h1>Hello from a shitty C++ web server!</h1>\n</body>\n</html>\n";
@@ -146,7 +140,7 @@ HttpServer::~HttpServer()
 };
 HttpServer::HttpServer(std::shared_ptr<ServerSettings> _settings)
 {
-  this->_instance = this;
+	this->_instance = this;
 	settings = _settings;
 	_port = settings->getPort();
 	_ipAddress = settings->getHost();
