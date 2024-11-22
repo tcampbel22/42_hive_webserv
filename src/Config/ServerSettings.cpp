@@ -26,7 +26,35 @@ ServerSettings::ServerSettings()
 
 ServerSettings::~ServerSettings() {}
 
+
 void		ServerSettings::parseServerSettings(std::string config) 
+{
+	// std::regex servers("server\\s+[^\\{]*\\{[^\\}]");
+	// std::smatch match;
+	// std::sregex_iterator begin(config.begin(), config.end(), servers);
+	// std::sregex_iterator end;
+	// for (std::sregex_iterator it = begin; it != end; it++)
+	// {
+	// 	match = *it;
+	// 	std::string_view matched_string(config.data() + match.position(), match.length());
+	// }
+
+// 	if (std::regex_search(config, match, host))
+// 	{
+// 		//do something
+// 	}
+	cycleLocations(config);
+}
+
+void	ServerSettings::parseLocationSettings(std::string_view location)
+{
+	int start = location.find_first_of('/');
+	int end = location.find_first_of('{') - 1;
+	const std::string key(location.substr(start, end - start));
+	setLocationSettings(key);
+}
+
+void	ServerSettings::cycleLocations(std::string config)
 {
 	std::regex location("location\\s+[^\\{]*\\{[^\\}]*\\}");
 	std::smatch match;
@@ -38,20 +66,14 @@ void		ServerSettings::parseServerSettings(std::string config)
 		std::string_view matched_string(config.data() + match.position(), match.length());
 		parseLocationSettings(matched_string);
 	}
-// 	if (std::regex_search(config, match, host))
-// 	{
-// 		//do something
-// 	}
 }
 
-void	ServerSettings::parseLocationSettings(std::string_view location)
+void	ServerSettings::setLocationSettings(const std::string& key)
 {
-	int start = location.find_first_of('/');
-	int end = location.find_first_of('{') - 1;
-	const std::string key(location.substr(start, end - start));
-	setLocationSettings(key);
+	auto it = locations.insert({key, LocationSettings(key)});
+	if (!it.second)
+		throw std::runtime_error("Duplicate key " + key);
 }
-
 void	ServerSettings::addServerName(std::string name)
 {
 	server_names.push_back(name);
@@ -62,12 +84,6 @@ void	ServerSettings::addErrorPage(int status, std::string path)
 	error_pages[status].push_back(path);
 }
 
-void	ServerSettings::setLocationSettings(const std::string& key)
-{
-	auto it = locations.insert({key, LocationSettings(key)});
-	if (!it.second)
-		throw std::runtime_error("Duplicate key " + key);
-}
 
 bool		ServerSettings::isDefaultServer() { return isDefault; }
 
@@ -90,8 +106,6 @@ std::vector<std::string> ServerSettings::getErrorPages(int status)
 		throw std::runtime_error("status not found");
 }
 
-
-
 std::string	ServerSettings::getLocationPath(std::string key) 
 {
 	auto it = locations.find(key);
@@ -107,7 +121,7 @@ std::string	ServerSettings::getLocationRoot(std::string key)
 	if (it != locations.end())
 		return locations[key].getRoot();
 	else
-		return "key not found";
+	return "key not found";
 }
 std::string	ServerSettings::getLocationDefaultFile(std::string key)
 {
@@ -137,5 +151,13 @@ std::vector<std::string>	ServerSettings::getLocationMethods(std::string key)
 		return locations[key].getMethods();
 }
 
+LocationSettings*			ServerSettings::getLocationBlock(const std::string key)
+{
+	auto it = locations.find(key);
+	if (it != locations.end())
+		return &(it->second);
+	else
+		return nullptr;
+}
 
 std::unordered_map<std::string, LocationSettings> ServerSettings::getLocationSettings() { return locations; }
