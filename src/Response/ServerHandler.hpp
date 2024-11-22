@@ -36,7 +36,8 @@ private:
 
 
 public:
-	ServerHandler(int fd, HttpRequest& _newInput);//(InputinformationClass& Eromon)
+	ServerHandler(int fd, HttpRequest& _newInput);
+	void parsePath();
 	void executeInput();
 	void doPost();
 	void doDelete();

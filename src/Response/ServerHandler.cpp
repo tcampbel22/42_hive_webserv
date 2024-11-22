@@ -14,18 +14,44 @@
 #include <fstream>
 #include <sstream>
 #include <filesystem>
+# include "../Config/LocationSettings.hpp"
+
+// void Serverhandler::parseMime()
+
+void ServerHandler::parsePath()
+{
+	int len = 1;
+	len = _input.path.find("/", 1);
+	std::string key = _input.path.substr(0, len);
+
+	LocationSettings *locSettings = _input.settings->getLocationBlock("/");
+	if (!locSettings)
+	{
+		_input.errorFlag = 404;
+	}
+
+}
 
 ServerHandler::ServerHandler(int fd, HttpRequest& _newInput):
 _response(), _input(_newInput)
 {
+
+	std::cout << _input.path << std::endl;
 	//add the acctual getting of path and check that the path is valid
 
 	try
 	{
-		if (_input.path.length() == 1)
-			_input.path = _pagePath + _input.path + "/index.html";
-		else
-			_input.path = _pagePath + _input.path;
+		if (_input.errorFlag < 1)
+		{
+		// if (_input.path.length() == 1)
+		// 	_input.path = _pagePath + _input.path + "/index.html";
+		// else
+		// 	_input.path = _pagePath + _input.path;
+		// _input.path = locSettings->getRoot() + _input.path; 
+		// _input.path = _input.path.substr(1, _input.path.length() -1);
+		// std::cout << _input.path << std::endl;
+			parsePath();
+		}
 		executeInput();
 		_response.sendResponse(fd);
 	}
@@ -39,12 +65,12 @@ _response(), _input(_newInput)
 void ServerHandler::executeInput()
 {
 	
-	if (_input.path.find("..") != std::string::npos)
-	{
-		_response.setResponseCode(403);
-		getFile("root/etc/response/403.html");
-	}
-	else if (_input.errorFlag == true)
+	// if (_input.path.find("..") != std::string::npos)
+	// {
+	// 	_response.setResponseCode(403);
+	// 	getFile("root/etc/response/403.html");
+	// }
+	if (_input.errorFlag == true)
 		doError();
 	else if (_input.method == "POST")
 		doPost();

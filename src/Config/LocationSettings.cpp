@@ -15,7 +15,7 @@
 LocationSettings::LocationSettings()
 {
 	path = "/";
-	root = "root/var/html";
+	root = "/root/var/html";
 	default_file = "root/var/html/index.html";
 	setMethods("POST");
 	setMethods("GET");
@@ -25,7 +25,7 @@ LocationSettings::LocationSettings()
 LocationSettings::LocationSettings(const std::string& new_path)
 {
 	path = new_path;
-	root = "/var/html";
+	root = "/root/var/html";
 	default_file = "var/html/index.html";
 	setMethods("POST");
 	setMethods("GET");
