@@ -13,14 +13,15 @@
 #include "ServerHandler.hpp"
 #include <fstream>
 #include <sstream>
-
+#include <filesystem>
 
 ServerHandler::ServerHandler(int fd, HttpRequest& _newInput):
 _response(), _input(_newInput)
 {
+	//add the acctual getting of path and check that the path is valid
+
 	try
 	{
-		// _input.errorFlag = 1;
 		if (_input.path.length() == 1)
 			_input.path = _pagePath + _input.path + "/index.html";
 		else
@@ -55,13 +56,14 @@ void ServerHandler::executeInput()
 		throw std::invalid_argument("Invalid argument");
 
 }
-
+//void	Serverhandler::makeMime();
 
 int ServerHandler::getFile(std::string path)
 {
 	std::ostringstream	stream;
 	std::fstream 		infile;
 
+	//check for file and for read permission and set error code accordingly
 	infile.open(path);
 	if (!infile.is_open())
 	{
@@ -75,7 +77,7 @@ int ServerHandler::getFile(std::string path)
 	_response.set_body(stream.str());
 	infile.close();
 	_response.setContentLength(stream.str().length());
-	if (path.find(".html"))// needs to be made more robust / to handle others as well, maybe own function
+	if (path.find(".html"))// needs to be made more robust / to handle others as well, maybe own function // not hardcoded!
 		_response.setContentType("text/html");
 	else if (path.find(".webp"))
 		_response.setContentType("text/webp");
@@ -89,15 +91,31 @@ int ServerHandler::getFile(std::string path)
 
 void ServerHandler::doError()
 {
-	_response.setResponseCode(400);
-	getFile("root/etc/response/400.html");
+	_response.setResponseCode(_input.errorFlag);
+	getFile("root/etc/response/" +  std::to_string(_input.errorFlag) + ".html");
 	//should get a error file from the directory
 }
 
 void ServerHandler::doPost()
 {
+	std::filesystem::path path(_input.path);
+	if(std::filesystem::exists(path))
+	{
+		//file exists, add to it.
+
+		//first check for write permission
+
+	}
+	else
+	{
+		//create file, and stream the body into it
+	}
+	//in both cases, check if it was successfull, or not, and set response code accordingly
+	//mutex might be needed if multiple servers have access to same resources?
+
 
 }
+
 
 void ServerHandler::doGet()
 {

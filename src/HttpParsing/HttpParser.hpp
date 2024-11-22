@@ -20,7 +20,9 @@
 # include <map>
 # include <unordered_set>
 # include <string>
+# include <memory>
 
+class ServerSettings;
 
 struct HttpRequest {
 	std::string method;
@@ -30,6 +32,7 @@ struct HttpRequest {
 	std::string host;
 	bool connection;
 	int errorFlag;
+	std::shared_ptr<ServerSettings> settings;
 };
 
 class HttpParser
@@ -42,7 +45,7 @@ private:
 public:
 	HttpParser();
 	~HttpParser();
-	static void	bigSend(int out_fd);
+	static void	bigSend(int out_fd, std::shared_ptr<ServerSettings> settingsPtr);
 	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request);
 	void recieveRequest(int out_fd);
 	bool isValidRequestline(std::string, HttpRequest&);

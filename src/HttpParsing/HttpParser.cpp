@@ -216,10 +216,11 @@ void HttpParser::handleChunkedBody(HttpRequest& request, std::istringstream& str
 
 
 
-void	HttpParser::bigSend(int out_fd) 
+void	HttpParser::bigSend(int out_fd, std::shared_ptr<ServerSettings> settingsPtr) 
 {
 	HttpParser parser;
 	HttpRequest request;
+	request.settings = settingsPtr; //added by Casi to get settings to response
 	parser.recieveRequest(out_fd);
 	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
    	// std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
