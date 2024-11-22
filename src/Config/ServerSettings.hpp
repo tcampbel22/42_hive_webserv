@@ -41,6 +41,7 @@ public:
 	~ServerSettings();
 	void						parseServerSettings(std::string config);
 	void						parseLocationSettings(std::string_view location);
+	void						cycleLocations(std::string config);
 	void						addErrorPage(int status, std::string path);
 	void						addServerName(std::string name);
 	void						setLocationSettings(const std::string& key);
@@ -55,5 +56,6 @@ public:
 	std::string 				getLocationDefaultFile(std::string key);
 	bool 						getLocationAutoIndex(std::string key);
 	std::vector<std::string>	getLocationMethods(std::string key);
+	LocationSettings*			getLocationBlock(const std::string key);
 	std::unordered_map<std::string, LocationSettings> getLocationSettings();
 };
