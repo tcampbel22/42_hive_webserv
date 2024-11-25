@@ -12,11 +12,14 @@
 
 #include "HttpParser.hpp"
 
-class requestLineValidator
+class chunkedBodyParser
 {
 private:
-	static const std::unordered_set<std::string> _validMethods;
+	static int hexToInt(std::string line);
+	static std::string readChunk(std::istringstream& stream, int chunkSize);
+	void parse(std::istringstream& stream, HttpRequest& request);
+	void procesLeftOvers(std::istringstream& stream);
 public:
-	static bool isValidRequestLine(std::string, HttpRequest&);
-
+	static void parseChunkedBody(std::istringstream& stream, HttpRequest& request);
 };
+

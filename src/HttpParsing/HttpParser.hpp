@@ -20,7 +20,8 @@
 # include <map>
 # include <unordered_set>
 # include <string>
-# include "HttpHeaderParser.hpp"
+// # include "HttpHeaderParser.hpp"
+// # include "requestLineValidator.hpp"
 
 
 struct HttpRequest {
@@ -46,10 +47,11 @@ public:
 	static void	bigSend(int out_fd);
 	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request);
 	void recieveRequest(int out_fd);
-	bool isValidRequestline(std::string, HttpRequest&);
-	void findKeys(HttpRequest& request);
-	void handleChunkedBody(HttpRequest&, std::istringstream&);
-	int hexToInt(std::string);
-
+	//bool isValidRequestline(std::string, HttpRequest&);
+	//void findKeys(HttpRequest& request);
+	//void handleChunkedBody(HttpRequest&, std::istringstream&);
+	//int hexToInt(std::string);
+	void parseBody(HttpRequest&, std::istringstream&);
+	void parseRegularBody(std::istringstream&, HttpRequest&);
 	//std::string trim(const std::string& str);
 };
