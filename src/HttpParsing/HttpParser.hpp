@@ -44,8 +44,8 @@ private:
 public:
 	HttpParser();
 	~HttpParser();
-	static void	bigSend(int out_fd);
-	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request);
+	static void	bigSend(int out_fd, std::shared_ptr<ServerSettings>&);
+	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, std::shared_ptr<ServerSettings>&);
 	void recieveRequest(int out_fd);
 	//bool isValidRequestline(std::string, HttpRequest&);
 	//void findKeys(HttpRequest& request);

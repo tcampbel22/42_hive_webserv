@@ -47,7 +47,7 @@ void	HttpParser::recieveRequest(int out_fd)
 	_clientDataBuffer.resize(_clientDataBuffer.size() - (bytes + bytesRead));
 }
 //Empty the vector to the requestMap, needs to be parsed in the response.
-void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request)
+void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, std::shared_ptr<ServerSettings>& configSettings)
 {
     try {
 		std::string data(clientData.begin(), clientData.end());
@@ -58,12 +58,11 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			request.errorFlag = 400;//error shit in here if first line is bad: ERROR 400 according to RFC
 			std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl; 
 		}
-		/*
-			TODO: parse path and method according to config file instructions. //requires information from config file
-		
-		
-		
-		*/
+		/* TODO: parse path and method according to config file instructions. //requires information from config file */
+		LocationSettings *legitPath = configSettings->getLocationPath(request.path);
+		if (!legitPath)
+			request.errorFlag = 404;
+
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (request.method == "GET" && this->_contentLength != 0) {
@@ -94,19 +93,24 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 		request.body += c;
 }
 
-void	HttpParser::bigSend(int out_fd) 
+void	HttpParser::bigSend(int out_fd, std::shared_ptr<ServerSettings>& configSetting) 
 {
 	HttpParser parser;
 	HttpRequest request;
 	parser.recieveRequest(out_fd);
+	parser.parseClientRequest(parser._clientDataBuffer, request, configSetting);
 	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
    	// std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
-	parser.parseClientRequest(parser._clientDataBuffer, request);
+
 	// std::cout << request.body << std::endl;
+
+
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value:" << pair.second << std::endl;
     // }
-	//ServerHandler response(out_fd, request);
+
+
+	ServerHandler response(out_fd, request);
 }
 
 // util function to trim off the white spaces and delimit the read when making key value pair
