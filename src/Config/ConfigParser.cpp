@@ -81,24 +81,34 @@ void	ConfigParser::countServers()
 	server_count = std::distance(begin, end);
 }
 
-void	ConfigParser::tokenise(const std::string& config)
+void	ConfigParser::tokenise(const std::string& c)
 {
 	std::string token;
 
-	for (char c : config)
+	for (size_t i = 0; i < c.length(); i++)
 	{
-		if (isspace(c) || c == '{' || c == '}' || c == ';')
+		if (isspace(c[i]))
 		{
 			if (!token.empty())
 			{
 				tokens.push_back(token);
 				token.clear();
 			}
-		if (c == '{' || c == '}' || c == ';')
-			tokens.push_back(std::string(1, c));
+		}
+		else if (c[i] == '{' || c[i] == '}' || c[i] == ';')
+		{
+			if (!token.empty())
+			{
+				tokens.push_back(token);
+				token.clear();
+			}
+			if (!tokens.empty() && tokens.back().find_first_of("{;") != std::string::npos && tokens.back().back() == c[i])
+				tokens.back().push_back(c[i]);
+			else
+				tokens.push_back(std::string(1, c[i]));
 		}
 		else
-			token += c;
+			token.push_back(c[i]);
 	}
 	if (!token.empty())
 		tokens.push_back(token);
@@ -109,8 +119,8 @@ void	ConfigParser::initialParse()
 	removeComments();
 	countServers();
 	tokenise(configFileStr);
-	for (auto it = tokens.begin(); it != tokens.end(); it++)
-		std::cout << *it << '\n';
+	// for (auto it = tokens.begin(); it != tokens.end(); it++)
+	// 	std::cout << *it << '\n';
 }
 
 std::string	ConfigParser::getConfigFileStr() { return configFileStr; }

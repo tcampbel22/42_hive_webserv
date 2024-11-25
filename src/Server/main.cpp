@@ -25,9 +25,16 @@ int	main(int ac, char **av)
 {
 	if (ac != 2)
 	{
-		ft_perror("expecting only configuration file as argument");
+		ft_perror("expecting only configuration file as argument"); //check if directory and ./
 		return 1;
 	}
+	try {
+		if (opendir(av[1]) != NULL)
+			throw std::invalid_argument("argument is a directory");
+	} catch (std::exception& e) {
+		ft_perror(e.what());
+		return 1; }
+
 	//Program will exit if an error is found with the config file
 	ConfigParser config((std::string)av[1]);
 	try {

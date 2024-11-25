@@ -10,38 +10,30 @@
 /**                                W E B S E R V                                 **/
 /**********************************************************************************/
 
-#pragma once
+#include "ConfigUtilities.hpp"
 
-#include "../../include/webserv.hpp"
-#include "ServerSettings.hpp"
-#include "LocationSettings.hpp"
-#include <vector>
-#include <unordered_map>
-#include <iostream>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sstream>
-#include <fstream>
-#include <cctype>
+ConfigUtilities::ConfigUtilities() {}
+ConfigUtilities::~ConfigUtilities() {}
 
-class ServerSettings;
-
-class ConfigParser
+void	ConfigUtilities::checkBrackets(std::vector<std::string> serverBlock) 
 {
-private:
-	std::string					configFileStr;
-	std::vector<std::string>	tokens; 
-	int							server_count;
-public:
-	std::vector<ServerSettings> settings;
-	ConfigParser();
-	ConfigParser(std::string file);
-	~ConfigParser();
-	void		readConfigFile(std::string);
-	void		parseConfigFile();
-	void		initialParse();
-	void		removeComments();
-	std::string	getConfigFileStr();
-	void		countServers();
-	void		tokenise(const std::string& config);
-};
+	int			lb_count = 0;
+	int			rb_count = 0;
+	for (auto it = serverBlock.begin(); it != serverBlock.end(); it++)
+	{
+		if (it->compare("{"))
+			lb_count++;
+		if (it->compare("}"))
+			rb_count++;
+	}
+	if (lb_count != rb_count)
+		throw std::runtime_error("Curly brackets mismatched");
+}
+
+void	ConfigUtilities::trimServerBlock(std::vector<std::string>& serverBlock)
+{
+	serverBlock.pop_back();
+	serverBlock[0].erase();
+	serverBlock[1].erase();
+	serverBlock.shrink_to_fit();
+}

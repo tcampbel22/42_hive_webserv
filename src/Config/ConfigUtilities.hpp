@@ -12,36 +12,16 @@
 
 #pragma once
 
-#include "../../include/webserv.hpp"
+#include <vector>
+#include "ConfigParser.hpp"
 #include "ServerSettings.hpp"
 #include "LocationSettings.hpp"
-#include <vector>
-#include <unordered_map>
-#include <iostream>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sstream>
-#include <fstream>
-#include <cctype>
 
-class ServerSettings;
-
-class ConfigParser
+class ConfigUtilities
 {
-private:
-	std::string					configFileStr;
-	std::vector<std::string>	tokens; 
-	int							server_count;
 public:
-	std::vector<ServerSettings> settings;
-	ConfigParser();
-	ConfigParser(std::string file);
-	~ConfigParser();
-	void		readConfigFile(std::string);
-	void		parseConfigFile();
-	void		initialParse();
-	void		removeComments();
-	std::string	getConfigFileStr();
-	void		countServers();
-	void		tokenise(const std::string& config);
+	ConfigUtilities();
+	~ConfigUtilities();
+	static	void	checkBrackets(std::vector<std::string> serverBlock);
+	static	void	trimServerBlock(std::vector<std::string>& serverBlock);
 };

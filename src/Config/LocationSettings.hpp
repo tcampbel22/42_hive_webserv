@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include "ServerSettings.hpp"
 #include <unordered_map>
 #include <iostream>
 #include <vector>
@@ -21,7 +22,7 @@ class LocationSettings
 private:
 	std::string					path; //URI
 	std::string 				root; //directory
-	std::vector<std::string>	methods; //allowed methods
+	std::vector<int>			methods; //allowed methods
 	std::string					default_file; //eg index.html
 	bool						autoindex; //enable or disable directory listing
 	bool						redirect;
@@ -31,12 +32,12 @@ public:
 	~LocationSettings();
 	void	setPath(std::string new_path);
 	void	setRoot(std::string new_root);
-	void	setMethods(std::string new_method);
+	void	setMethods(int new_method);
 	void	setDefaultFile(std::string new_filepath);
 	void	setAutoIndex(bool val);
 	std::string					getPath();
 	std::string					getRoot();
 	std::string					getDefaultFilePath();
-	std::vector<std::string>	getMethods();
+	std::vector<int>			getMethods();
 	bool						isAutoIndex();
 };
