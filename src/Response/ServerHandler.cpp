@@ -38,7 +38,7 @@ _response(), _input(_newInput)
 
 	std::cout << _input.path << std::endl;
 	//add the acctual getting of path and check that the path is valid
-
+	makeMIME();
 	try
 	{
 		if (_input.errorFlag < 1)
@@ -82,7 +82,54 @@ void ServerHandler::executeInput()
 		throw std::invalid_argument("Invalid argument");
 
 }
-//void	Serverhandler::makeMime();
+void	ServerHandler::makeMIME()
+{
+		MIMEs = {
+		//Text files
+		{".html", "text/html"},
+		{".txt", "text/plain"},
+		{".css", "text/css"},
+		{".js", "text/javascript"}, //could also be application/javascript
+
+		//Image files
+		{".webp", "image/webp"},
+		{".jpg", "image/jpeg"},
+		{".jpeg", "image/jpeg"},
+		{".png", "image/png"},
+		{".gif", "image/gif"},
+		{".svg", "image/svg+xml"},
+		{".ico", "image/x-icon"},
+
+		//Video files
+		{".mp4", "video/mp4"},
+		{".webm", "video/webm"},
+
+		//Audio files
+		{".mp3", "audio/mpeg"},
+		{".waw", "audio/waw"},
+
+		//Application files
+		{".json", "application/json"},
+		{".xml", "application/xml"},
+		{".pdf", "application/pdf"},
+		{".zip", "application/zip"},
+		{".gzip", "application/gzip"},
+		//Font files
+		{".woff", "font/woff"},
+		{".woff2", "font/woff2"},
+		{".ttf", "font/ttf"},
+		{".otf", "font/otf"}
+		//set the key to lowercase, before searching
+	};
+}
+
+void	setContentType(std::string path)
+{
+	std::string key = path.substr(path.find_last_of("."), path.length() - path.find_last_of("."));
+	std::cout << "key = " << key << std::endl;
+
+
+}
 
 int ServerHandler::getFile(std::string path)
 {
@@ -103,6 +150,7 @@ int ServerHandler::getFile(std::string path)
 	_response.set_body(stream.str());
 	infile.close();
 	_response.setContentLength(stream.str().length());
+	setContentType(path);
 	if (path.find(".html"))// needs to be made more robust / to handle others as well, maybe own function // not hardcoded!
 		_response.setContentType("text/html");
 	else if (path.find(".webp"))

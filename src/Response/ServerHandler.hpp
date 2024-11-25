@@ -14,6 +14,7 @@
 #include <iostream>
 #include "Response.hpp"
 #include "../HttpParsing/HttpParser.hpp"
+#include <unordered_map>
 
 struct HttpRequest;
 
@@ -24,6 +25,8 @@ private:
 	HttpRequest& _input;
 	std::string _responsePath;
 	std::string _pagePath = "root/var/html";
+	std::unordered_map<std::string, std::string> MIMEs;
+
 // struct HttpRequest {
 // 	std::string method;
 // 	std::string path;
@@ -37,11 +40,12 @@ private:
 
 public:
 	ServerHandler(int fd, HttpRequest& _newInput);
-	void parsePath();
-	void executeInput();
-	void doPost();
-	void doDelete();
-	void doGet();
-	void doError();
-	int getFile(std::string path);
+	void 	parsePath();
+	void 	executeInput();
+	void 	doPost();
+	void 	doDelete();
+	void 	doGet();
+	void 	doError();
+	int		getFile(std::string path);
+	void	makeMIME();
 };
