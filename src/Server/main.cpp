@@ -14,6 +14,7 @@
 #include "../Server/HttpServer.hpp"
 #include "../Config/ConfigParser.hpp"
 #include "../Config/ServerSettings.hpp"
+#include "../HttpParsing/HttpParser.hpp"
 
 
 void	ft_perror(std::string str) //need to make as logger instead
@@ -25,7 +26,7 @@ int	main(int ac, char **av)
 {
 	if (ac != 2)
 	{
-		ft_perror("expecting only configuration file as argument"); //check if directory and ./
+		ft_perror("expecting only configuration file as argument");
 		return 1;
 	}
 	try {
@@ -34,7 +35,6 @@ int	main(int ac, char **av)
 	} catch (std::exception& e) {
 		ft_perror(e.what());
 		return 1; }
-
 	//Program will exit if an error is found with the config file
 	ConfigParser config((std::string)av[1]);
 	try {
