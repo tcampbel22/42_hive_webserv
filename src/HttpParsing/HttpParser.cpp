@@ -221,6 +221,7 @@ void	HttpParser::bigSend(int out_fd, std::shared_ptr<ServerSettings> settingsPtr
 	HttpParser parser;
 	HttpRequest request;
 	request.settings = settingsPtr; //added by Casi to get settings to response
+	request.errorFlag = -1; //added by Casi to initialize the errorflag
 	parser.recieveRequest(out_fd);
 	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
    	// std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";

@@ -15,21 +15,41 @@
 #include <sstream>
 #include <filesystem>
 # include "../Config/LocationSettings.hpp"
+#include <regex>
 
-// void Serverhandler::parseMime()
-
+//check to see if the path domain specified is located in the server
+//and parse the root to it
 void ServerHandler::parsePath()
 {
+	if (_input.path.empty())
+	{
+		_input.errorFlag = 400;
+		return ;
+	}
 	int len = 1;
-	len = _input.path.find("/", 1);
+	if (_input.path.find("/", 1) != std::string::npos)
+		len = _input.path.find("/", 1);
 	std::string key = _input.path.substr(0, len);
-
-	LocationSettings *locSettings = _input.settings->getLocationBlock("/");
+	// std::cout << "locationKey = " << key << std::endl;
+	LocationSettings *locSettings = _input.settings->getLocationBlock(key);
 	if (!locSettings)
 	{
 		_input.errorFlag = 404;
 	}
+	else
+		_input.path = locSettings->getRoot() + _input.path;
+	if (_input.path.length() > 1 && _input.path.at(0) == '/')
+		_input.path = _input.path.substr(1, _input.path.length() -1);
+	// std::cout << "DEFAULT FILE = " << locSettings->getDefaultFilePath() << std::endl;
+	if (_input.path.back() == '/')
+		_input.path = _input.path + locSettings->getDefaultFilePath();
+		// std::cout << _input.path << std::endl;
 
+	std::regex validPathRegex("^[a-zA-Z0-9/_.-]+$");
+	if (!std::regex_match(_input.path, validPathRegex))
+		_input.errorFlag = 401;		
+	else if (_input.path.find("..") != std::string::npos)
+		_input.errorFlag = 401;
 }
 
 ServerHandler::ServerHandler(int fd, HttpRequest& _newInput):
@@ -37,19 +57,14 @@ _response(), _input(_newInput)
 {
 
 	std::cout << _input.path << std::endl;
+	std::cout << "ERROR CODE FROM PARSING = " << _input.errorFlag << std::endl;
 	//add the acctual getting of path and check that the path is valid
-	makeMIME();
+	//std::cout << "error flag = " << _input.errorFlag << std::endl;
 	try
 	{
-		if (_input.errorFlag < 1)
+		makeMIME();
+		if (_input.errorFlag < 0)
 		{
-		// if (_input.path.length() == 1)
-		// 	_input.path = _pagePath + _input.path + "/index.html";
-		// else
-		// 	_input.path = _pagePath + _input.path;
-		// _input.path = locSettings->getRoot() + _input.path; 
-		// _input.path = _input.path.substr(1, _input.path.length() -1);
-		// std::cout << _input.path << std::endl;
 			parsePath();
 		}
 		executeInput();
@@ -126,7 +141,7 @@ void	ServerHandler::makeMIME()
 void	setContentType(std::string path)
 {
 	std::string key = path.substr(path.find_last_of("."), path.length() - path.find_last_of("."));
-	std::cout << "key = " << key << std::endl;
+	std::cout << "contentKey = " << key << std::endl;
 
 
 }
