@@ -113,7 +113,6 @@ void HttpServer::startListening()
 				//testSend(_fd_out);
 
 				//ServerHandler handle_request(_fd_out, );
-				this->settings;
 				HttpParser::bigSend(_fd_out, this->settings);
 				// _events.events = EPOLLIN; 
                 // _events.data.fd = _fd_out;

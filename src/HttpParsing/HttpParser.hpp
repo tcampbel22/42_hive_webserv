@@ -20,8 +20,8 @@
 # include <map>
 # include <unordered_set>
 # include <string>
-// # include "HttpHeaderParser.hpp"
-// # include "requestLineValidator.hpp"
+# include <memory>
+# include <filesystem>
 
 
 struct HttpRequest {
@@ -32,7 +32,11 @@ struct HttpRequest {
 	std::string host;
 	bool connection;
 	int errorFlag;
+	HttpRequest();
 };
+
+class ServerSettings;
+class LocationSettings;
 
 class HttpParser
 {
@@ -53,5 +57,6 @@ public:
 	//int hexToInt(std::string);
 	void parseBody(HttpRequest&, std::istringstream&);
 	void parseRegularBody(std::istringstream&, HttpRequest&);
+	void validateLocation(LocationSettings*, int*);
 	//std::string trim(const std::string& str);
 };

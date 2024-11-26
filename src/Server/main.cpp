@@ -35,11 +35,11 @@ int	main(int ac, char **av)
 	std::shared_ptr<ServerSettings> setting = std::make_shared<ServerSettings>(config.settings[0]);
 	//start server class, calls the socket creation function in constructor, closes the socket in the destructor.
 	HttpServer server(setting);
-	LocationSettings *block = setting->getLocationBlock("/var");
-	if (block)
-		std::cout << block->getRoot() << '\n';
-	else
-		std::cout << "returned NULL\n";
+	// LocationSettings *block = setting->getLocationBlock("/var");
+	// if (block)
+	// 	std::cout << block->getRoot() << '\n';
+	// else
+	// 	std::cout << "returned NULL\n";
 	server.startListening();
 	// int fd = open("./test.txt", O_RDONLY);
 	// HttpParser parser;
