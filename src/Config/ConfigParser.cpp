@@ -22,7 +22,7 @@ ConfigParser::ConfigParser(std::string file)
 int	checkConfName(std::string file)
 {
 	int pos = file.find('.');
-	std::string suffix = file.substr(pos, file.length());
+	std::string suffix = file.substr(pos, file.length() - pos);
 	if (suffix.compare(".conf") != 0)
 		return 1;
 	return 0;
@@ -35,13 +35,13 @@ void	ConfigParser::readConfigFile(std::string file)
 	if (checkConfName(file))
 	{
 		std::cout << "invalid config file\n";
-		return ;
+		exit(1) ;
 	}
 	infile.open(file);
 	if (!infile.is_open())
 	{
 		std::cout << "failed to open config file\n";
-		return ;
+		exit(1) ;
 	}
 	stream << infile.rdbuf();
 	configFileStr = stream.str();
@@ -119,7 +119,7 @@ void	ConfigParser::initialParse()
 	removeComments();
 	countServers();
 	tokenise(configFileStr);
-	// for (auto it = tokens.begin(); it != tokens.end(); it++)
+	// for (auto it = tokens.begin() + 2; it != tokens.end() - 1; it++)
 	// 	std::cout << *it << '\n';
 }
 

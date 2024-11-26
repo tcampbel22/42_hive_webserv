@@ -23,11 +23,12 @@ private:
 	std::string					path; //URI
 	std::string 				root; //directory
 	std::vector<int>			methods; //allowed methods
-	std::string					default_file; //eg index.html
+	std::string					default_file; //index index.html
 	bool						autoindex; //enable or disable directory listing
 	bool						redirect;
 public:
 	LocationSettings();
+	LocationSettings(int i);
 	LocationSettings(const std::string& new_path);
 	~LocationSettings();
 	void	setPath(std::string new_path);
@@ -35,9 +36,9 @@ public:
 	void	setMethods(int new_method);
 	void	setDefaultFile(std::string new_filepath);
 	void	setAutoIndex(bool val);
-	std::string					getPath();
-	std::string					getRoot();
-	std::string					getDefaultFilePath();
-	std::vector<int>			getMethods();
-	bool						isAutoIndex();
+	std::string&					getPath(); //URI
+	std::string&					getRoot(); //root
+	std::string&					getDefaultFile();
+	std::vector<int>&				getMethods();
+	bool							isAutoIndex();
 };
