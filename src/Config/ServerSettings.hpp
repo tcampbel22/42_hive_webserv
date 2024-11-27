@@ -13,6 +13,7 @@
 #pragma once
 
 #include "../../include/webserv.hpp"
+#include "ConfigUtilities.hpp"
 #include "LocationSettings.hpp"
 #include <vector>
 #include <unordered_map>
@@ -24,6 +25,12 @@
 #include <fstream>
 #include <regex>
 #include <string_view>
+
+#define GET 1
+#define POST 2
+#define DELETE 3
+
+class LocationSettings;
 
 class ServerSettings
 {
@@ -39,23 +46,38 @@ private:
 public:
 	ServerSettings();
 	~ServerSettings();
-	void						parseServerSettings(std::string config);
+	//PARSERS
+	void						parseServerSettings(std::vector<std::string>& tokens);
 	void						parseLocationSettings(std::string_view location);
+	void						parseServerBlock(std::vector<std::string>& serverBlock);
 	void						cycleLocations(std::string config);
+	void						parseHost(std::vector<std::string>& directive, std::vector<std::string>::iterator& it);
+	void						parsePort(std::vector<std::string>& directive, std::vector<std::string>::iterator& it);
+	void						parseServerNames(std::vector<std::string>& directive, std::vector<std::string>::iterator& it, bool *dup);
+	void						parseMaxBodySize(std::vector<std::string>& directive, std::vector<std::string>::iterator& it);
+	void						parseLocationBlock(std::vector<std::string>& serverBlock, std::vector<std::string>::iterator& it);
+	void						parseErrorPages(std::vector<std::string>& serverBlock, std::vector<std::string>::iterator& it);
+	void						checkConfigValues();
+	
+	//SETTERS
+	void						setHost(std::string ip);
+	void						setPort(int port_num);
+	void						setMaxClientBodySize(int size);
 	void						addErrorPage(int status, std::string path);
 	void						addServerName(std::string name);
 	void						setLocationSettings(const std::string& key);
+	//GETTERS
 	bool						isDefaultServer();
 	int							getPort();
-	std::string					getHost();
-	std::vector<std::string> 	getServerNames();
+	std::string&				getHost();
+	std::vector<std::string>& 	getServerNames();
 	int							getMaxClientBody();
-	std::vector<std::string>	getErrorPages(int key);
-	std::string 				getLocationPath(std::string key);
-	std::string 				getLocationRoot(std::string key);
-	std::string 				getLocationDefaultFile(std::string key);
+	std::vector<std::string>&	getErrorPages(int key);
+	std::string& 				getLocationPath(std::string key);
+	std::string& 				getLocationRoot(std::string key);
+	std::string& 				getLocationDefaultFile(std::string key);
 	bool 						getLocationAutoIndex(std::string key);
-	std::vector<std::string>	getLocationMethods(std::string key);
+	std::vector<int>&			getLocationMethods(std::string key);
 	LocationSettings*			getLocationBlock(const std::string key);
-	std::unordered_map<std::string, LocationSettings> getLocationSettings();
+	// std::unordered_map<std::string, LocationSettings> getLocationSettings();
 };

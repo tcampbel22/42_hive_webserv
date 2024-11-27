@@ -22,7 +22,7 @@ ConfigParser::ConfigParser(std::string file)
 int	checkConfName(std::string file)
 {
 	int pos = file.find('.');
-	std::string suffix = file.substr(pos, file.length());
+	std::string suffix = file.substr(pos, file.length() - pos);
 	if (suffix.compare(".conf") != 0)
 		return 1;
 	return 0;
@@ -35,13 +35,13 @@ void	ConfigParser::readConfigFile(std::string file)
 	if (checkConfName(file))
 	{
 		std::cout << "invalid config file\n";
-		return ;
+		exit(1) ;
 	}
 	infile.open(file);
 	if (!infile.is_open())
 	{
 		std::cout << "failed to open config file\n";
-		return ;
+		exit(1) ;
 	}
 	stream << infile.rdbuf();
 	configFileStr = stream.str();
@@ -53,7 +53,7 @@ void		ConfigParser::parseConfigFile()
 	initialParse(); //need to check how many servers there are, then create that many instances
 	for (int i = 0; i < server_count; i++)
 		settings.push_back(ServerSettings());
-	settings[0].parseServerSettings(configFileStr);
+	settings[0].parseServerSettings(tokens);
 }
 
 void	ConfigParser::removeComments()
@@ -81,35 +81,45 @@ void	ConfigParser::countServers()
 	server_count = std::distance(begin, end);
 }
 
-// void	ConfigParser::tokenise(const std::string& config)
-// {
-// 	std::string token;
+void	ConfigParser::tokenise(const std::string& c)
+{
+	std::string token;
 
-// 	// for (char c : config)
-// 	// {
-// 		// if (isspace(c) || c == '{' || c == '}' || c = ';')
-// 		// {
-// 		// 	if (!token.empty())
-// 		// 	{
-// 		// 		tokens.push_back(token);
-// 		// 		token.clear();
-// 		// 	}
-// 	// 	if (c == '{' || c == '}' || c == ';')
-// 	// 		tokens.push_back(std::string(1, c));
-// 	// 	}
-// 	// 	else
-// 	// 		token += c;
-// 	// }
-// 	if (!token.empty())
-// 		tokens.push_back(token);
-// }
+	for (size_t i = 0; i < c.length(); i++)
+	{
+		if (isspace(c[i]))
+		{
+			if (!token.empty())
+			{
+				tokens.push_back(token);
+				token.clear();
+			}
+		}
+		else if (c[i] == '{' || c[i] == '}' || c[i] == ';')
+		{
+			if (!token.empty())
+			{
+				tokens.push_back(token);
+				token.clear();
+			}
+			if (!tokens.empty() && tokens.back().find_first_of("{;") != std::string::npos && tokens.back().back() == c[i])
+				tokens.back().push_back(c[i]);
+			else
+				tokens.push_back(std::string(1, c[i]));
+		}
+		else
+			token.push_back(c[i]);
+	}
+	if (!token.empty())
+		tokens.push_back(token);
+}
 
 void	ConfigParser::initialParse()
 {
 	removeComments();
 	countServers();
-	// tokenise(configFileStr);
-	// for (auto it = tokens.begin(); it != tokens.end(); it++)
+	tokenise(configFileStr);
+	// for (auto it = tokens.begin() + 2; it != tokens.end() - 1; it++)
 	// 	std::cout << *it << '\n';
 }
 
