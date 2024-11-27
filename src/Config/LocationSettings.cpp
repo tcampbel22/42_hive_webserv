@@ -16,20 +16,57 @@ LocationSettings::LocationSettings()
 {
 	path = "/";
 	root = "root/var/html";
-	default_file = "root/var/html/index.html";
-	setMethods("POST");
-	setMethods("GET");
+	default_file = "index.html";
+	setMethods(POST);
+	setMethods(GET);
 	autoindex = false;
+	redirect = false;
+}
+
+
+LocationSettings::LocationSettings(int i)
+{
+	if (i == 1)
+	{
+		path = "/path";
+		root = "/var/html";
+		default_file = "index.html";
+		setMethods(POST);
+		setMethods(GET);
+		autoindex = false;
+		redirect = false;
+	}
+	else if (i == 2)
+	{
+		path = "/path";
+		root = "/var/html";
+		default_file = "index.html";
+		setMethods(POST);
+		setMethods(GET);
+		autoindex = false;
+		redirect = false;
+	}
+	else
+	{
+		path = "/path";
+		root = "/var/html";
+		default_file = "index.html";
+		setMethods(POST);
+		setMethods(GET);
+		autoindex = false;
+		redirect = false;
+	}
 }
 
 LocationSettings::LocationSettings(const std::string& new_path)
 {
 	path = new_path;
 	root = "/var/html";
-	default_file = "var/html/index.html";
-	setMethods("POST");
-	setMethods("GET");
+	default_file = "index.html";
+	setMethods(POST);
+	setMethods(GET);
 	autoindex = false;
+	redirect = false;
 }
 
 LocationSettings::~LocationSettings() {}
@@ -37,13 +74,13 @@ LocationSettings::~LocationSettings() {}
 //SETTERS
 void	LocationSettings::setPath(std::string new_path) { path = new_path; }
 void	LocationSettings::setRoot(std::string new_root) { root = new_root; }
-void	LocationSettings::setMethods(std::string new_method) { methods.push_back(new_method); }
+void	LocationSettings::setMethods(int new_method) { methods.push_back(new_method); }
 void	LocationSettings::setDefaultFile(std::string new_filepath) { default_file = new_filepath; }
 void	LocationSettings::setAutoIndex(bool val) { autoindex = val; }
 
 //GETTERS
-std::string					LocationSettings::getPath() { return path; }
-std::string					LocationSettings::getRoot() { return root; }
-std::string					LocationSettings::getDefaultFilePath() { return default_file; }
-std::vector<std::string>	LocationSettings::getMethods() { return methods; }
+std::string&				LocationSettings::getPath() { return path; }
+std::string&				LocationSettings::getRoot() { return root; }
+std::string&				LocationSettings::getDefaultFile() { return default_file; }
+std::vector<int>&			LocationSettings::getMethods() { return methods; }
 bool						LocationSettings::isAutoIndex() { return autoindex; }

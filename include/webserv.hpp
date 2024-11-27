@@ -16,6 +16,7 @@
 #include <poll.h> //poll
 #include <sys/socket.h> //socket
 #include <string>
+#include <dirent.h>
 
 
 void	ft_perror(std::string str);
