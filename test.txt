@@ -1,4 +1,4 @@
-GET /index.html/eromon HTTP/1.1
+GET ////index.html////eromon HTTP/1.1
 Host: 127.0.0.1:8000
 Connection: keep-alive
 Cache-Control: max-age=0
