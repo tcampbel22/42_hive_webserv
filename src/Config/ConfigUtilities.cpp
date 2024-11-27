@@ -27,7 +27,7 @@ void	ConfigUtilities::checkBrackets(std::vector<std::string> serverBlock)
 			rb_count++;
 	}
 	if (lb_count != rb_count)
-		throw std::runtime_error("Curly brackets mismatched");
+		throw std::runtime_error("config: curly brackets mismatched");
 }
 
 void	ConfigUtilities::trimServerBlock(std::vector<std::string>& serverBlock)
@@ -36,4 +36,44 @@ void	ConfigUtilities::trimServerBlock(std::vector<std::string>& serverBlock)
 	serverBlock[0].erase();
 	serverBlock[1].erase();
 	serverBlock.shrink_to_fit();
+}
+
+void	ConfigUtilities::shiftLocationBlock(std::vector<std::string>& location, std::vector<std::string>::iterator& it)
+{
+	if ((std::next(it) != location.end() || std::next(it)->compare("}") == 0) && !it->compare("{"))
+		it++;
+	else
+		throw std::runtime_error("location: invalid syntax error");
+
+}
+void	ConfigUtilities::checkVectorEnd(std::vector<std::string>& vec, std::vector<std::string>::iterator& it, std::string msg)
+{
+	if (std::next(it) == vec.end())
+		throw std::runtime_error(msg);
+	it++;
+}
+
+void	ConfigUtilities::checkSemiColon(std::vector<std::string>& vec, std::vector<std::string>::iterator it, std::string msg)
+{
+	if (std::next(it) == vec.end() || (it + 1)->compare(";"))
+		throw std::runtime_error(msg);
+}
+
+void	ConfigUtilities::checkDuplicates(std::variant<int, bool, std::string> val, std::string msg)
+{
+	if (auto ptr = std::get_if<int>(&val))
+	{
+		if (*ptr != -1)
+			throw std::runtime_error(msg + " duplicate error");
+	}
+	else if (auto ptr = std::get_if<bool>(&val))
+	{
+		if (*ptr == true)
+			throw std::runtime_error(msg + " duplicate error");
+	}
+	else if (auto ptr = std::get_if<std::string>(&val))
+	{
+		if (!ptr->empty())
+			throw std::runtime_error(msg + " duplicate error");
+	}
 }

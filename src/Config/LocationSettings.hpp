@@ -17,6 +17,11 @@
 #include <iostream>
 #include <vector>
 
+#define ROOT 1;
+#define TEMP 2;
+#define REDIRECT 3;
+#define CGI 4;
+
 class LocationSettings
 {
 private:
@@ -24,21 +29,25 @@ private:
 	std::string 				root; //directory
 	std::vector<int>			methods; //allowed methods
 	std::string					default_file; //index index.html
+	std::unordered_map<int, std::vector<std::string>> location_error_pages;
 	bool						autoindex; //enable or disable directory listing
 	bool						redirect;
+	bool						isDirectory = false;
+	bool						isFile = false;
 public:
 	LocationSettings();
 	LocationSettings(int i);
 	LocationSettings(const std::string& new_path);
 	~LocationSettings();
-	void	setPath(std::string new_path);
-	void	setRoot(std::string new_root);
-	void	setMethods(int new_method);
-	void	setDefaultFile(std::string new_filepath);
-	void	setAutoIndex(bool val);
+	void	checkLocationValues(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
+	void	parseRoot(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
+	void	parseDefaultFile(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
+	// void	parseMethods(int new_method);
+	// void	parseAutoIndex(bool val);
 	std::string&					getPath(); //URI
 	std::string&					getRoot(); //root
-	std::string&					getDefaultFile();
-	std::vector<int>&				getMethods();
-	bool							isAutoIndex();
+	std::string&					getDefaultFile(); //default homepage
+	std::vector<int>&				getMethods(); //Methods POST GET DELETE
+	bool							isAutoIndex(); //directory listing
+
 };

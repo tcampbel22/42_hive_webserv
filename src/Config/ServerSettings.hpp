@@ -25,6 +25,7 @@
 #include <fstream>
 #include <regex>
 #include <string_view>
+#include <iterator>
 
 #define GET 1
 #define POST 2
@@ -48,16 +49,15 @@ public:
 	~ServerSettings();
 	//PARSERS
 	void						parseServerSettings(std::vector<std::string>& tokens);
-	void						parseLocationSettings(std::string_view location);
 	void						parseServerBlock(std::vector<std::string>& serverBlock);
-	void						cycleLocations(std::string config);
 	void						parseHost(std::vector<std::string>& directive, std::vector<std::string>::iterator& it);
 	void						parsePort(std::vector<std::string>& directive, std::vector<std::string>::iterator& it);
 	void						parseServerNames(std::vector<std::string>& directive, std::vector<std::string>::iterator& it, bool *dup);
 	void						parseMaxBodySize(std::vector<std::string>& directive, std::vector<std::string>::iterator& it);
-	void						parseLocationBlock(std::vector<std::string>& serverBlock, std::vector<std::string>::iterator& it);
 	void						parseErrorPages(std::vector<std::string>& serverBlock, std::vector<std::string>::iterator& it);
-	void						checkConfigValues();
+	void						checkConfigValues(std::vector<std::string>& directive, std::vector<std::string>::iterator& it);
+	void						parseLocationBlock(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
+	void						parseLocationBlockSettings(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
 	
 	//SETTERS
 	void						setHost(std::string ip);
