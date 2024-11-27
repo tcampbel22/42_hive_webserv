@@ -19,6 +19,8 @@ HttpParser::HttpParser() : _fullyRead(true), _contentLength(0) {}
 
 HttpParser::~HttpParser() {}
 
+HttpRequest::HttpRequest() : connection(true), errorFlag(-1) {}
+
 
 //Reads the client request and stores it in a vector<char>
 void	HttpParser::recieveRequest(int out_fd)
@@ -47,7 +49,7 @@ void	HttpParser::recieveRequest(int out_fd)
 	_clientDataBuffer.resize(_clientDataBuffer.size() - (bytes + bytesRead));
 }
 //Empty the vector to the requestMap, needs to be parsed in the response.
-void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request)
+void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, std::shared_ptr<ServerSettings>& configSettings)
 {
     try {
 		std::string data(clientData.begin(), clientData.end());
@@ -58,12 +60,11 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			request.errorFlag = 400;//error shit in here if first line is bad: ERROR 400 according to RFC
 			std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl; 
 		}
-		/*
-			TODO: parse path and method according to config file instructions. //requires information from config file
-		
-		
-		
-		*/
+		LocationSettings *block = configSettings->getLocationBlock(request.path); //parse path and method according to config file instructions. //requires information from config file
+		if (!block)
+			request.errorFlag = 404;
+		//else
+			//validateLocation(block, &request.errorFlag);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (request.method == "GET" && this->_contentLength != 0) {
@@ -71,9 +72,22 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		}
 		parseBody(request, requestStream);
 		} catch (std::exception& e) {
-			//std::cerr << e.what() << '\n';
+			std::cerr << e.what() << '\n';
 		}
 }
+
+// void HttpParser::validateLocation(LocationSettings* block, int* error) {
+// 	std::string path = block->getPath();
+// 	std::cout << block->getPath() << std::endl;
+// 	if (std::filesystem::exists(path)) {
+// 		if (std::filesystem::is_directory(path)){
+// 			return;
+// 		}
+// 		//TBD: might need to add a error or further parsing, if the path exist but is not a directory.
+// 	}
+// 	else
+// 		*error = 404;
+// }
 
 void HttpParser::parseBody(HttpRequest& request, std::istringstream& stream) {
         if (request.headers.count("Transfer-Encoding") == std::string::npos && _contentLength == 0)
@@ -94,19 +108,24 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 		request.body += c;
 }
 
-void	HttpParser::bigSend(int out_fd) 
+void	HttpParser::bigSend(int out_fd, std::shared_ptr<ServerSettings>& configSetting) 
 {
 	HttpParser parser;
 	HttpRequest request;
 	parser.recieveRequest(out_fd);
+	parser.parseClientRequest(parser._clientDataBuffer, request, configSetting);
 	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
    	// std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
-	parser.parseClientRequest(parser._clientDataBuffer, request);
+
 	// std::cout << request.body << std::endl;
+
+
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value:" << pair.second << std::endl;
     // }
-	//ServerHandler response(out_fd, request);
+
+
+	ServerHandler response(out_fd, request);
 }
 
 // util function to trim off the white spaces and delimit the read when making key value pair

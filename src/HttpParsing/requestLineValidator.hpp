@@ -18,5 +18,6 @@ private:
 	static const std::unordered_set<std::string> _validMethods;
 public:
 	static bool isValidRequestLine(std::string, HttpRequest&);
-
+	static bool	checkPath(const std::string);
+	static void	trimPath(std::string&);
 };
