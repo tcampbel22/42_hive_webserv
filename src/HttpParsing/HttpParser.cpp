@@ -106,6 +106,10 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 	_contentLength = std::stoi(request.headers.at("Content-Length"));
 	for (int i = 0; i < _contentLength && stream.get(c); i++)
 		request.body += c;
+	if ((int)request.body.size() != _contentLength) {
+		request.connection = false;
+		request.errorFlag = 400; //in case content-length isn't the same as actual body size
+	}
 }
 
 void	HttpParser::bigSend(int out_fd, std::shared_ptr<ServerSettings>& configSetting) 
