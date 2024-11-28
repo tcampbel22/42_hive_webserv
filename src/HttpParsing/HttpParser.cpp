@@ -90,8 +90,11 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 // }
 
 void HttpParser::parseBody(HttpRequest& request, std::istringstream& stream) {
-        if (request.headers.count("Transfer-Encoding") == std::string::npos && _contentLength == 0)
+        if (request.headers.count("Transfer-Encoding") == std::string::npos && _contentLength == 0) {
+			if (_contentLength == 0)
+				request.errorFlag = 404;
 			return ;
+		}
 		auto it = request.headers.find("Transfer-Encoding");
         if (it != request.headers.end() && it->second.find("chunked") != std::string::npos) {
             chunkedBodyParser::parseChunkedBody(stream, request);

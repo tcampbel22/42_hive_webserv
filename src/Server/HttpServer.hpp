@@ -31,8 +31,10 @@
 #include <memory>
 #include "../Response/ServerHandler.hpp"
 #include <csignal>
+#include <ctime>
 
 # define MAX_EVENTS 20 //Can define this in config file or create a funct based on cpu load or leave it
+# define TIME_OUT_PERIOD 10
 
 class HttpServer
 {
@@ -47,7 +49,7 @@ private:
 	epoll_event		_events;
 	epoll_event		_eventsArr[MAX_EVENTS];
 	int				numEvents;
-	
+	std::unordered_map<int, time_t> _fd_activity_map;
 	
 public:
 	std::shared_ptr<ServerSettings> settings;

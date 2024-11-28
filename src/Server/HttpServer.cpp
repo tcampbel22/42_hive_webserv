@@ -87,7 +87,7 @@ void HttpServer::startListening()
 		if (numEvents < 0){
 			std::cout << "Epoll wait failed\n";
 			break ;}
-			
+		time_t current_time = std::time(nullptr);
 		for (int i = 0; i < numEvents; i++)
 		{
 			if (_eventsArr[i].data.fd == _serverFd)
@@ -106,6 +106,7 @@ void HttpServer::startListening()
                 _events.data.fd = _clientSocket;
 				
 				epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events); //guard later
+				_fd_activity_map[_clientSocket] = current_time;
 			}
 			else if (_eventsArr[i].events & EPOLLIN)
 			{	
@@ -114,6 +115,7 @@ void HttpServer::startListening()
 
 				//ServerHandler handle_request(_fd_out, );
 				HttpParser::bigSend(_fd_out, this->settings);
+				_fd_activity_map[_clientSocket] = current_time; //update the time after request is processed;
 				// _events.events = EPOLLIN; 
                 // _events.data.fd = _fd_out;
 				epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events); //guard later

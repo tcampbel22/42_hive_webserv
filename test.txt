@@ -14,3 +14,11 @@ Sec-Fetch-User: ?1
 Sec-Fetch-Dest: document
 Accept-Encoding: gzip, deflate, br, zstd
 Accept-Language: en-US,en;q=0.9
+
+POST /index.html HTTP/1.1
+Host: 127.0.0.1:8000
+Connection: keep-alive
+Content-Length: 13
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+
+Hello world!

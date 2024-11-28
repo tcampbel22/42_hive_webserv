@@ -42,7 +42,11 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 			request.errorFlag = 1; //if Path is incorrect: error handling here(HTTP Status 400 or HTTP Status 404).
 			return false;
 		}
-		trimPath(tmp); // formating the path incase there is additional slashes ('/')
+		std::cout << tmp << std::endl;
+		if (!checkPath(tmp)) {
+			request.connection = false;
+			request.errorFlag = 404; // check the path incase there is additional slashes ('/')
+		}
 		request.path = tmp;
 		
 		startPos = spPos + 1;
@@ -54,41 +58,42 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 	return true;
 }
 
-void requestLineValidator::trimPath(std::string& path) {
-	if (!checkPath(path))
-	{
-		std::string trimmedPath;
-		bool		lastWasSlash = false;
-		for (size_t i = 0; i < path.length(); i++) {
-			if (path[i] == '/') {
-				if (!lastWasSlash) {
-					trimmedPath += '/';
-					lastWasSlash = true;
-				}
-			}
-			else {
-				trimmedPath += path[i];
-				lastWasSlash = false;
-			}
-		}
-		if (trimmedPath.length() > 1 && trimmedPath.back() == '/') { //might need to remove, removes the trailing slash ('/')
-            trimmedPath.pop_back();
-        }
-		path = trimmedPath;
-	}
-}
+// void requestLineValidator::trimPath(std::string& path) {
+// 	if (!checkPath(path))
+// 	{
+// 		std::string trimmedPath;
+// 		bool		lastWasSlash = false;
+// 		for (size_t i = 0; i < path.length(); i++) {
+// 			if (path[i] == '/') {
+// 				if (!lastWasSlash) {
+// 					trimmedPath += '/';
+// 					lastWasSlash = true;
+// 				}
+// 			}
+// 			else {
+// 				trimmedPath += path[i];
+// 				lastWasSlash = false;
+// 			}
+// 		}
+// 		if (trimmedPath.length() > 1 && trimmedPath.back() == '/') { //might need to remove, removes the trailing slash ('/')
+//             trimmedPath.pop_back();
+//         }
+// 		path = trimmedPath;
+// 	}
+// }
 
 bool requestLineValidator::checkPath(const std::string path) {
-	int	count = 0;
-	for (size_t i = 0; i < path.length(); i++) {
-		if (path[i] && path[i] == '/' && path[i + 1] == '/')
-			count++;
-	}
-	std::cout << "value of count: " << count << std::endl;
-	if (count > 0)
-		return false;
-	else
-		return true;
+	// int	count = 0;
+	// for (size_t i = 0; i < path.length(); i++) {
+	// 	if (path[i] && path[i] == '/' && path[i + 1] == '/')
+	// 		count++;
+	// }
+	// if (count > 0)
+	// 	return false;
+	// else
+	// 	return true;
+	std::regex regex("//");
+	return !std::regex_search(path, regex);
 }
 
 
