@@ -14,6 +14,8 @@
 #include <iostream>
 #include "Response.hpp"
 #include "../HttpParsing/HttpParser.hpp"
+#include <unordered_map>
+# include "../Config/LocationSettings.hpp"
 
 struct HttpRequest;
 
@@ -22,8 +24,12 @@ class ServerHandler
 private:
 	Response _response;
 	HttpRequest& _input;
-	std::string _responsePath;
-	std::string _pagePath = "root/var/html";
+	//std::string _responsePath;
+	//std::string _pagePath = "root/var/html";
+	LocationSettings *locSettings;
+
+	std::unordered_map<std::string, std::string> MIMEs;
+
 // struct HttpRequest {
 // 	std::string method;
 // 	std::string path;
@@ -36,11 +42,15 @@ private:
 
 
 public:
-	ServerHandler(int fd, HttpRequest& _newInput);//(InputinformationClass& Eromon)
-	void executeInput();
-	void doPost();
-	void doDelete();
-	void doGet();
-	void doError();
-	int getFile(std::string path);
+	ServerHandler(int fd, HttpRequest& _newInput);
+	int 	checkMethod();
+	void	setContentType(std::string path);
+	void 	parsePath();
+	void 	executeInput();
+	void 	doPost();
+	void 	doDelete();
+	void 	doGet();
+	void 	doError();
+	int		getFile(std::string path);
+	void	makeMIME();
 };

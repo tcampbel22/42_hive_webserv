@@ -20,9 +20,11 @@
 # include <map>
 # include <unordered_set>
 # include <string>
-// # include "HttpHeaderParser.hpp"
-// # include "requestLineValidator.hpp"
+# include <memory>
+# include <filesystem>
 
+
+class ServerSettings;
 
 struct HttpRequest {
 	std::string method;
@@ -32,7 +34,12 @@ struct HttpRequest {
 	std::string host;
 	bool connection;
 	int errorFlag;
+	std::shared_ptr<ServerSettings> settings;
+	HttpRequest();
 };
+
+class ServerSettings;
+class LocationSettings;
 
 class HttpParser
 {
@@ -44,8 +51,8 @@ private:
 public:
 	HttpParser();
 	~HttpParser();
-	static void	bigSend(int out_fd);
-	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request);
+	static void	bigSend(int out_fd, std::shared_ptr<ServerSettings>&);
+	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, std::shared_ptr<ServerSettings>&);
 	void recieveRequest(int out_fd);
 	//bool isValidRequestline(std::string, HttpRequest&);
 	//void findKeys(HttpRequest& request);
@@ -53,5 +60,6 @@ public:
 	//int hexToInt(std::string);
 	void parseBody(HttpRequest&, std::istringstream&);
 	void parseRegularBody(std::istringstream&, HttpRequest&);
+	void validateLocation(LocationSettings*, int*);
 	//std::string trim(const std::string& str);
 };

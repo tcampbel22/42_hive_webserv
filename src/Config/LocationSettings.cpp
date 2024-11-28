@@ -14,9 +14,12 @@
 
 LocationSettings::LocationSettings()
 {
+
 	path = "/root";
 	root = "";
 	default_file = "";
+
+	
 	autoindex = false;
 	redirect = false;
 }
