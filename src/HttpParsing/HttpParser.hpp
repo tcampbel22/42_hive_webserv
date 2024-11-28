@@ -24,6 +24,8 @@
 # include <filesystem>
 
 
+class ServerSettings;
+
 struct HttpRequest {
 	std::string method;
 	std::string path;
@@ -32,6 +34,7 @@ struct HttpRequest {
 	std::string host;
 	bool connection;
 	int errorFlag;
+	std::shared_ptr<ServerSettings> settings;
 	HttpRequest();
 };
 

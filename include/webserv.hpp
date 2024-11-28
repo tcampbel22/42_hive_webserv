@@ -18,7 +18,6 @@
 #include <string>
 #include <dirent.h>
 
-
 void	ft_perror(std::string str);
 // Everything in C++ 98.
 // execve, dup, dup2, pipe, strerror, gai_strerror,

@@ -108,10 +108,14 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 		request.body += c;
 }
 
+
 void	HttpParser::bigSend(int out_fd, std::shared_ptr<ServerSettings>& configSetting) 
+
 {
 	HttpParser parser;
 	HttpRequest request;
+	request.settings = settingsPtr; //added by Casi to get settings to response
+	request.errorFlag = -1; //added by Casi to initialize the errorflag
 	parser.recieveRequest(out_fd);
 	parser.parseClientRequest(parser._clientDataBuffer, request, configSetting);
 	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string

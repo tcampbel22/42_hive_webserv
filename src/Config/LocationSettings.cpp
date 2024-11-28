@@ -15,7 +15,7 @@
 LocationSettings::LocationSettings()
 {
 	path = "/";
-	root = "root/var/html";
+	root = "/root/var/html";
 	default_file = "index.html";
 	setMethods(POST);
 	setMethods(GET);
