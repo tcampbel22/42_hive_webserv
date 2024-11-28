@@ -15,6 +15,7 @@
 #include "Response.hpp"
 #include "../HttpParsing/HttpParser.hpp"
 #include <unordered_map>
+# include "../Config/LocationSettings.hpp"
 
 struct HttpRequest;
 
@@ -23,8 +24,10 @@ class ServerHandler
 private:
 	Response _response;
 	HttpRequest& _input;
-	std::string _responsePath;
-	std::string _pagePath = "root/var/html";
+	//std::string _responsePath;
+	//std::string _pagePath = "root/var/html";
+	LocationSettings *locSettings;
+
 	std::unordered_map<std::string, std::string> MIMEs;
 
 // struct HttpRequest {
@@ -40,6 +43,8 @@ private:
 
 public:
 	ServerHandler(int fd, HttpRequest& _newInput);
+	int 	checkMethod();
+	void	setContentType(std::string path);
 	void 	parsePath();
 	void 	executeInput();
 	void 	doPost();
