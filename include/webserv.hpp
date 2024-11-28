@@ -18,6 +18,9 @@
 #include <string>
 #include <dirent.h>
 
+
+#define MAX_BODY_SIZE 5000
+
 void	ft_perror(std::string str);
 // Everything in C++ 98.
 // execve, dup, dup2, pipe, strerror, gai_strerror,

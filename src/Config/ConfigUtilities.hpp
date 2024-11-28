@@ -16,6 +16,10 @@
 #include "ConfigParser.hpp"
 #include "ServerSettings.hpp"
 #include "LocationSettings.hpp"
+#include <variant>
+#include <algorithm>
+
+class LocationSettings;
 
 class ConfigUtilities
 {
@@ -23,5 +27,11 @@ public:
 	ConfigUtilities();
 	~ConfigUtilities();
 	static	void	checkBrackets(std::vector<std::string> serverBlock);
-	static	void	trimServerBlock(std::vector<std::string>& serverBlock);
+	static	void	trimServerBlock(std::vector<std::string>& serverBlock, std::vector<std::string>::iterator& it);
+	static	void	shiftLocationBlock(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
+	static	void	checkVectorEnd(std::vector<std::string>& vec, std::vector<std::string>::iterator& it, std::string msg);
+	static	void	checkSemiColon(std::vector<std::string>& vec, std::vector<std::string>::iterator it, std::string msg);
+	static	void	checkDuplicates(std::variant<int, bool, std::string, std::vector<int>> val, std::string msg);
+	static	void	printLocationBlock(LocationSettings location);
+	static	void	checkMethodDuplicates(std::vector<int>& location);
 };

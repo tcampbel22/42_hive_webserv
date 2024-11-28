@@ -13,10 +13,7 @@
 #include "ServerSettings.hpp"
 #include "ConfigParser.hpp"
 
-ServerSettings::ServerSettings() : isDefault(false), host(""), port(-1), max_client_body_size(-1)
-{
-	addServerName("www.example.com");
-}
+ServerSettings::ServerSettings() : isDefault(false), host(""), port(-1), max_client_body_size(-1) {}
 
 ServerSettings::~ServerSettings() {}
 
@@ -24,21 +21,19 @@ ServerSettings::~ServerSettings() {}
 void	ServerSettings::parseServerBlock(std::vector<std::string>& serverBlock)
 {
 	ConfigUtilities::checkBrackets(serverBlock);
-	ConfigUtilities::trimServerBlock(serverBlock);
+	auto it = serverBlock.begin();
+	ConfigUtilities::trimServerBlock(serverBlock, it);
 	//check if the server is first and set as default
-	locations.insert({"/", LocationSettings(1)});
-	locations.insert({"hello", LocationSettings(2)});
-	locations.insert({"there", LocationSettings(3)});
 	const std::string	directives[6] = {"host", "port", "client_max_body_size", "server_names", "location", "error_page"};
 	bool				isValid = false;
 	bool				dupServerName = false;
 	
-	for (auto it = serverBlock.begin(); it != serverBlock.end(); it++)
+	for (; it != serverBlock.end(); it++)
 	{
 		isValid = false;
 		for (int i = 0; i < 6; i++)
 		{
-			if (it->compare(directives[i]) == 0)
+			if (!it->compare(directives[i]))
 			{
 				isValid = true;
 				switch (i + 1)
@@ -49,48 +44,35 @@ void	ServerSettings::parseServerBlock(std::vector<std::string>& serverBlock)
 				case 2: //port
 					parsePort(serverBlock, it);
 					break;
-				case 3: 
+				case 3: //body size
 					parseMaxBodySize(serverBlock, it);
 					break;
 				case 4: //server_names
 					parseServerNames(serverBlock, it, &dupServerName);
 					break;
 				case 5: //location block
-					// parseLocationBlock(it);
-					// cycleLocations(*it);
+					parseLocationBlock(serverBlock, it);
 					break;
 				case 6: //error page
 					parseErrorPages(serverBlock, it);
 					break;
 				default:
 					throw std::logic_error("Something went very wrong....");
-				}
 				break ;
+				}
 			}
 		}
+		if (!isValid)
+			throw std::runtime_error("invalid directive in server block");
 	}
-	if (!isValid)
-		throw std::runtime_error("invalid directive in configuration file");
+	checkConfigValues(serverBlock, it);
 }
-//check host
-//check port
-//check servernames
-//check error pages -> 400, 401, 403, 404, 500, 502, 503
-//check client body size
-//Check for duplicates, missing semi colons, uneven brackets, non directives 
-//call locations cycle locations within current vector
-
-
 
 void	ServerSettings::parseHost(std::vector<std::string>& directive, std::vector<std::string>::iterator& it) 
 {
-	if (!host.empty())
-		throw std::runtime_error("host: duplicate directive");
-	if (std::next(it) == directive.end())
-		throw std::runtime_error("host: empty value");
-	it++;
-	if (std::next(it) == directive.end() || (it + 1)->compare(";"))
-		throw std::invalid_argument("host: syntax error");
+	ConfigUtilities::checkDuplicates(host, "host:");
+	ConfigUtilities::checkVectorEnd(directive, it, "host: empty value");
+	ConfigUtilities::checkSemiColon(directive, it, "host: syntax error");
 	std::string ip = *it;
 	std::regex ip_addr("^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$");
 	if (std::regex_match(ip, ip_addr))
@@ -98,8 +80,7 @@ void	ServerSettings::parseHost(std::vector<std::string>& directive, std::vector<
 		setHost(ip);
 		it++;
 		// std::cout << "Host: " << host << '\n';
-		if (std::next(it) == directive.end())
-			checkConfigValues();
+		checkConfigValues(directive, it);
 	}
 	else
 		throw std::runtime_error("host: invalid ip address");
@@ -107,13 +88,9 @@ void	ServerSettings::parseHost(std::vector<std::string>& directive, std::vector<
 
 void	ServerSettings::parsePort(std::vector<std::string>& directive, std::vector<std::string>::iterator& it) 
 {
-	if (port != -1)
-		throw std::runtime_error("duplicate port directive");
-	if (std::next(it) == directive.end())
-		throw std::runtime_error("port: empty value");
-	it++;
-	if (std::next(it) == directive.end() || (it + 1)->compare(";"))
-		throw std::invalid_argument("port: syntax error");
+	ConfigUtilities::checkDuplicates(port, "port:");
+	ConfigUtilities::checkVectorEnd(directive, it, "port: empty value");
+	ConfigUtilities::checkSemiColon(directive, it, "port: syntax error");
 	int port_num;
 	try {
 		port_num = stoi(*it);
@@ -125,8 +102,7 @@ void	ServerSettings::parsePort(std::vector<std::string>& directive, std::vector<
 		port = port_num;
 		it++;
 		// std::cout << "Port: " << port << '\n';
-		if (std::next(it) == directive.end())
-			checkConfigValues();
+		checkConfigValues(directive, it);
 	}
 	else
 		throw std::runtime_error("invalid port number/invalid syntax");
@@ -134,13 +110,9 @@ void	ServerSettings::parsePort(std::vector<std::string>& directive, std::vector<
 
 void	ServerSettings::parseMaxBodySize(std::vector<std::string>& directive, std::vector<std::string>::iterator& it) 
 {
-	if (max_client_body_size != -1)
-		throw std::runtime_error("duplicate max client body directive");
-	if (std::next(it) == directive.end())
-		throw std::runtime_error("Max_body_size: empty value");
-	it++;
-	if (std::next(it) == directive.end() || (it + 1)->compare(";"))
-		throw std::invalid_argument("Max_body_size: syntax error");
+	ConfigUtilities::checkDuplicates(max_client_body_size, "max client body:");
+	ConfigUtilities::checkVectorEnd(directive, it, "Max_body_size: empty value");
+	ConfigUtilities::checkSemiColon(directive, it, "Max_body_size: syntax error");
 	int size;
 	try {
 		size = stoi(*it);
@@ -152,8 +124,7 @@ void	ServerSettings::parseMaxBodySize(std::vector<std::string>& directive, std::
 		max_client_body_size = size;
 		it++;
 		// std::cout << "Max: " << getMaxClientBody() << '\n';
-		if (std::next(it) == directive.end())
-			checkConfigValues();
+		checkConfigValues(directive, it);
 	}
 	else
 		throw std::runtime_error("invalid client max body size/invalid syntax");
@@ -161,42 +132,32 @@ void	ServerSettings::parseMaxBodySize(std::vector<std::string>& directive, std::
 
 void	ServerSettings::parseServerNames(std::vector<std::string>& directive, std::vector<std::string>::iterator& it, bool *dup)
 {
-	if (*dup == true)
-		throw std::runtime_error("server_names: duplicate server_name directive");
-	if (std::next(it) == directive.end())
-		throw std::runtime_error("server_names: empty value");
-	it++;
+	ConfigUtilities::checkDuplicates(*dup, "server_names:");
+	ConfigUtilities::checkVectorEnd(directive, it, "server_names: empty value");
 	std::regex name("(^(www\\.)?([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}$)");
-	for (auto it2 = it; it2 != directive.end(); it2++)
+	for (; it != directive.end(); it++)
 	{
-		if (it2->compare(";") == 0)
+		if (it->compare(";") == 0)
 			break ;
-		if (std::regex_match(*it2, name))
+		if (std::regex_match(*it, name))
 		{
 			*dup = true;
-			addServerName(*it2);
-			// std::cout << "Server name: " << *it2 << '\n';
+			addServerName(*it);
+			// std::cout << "Server name: " << *it << '\n';
 		}
 		else
 			throw std::runtime_error("server_names: invalid server name/syntax error");
-		it = it2;
 	}
-	if (std::next(it) == directive.end() || (it + 1)->compare(";"))
-		throw std::invalid_argument("server_names: syntax error");
-	it++;
-	if (std::next(it) == directive.end())
-		checkConfigValues();
+	ConfigUtilities::checkSemiColon(directive, std::prev(it), "server_names: syntax error semi");
+	if (std::next(it) != directive.end())
+		it++;
+	checkConfigValues(directive, it);
 }
-// void	ServerSettings::parseLocationBlock(std::vector<std::string>& directive, std::vector<std::string>::iterator& it) {}
 
 void	ServerSettings::parseErrorPages(std::vector<std::string>& directive, std::vector<std::string>::iterator& it)  
 {
-	if (std::next(it) == directive.end())
-		throw std::runtime_error("error_pages: empty error code value");
-	it++;
-	if (std::next(it) == directive.end())
-		throw std::runtime_error("error_pages: empty error page value");
-	it++;
+	ConfigUtilities::checkVectorEnd(directive, it, "error_pages: empty error code value");
+	ConfigUtilities::checkVectorEnd(directive, it, "error_pages: empty error page value");
 	int error_code;
 	try {
 		error_code = stoi(*(it - 1));
@@ -205,13 +166,14 @@ void	ServerSettings::parseErrorPages(std::vector<std::string>& directive, std::v
 	}
 	if (error_code > 400 && error_code <= 505)
 	{
-		if (std::next(it) == directive.end() || (it + 1)->compare(";"))
-			throw std::runtime_error("error_pages: syntax error");
+		ConfigUtilities::checkSemiColon(directive, it, "error_pages: syntax error");
 		addErrorPage(error_code, *it);
 		// std::cout << "Error code: " <<*(it - 1) << " Path: " << *it << '\n';
 	}
 	else
-		throw std::runtime_error("invalid client max body size/invalid syntax");
+		throw std::runtime_error("error_pages: invalid error code");
+	ConfigUtilities::checkVectorEnd(directive, it, "error_pages: syntax error");
+	checkConfigValues(directive, it);
 }
 
 
@@ -228,43 +190,72 @@ void		ServerSettings::parseServerSettings(std::vector<std::string>& tokens)
 	// }		
 }
 
-void	ServerSettings::parseLocationSettings(std::string_view location)
+void	ServerSettings::parseLocationBlockSettings(std::vector<std::string>& location, std::vector<std::string>::iterator& it)
 {
-	int start = location.find_first_of('/');
-	int end = location.find_first_of('{') - 1;
-	const std::string key(location.substr(start, end - start));
-	setLocationSettings(key);
-}
-
-void	ServerSettings::cycleLocations(std::string config)
-{
-	std::regex location("location\\s+[^\\{]*\\{[^\\}]*\\}");
-	std::smatch match;
-	std::sregex_iterator begin(config.begin(), config.end(), location);
-	std::sregex_iterator end;
-	for (std::sregex_iterator it = begin; it != end; it++)
+	
+	auto it2 = locations.insert({*it, LocationSettings(*it)});
+	if (!it2.second)
+		throw std::runtime_error("location: duplicate URI");
+	std::string directives[6] = {"root", "index", "methods", "autoindex", "redirect", "error_pages"};
+	std::string	key = *it;
+	bool		isValid = false;
+	ConfigUtilities::checkVectorEnd(location, it, "location: invalid syntax");
+	ConfigUtilities::shiftLocationBlock(location, it);
+	for (;*it != "}"; it++)
 	{
-		match = *it;
-		std::string_view matched_string(config.data() + match.position(), match.length());
-		parseLocationSettings(matched_string);
+		isValid = false;
+		for (int i = 0; i < 5; i++)
+		{
+			if (!it->compare(directives[i]))
+			{
+				isValid = true;
+				switch(i + 1)
+				{
+					case 1:
+						locations[key].parseRoot(location, it);
+						break;
+					case 2:
+						locations[key].parseDefaultFile(location, it);
+						break;
+					case 3:
+						locations[key].parseMethods(location, it);
+						break;
+					case 4:
+						locations[key].parseAutoIndex(location, it);
+						break;
+					case 5:
+						locations[key].parseRedirect(location, it);
+						break;
+					default:
+						throw std::logic_error("Something went very wrong...");
+				}
+				break ;
+			}
+		}
+		if (!isValid)
+			throw std::runtime_error("location: invalid directive");
 	}
+	// ConfigUtilities::printLocationBlock(locations[key]);
 }
 
-void	ServerSettings::setLocationSettings(const std::string& key)
+void	ServerSettings::parseLocationBlock(std::vector<std::string>& location, std::vector<std::string>::iterator& it)
 {
-	auto it = locations.insert({key, LocationSettings(key)});
-	if (!it.second)
-		throw std::runtime_error("Duplicate key " + key);
+	
+	ConfigUtilities::checkVectorEnd(location, it, "location: invalid URI/path");
+	std::regex uri("\\/[a-zA-Z0-9._\\-\\/]*");
+	if (std::next(it) != location.end() && std::regex_match(*it, uri) && !std::next(it)->compare("{"))
+		parseLocationBlockSettings(location, it);
+	else
+		throw std::runtime_error("location: syntax error");
 }
-
 
 //GETTERS
 
-bool			ServerSettings::isDefaultServer() { return isDefault; }
-int				ServerSettings::getPort() { return port; }
-std::string&	ServerSettings::getHost() { return host; }
+bool						ServerSettings::isDefaultServer() { return isDefault; }
+int							ServerSettings::getPort() { return port; }
+std::string&				ServerSettings::getHost() { return host; }
 std::vector<std::string>&	ServerSettings::getServerNames() { return server_names; } //retuns vector containing all server names
-int				ServerSettings::getMaxClientBody() {return max_client_body_size; } //in megabytes
+int							ServerSettings::getMaxClientBody() { return max_client_body_size; } //in bytes
 
 std::vector<std::string>& ServerSettings::getErrorPages(int status) 
 {
@@ -333,11 +324,9 @@ LocationSettings*			ServerSettings::getLocationBlock(const std::string key)
 		return nullptr;
 }
 
-// std::unordered_map<std::string, LocationSettings> ServerSettings::getLocationSettings() { return locations; }
-
 //SETTERS
 
-void	ServerSettings::addServerName(std::string name) { server_names.push_back(name); }
+void	ServerSettings::addServerName(std::string name) { server_names.push_back(name); } //Need to check for duplicates
 void	ServerSettings::addErrorPage(int status, std::string path) 
 { 
 	if (error_pages.find(status) != error_pages.end())
@@ -353,8 +342,15 @@ void	ServerSettings::setPort(int port_num) { port = port_num; }
 void	ServerSettings::setMaxClientBodySize(int size) { max_client_body_size = size; }
 
 
-void	ServerSettings::checkConfigValues()
+void	ServerSettings::checkConfigValues(std::vector<std::string>& directive, std::vector<std::string>::iterator& it)
 {
-	if (port == -1 || host.empty() || max_client_body_size == -1)
-		throw std::runtime_error("values missing from configuration file");
+	if (it == directive.end() || std::next(it) == directive.end())
+	{
+		if (port == -1 || host.empty())
+			throw std::runtime_error("host or port missing from configuration file");
+		if (locations.find("/") == locations.end())
+			throw std::runtime_error("root directory missing from configuration file");
+		if (max_client_body_size == -1)
+			max_client_body_size = MAX_BODY_SIZE;
+	}
 }
