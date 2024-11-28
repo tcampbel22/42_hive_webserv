@@ -30,12 +30,12 @@ void	ConfigUtilities::checkBrackets(std::vector<std::string> serverBlock)
 		throw std::runtime_error("config: curly brackets mismatched");
 }
 
-void	ConfigUtilities::trimServerBlock(std::vector<std::string>& serverBlock)
+void	ConfigUtilities::trimServerBlock(std::vector<std::string>& serverBlock, std::vector<std::string>::iterator& it)
 {
-	serverBlock.pop_back();
-	serverBlock[0].erase();
-	serverBlock[1].erase();
-	serverBlock.shrink_to_fit();
+	if (std::next(it) != serverBlock.end() && !it->compare("server") && !std::next(it)->compare("{"))
+		it += 2;
+	if (!serverBlock.back().compare("}"))
+		serverBlock.pop_back();
 }
 
 void	ConfigUtilities::shiftLocationBlock(std::vector<std::string>& location, std::vector<std::string>::iterator& it)
@@ -50,7 +50,8 @@ void	ConfigUtilities::checkVectorEnd(std::vector<std::string>& vec, std::vector<
 {
 	if (std::next(it) == vec.end())
 		throw std::runtime_error(msg);
-	it++;
+	else
+		it++;
 }
 
 void	ConfigUtilities::checkSemiColon(std::vector<std::string>& vec, std::vector<std::string>::iterator it, std::string msg)
@@ -59,7 +60,7 @@ void	ConfigUtilities::checkSemiColon(std::vector<std::string>& vec, std::vector<
 		throw std::runtime_error(msg);
 }
 
-void	ConfigUtilities::checkDuplicates(std::variant<int, bool, std::string> val, std::string msg)
+void	ConfigUtilities::checkDuplicates(std::variant<int, bool, std::string, std::vector<int>> val, std::string msg)
 {
 	if (auto ptr = std::get_if<int>(&val))
 	{
@@ -76,4 +77,49 @@ void	ConfigUtilities::checkDuplicates(std::variant<int, bool, std::string> val, 
 		if (!ptr->empty())
 			throw std::runtime_error(msg + " duplicate error");
 	}
+	else if (auto ptr = std::get_if<std::vector<int>>(&val))
+	{
+		if (!ptr->empty())
+			throw std::runtime_error(msg + " duplicate error");
+	}
+}
+
+void	ConfigUtilities::printLocationBlock(LocationSettings location)
+{
+	std::cout << "Path: " << location.getPath() << '\n';
+	if (!location.getRoot().empty())
+		std::cout << "Root: " << location.getRoot() << '\n';
+	else
+		std::cout << "Root: no root\n";
+	std::cout << "Autoindex: " << std::boolalpha << location.isAutoIndex() << '\n';
+	if (location.getRedirect().empty())
+		std::cout << "Redirect: no redirect\n";
+	else
+		std::cout << "Redirect: " << location.getRedirect() << '\n';
+	if (location.getMethods().empty())
+		std::cout << "Methods: no methods\n";
+	else
+	{
+		std::cout << "Methods:";
+		for (auto it = location.getMethods().begin(); it != location.getMethods().end(); it++) 
+		{
+			if (*it == 1)
+				std::cout << " GET ";
+			if (*it == 2)
+				std::cout << " POST ";
+			if (*it == 3)
+				std::cout << " DELETE ";
+		}
+		std::cout << '\n';
+	}
+}
+
+void	ConfigUtilities::checkMethodDuplicates(std::vector<int>& method)
+{
+	if (std::count(method.begin(), method.end(), GET) > 1)
+		throw std::runtime_error("method: duplicate method");
+	if (std::count(method.begin(), method.end(), POST) > 1)
+		throw std::runtime_error("method: duplicate method");
+	if (std::count(method.begin(), method.end(), DELETE) > 1)
+		throw std::runtime_error("method: duplicate method");
 }

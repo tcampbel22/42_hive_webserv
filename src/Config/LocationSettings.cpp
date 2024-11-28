@@ -14,48 +14,13 @@
 
 LocationSettings::LocationSettings()
 {
-	path = "/";
-	root = "root/var/html";
-	default_file = "index.html";
-	// setMethods(POST);
-	// setMethods(GET);
+	path = "/root";
+	root = "";
+	default_file = "";
 	autoindex = false;
 	redirect = false;
 }
 
-LocationSettings::LocationSettings(int i)
-{
-	if (i == 1)
-	{
-		path = "/path";
-		root = "/var/html";
-		default_file = "index.html";
-		// setMethods(POST);
-		// setMethods(GET);
-		autoindex = false;
-		redirect = false;
-	}
-	else if (i == 2)
-	{
-		path = "/path";
-		root = "/var/html";
-		default_file = "index.html";
-		// setMethods(POST);
-		// setMethods(GET);
-		autoindex = false;
-		redirect = false;
-	}
-	else
-	{
-		path = "/path";
-		root = "/var/html";
-		default_file = "index.html";
-		// setMethods(POST);
-		// setMethods(GET);
-		autoindex = false;
-		redirect = false;
-	}
-}
 
 LocationSettings::LocationSettings(const std::string& new_path)
 {
@@ -64,23 +29,21 @@ LocationSettings::LocationSettings(const std::string& new_path)
 		isDirectory = true;
 	else
 		isFile = true;
-	// root = "/var/html";
-	// default_file = "index.html";
-	// setMethods(POST);
-	// setMethods(GET);
-	// autoindex = false;
-	// redirect = false;
+	root = "";
+	default_file = "";
+	autoindex = false;
+	redirect = "";
 }
 
 LocationSettings::~LocationSettings() {}
 
 //PARSERS
 
-void	LocationSettings::checkLocationValues(std::vector<std::string>& location, std::vector<std::string>::iterator& it)
+void	LocationSettings::checkLocationValues(std::vector<std::string>::iterator& it)
 {
-	if (std::next(it) == location.end())
+	if (!std::next(it)->compare("}"))
 	{
-		if (redirect && (!root.empty() || autoindex || !methods.empty() || !default_file.empty()))
+		if (!redirect.empty() && (!root.empty() || autoindex || !methods.empty() || !default_file.empty()))
 			throw std::runtime_error("location: extra directives in redirect block");
 		if (!path.compare("/"))
 		{
@@ -101,13 +64,13 @@ void	LocationSettings::parseRoot(std::vector<std::string>& location, std::vector
 {
 	ConfigUtilities::checkDuplicates(root, "root:");
 	ConfigUtilities::checkVectorEnd(location, it, "location: root: invalid syntax");
-	std::regex root("\\/[a-zA-Z0-9._\\-\\/]+");
-	if (std::regex_match(*it, root) && std::next(it)->compare(";") == 0)
+	std::regex root_regex("\\/[a-zA-Z0-9._\\-\\/]+");
+	if (std::regex_match(*it, root_regex) && std::next(it)->compare(";") == 0)
 		root = *it;
 	else
 		throw std::runtime_error("location: root: invalid root path/syntax error");
 	ConfigUtilities::checkVectorEnd(location, it, "location: root: invalid syntax");
-	checkLocationValues(location, it);
+	checkLocationValues(it);
 }
 
 void	LocationSettings::parseDefaultFile(std::vector<std::string>& location, std::vector<std::string>::iterator& it) 
@@ -116,16 +79,62 @@ void	LocationSettings::parseDefaultFile(std::vector<std::string>& location, std:
 	ConfigUtilities::checkVectorEnd(location, it, "location: default file: invalid syntax");
 	ConfigUtilities::checkSemiColon(location, it, "location: default file: syntax error");
 	default_file = *it;
-	checkLocationValues(location, it);
+	checkLocationValues(it);
+	ConfigUtilities::checkVectorEnd(location, it, "location: autoindex: invalid syntax");
 }
 
-// void	LocationSettings::setRoot(std::string new_root) { root = new_root; }
-// void	LocationSettings::setMethods(int new_method) { methods.push_back(new_method); }
-// void	LocationSettings::setAutoIndex(bool val) { autoindex = val; }
+void	LocationSettings::parseAutoIndex(std::vector<std::string>& location, std::vector<std::string>::iterator& it) 
+{
+	ConfigUtilities::checkDuplicates(autoindex, "autoindex:");
+	ConfigUtilities::checkVectorEnd(location, it, "location: autoindex: invalid syntax");
+	ConfigUtilities::checkSemiColon(location, it, "location: autoindex: syntax error");
+	if (!it->compare("on"))
+		autoindex = true;
+	else if (!it->compare("off"))
+		autoindex = false;
+	else
+		throw std::runtime_error("location: autoindex: value must be on or off");
+	checkLocationValues(it);
+	ConfigUtilities::checkVectorEnd(location, it, "location: autoindex: invalid syntax");
+}
+
+void	LocationSettings::parseRedirect(std::vector<std::string>& location, std::vector<std::string>::iterator& it)
+{
+	ConfigUtilities::checkDuplicates(redirect, "redirect:");
+	ConfigUtilities::checkVectorEnd(location, it, "location: redirect: invalid syntax");
+	ConfigUtilities::checkSemiColon(location, it, "location: redirect: syntax error");
+	redirect = *it;
+	checkLocationValues(it);
+	ConfigUtilities::checkVectorEnd(location, it, "location: autoindex: invalid syntax");
+}
+
+void	LocationSettings::parseMethods(std::vector<std::string>& location, std::vector<std::string>::iterator& it)
+{
+	ConfigUtilities::checkDuplicates(methods, "methods:");
+	ConfigUtilities::checkVectorEnd(location, it, "location: methods: syntax error");
+	std::string method_str[3] = {"GET", "POST", "DELETE"};
+	for (; it != location.end(); it++)
+	{
+		if (!it->compare(";"))
+			break ;
+		if (!it->compare(method_str[0]))
+			methods.push_back(GET);
+		else if (!it->compare(method_str[1]))
+			methods.push_back(POST);
+		else if (!it->compare(method_str[2]))
+			methods.push_back(DELETE);
+		else 
+			throw std::runtime_error("location: methods: invaid method type");
+	}
+	ConfigUtilities::checkSemiColon(location, std::prev(it), "location: redirect: syntax error");
+	ConfigUtilities::checkMethodDuplicates(methods);
+	checkLocationValues(it);
+}
 
 //GETTERS
 std::string&				LocationSettings::getPath() { return path; }
 std::string&				LocationSettings::getRoot() { return root; }
 std::string&				LocationSettings::getDefaultFile() { return default_file; }
+std::string&				LocationSettings::getRedirect() { return redirect; }
 std::vector<int>&			LocationSettings::getMethods() { return methods; }
 bool						LocationSettings::isAutoIndex() { return autoindex; }
