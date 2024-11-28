@@ -10,38 +10,16 @@
 /**                                W E B S E R V                                 **/
 /**********************************************************************************/
 
-#pragma once
+#include "HttpParser.hpp"
 
-#include "../../include/webserv.hpp"
-#include "ServerSettings.hpp"
-#include "LocationSettings.hpp"
-#include <vector>
-#include <unordered_map>
-#include <iostream>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sstream>
-#include <fstream>
-#include <cctype>
-
-class ServerSettings;
-
-class ConfigParser
+class chunkedBodyParser
 {
 private:
-	std::string					configFileStr;
-	std::vector<std::string>	tokens; 
-	int							server_count;
+	static int hexToInt(std::string line);
+	static std::string readChunk(std::istringstream& stream, int chunkSize);
+	void parse(std::istringstream& stream, HttpRequest& request);
+	void procesLeftOvers(std::istringstream& stream);
 public:
-	std::vector<ServerSettings> settings;
-	ConfigParser();
-	ConfigParser(std::string file);
-	~ConfigParser();
-	void		readConfigFile(std::string);
-	void		parseConfigFile();
-	void		initialParse();
-	void		removeComments();
-	std::string	getConfigFileStr();
-	void		countServers();
-	void		tokenise(const std::string& config);
+	static void parseChunkedBody(std::istringstream& stream, HttpRequest& request);
 };
+
