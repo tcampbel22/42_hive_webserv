@@ -2,7 +2,7 @@ NAME	:= webserv
 
 CC		:= c++
 
-FLAGS	:= -Wextra -Wall -Werror -std=c++17 #-fsanitize=address -g
+FLAGS	:= -Wextra -Wall -Werror -std=c++20 #-fsanitize=address -g
 
 OBJ_DIR := ./src/Objects
 SRCS_DIR = ./src
