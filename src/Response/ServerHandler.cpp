@@ -235,6 +235,7 @@ void ServerHandler::doError()
 
 	std::string errorPath;
 	std::vector<std::string> errorVector;
+	//could getErrorPages perhaps return just a string path to the correct Error page?
 	try
 	{
 		errorVector = _input.settings->getErrorPages(_input.errorFlag);
@@ -249,9 +250,8 @@ void ServerHandler::doError()
 			return;
 	}
 
-	//could getErrorPages perhaps return just a string path to the correct Error page?
-	//errorPath = _input.settings->getErrorPages(_input.errorFlag);
-	// getFile(locSettings->//get error path)
+
+
 	//This needs to check the error pyramid for correct error file
 	
 	// getFile("root/etc/response/" +  std::to_string(_input.errorFlag) + ".html");
@@ -311,8 +311,53 @@ void ServerHandler::doPost()
 		_input.errorFlag = 404;
 }
 
+void ServerHandler::generateIndex()
+{
+	std::filesystem::path dirPath(_input.path);
+	std::string body;
+
+	body = "	<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n    <title>" + _input.path + " Directory listing</title>\n</head>\n<body>\n    <h1>";
+	body += _input.path + " directory listing:</h1>\n";
+
+	try
+	{
+		if(std::filesystem::exists(dirPath) && std::filesystem::is_directory(dirPath))
+		{
+			for (const auto& file : std::filesystem::directory_iterator(dirPath))
+			{
+				body += "<p>";
+				if (file.is_directory())
+					body += "[DIR] " + file.path().filename().string();
+				else
+					body += "[FILE] " + file.path().filename().string();
+				body += "</p>\n";
+			}
+		}
+	}
+	catch(const std::exception& e)
+	{
+		_input.errorFlag = 403; //probably other code
+		return ;
+	}
+	body += "</body>\n</html>";
+
+	_response.set_body(body);
+	_response.setContentType("text/html");
+	_response.setContentLength(body.length());
+	_response.setResponseCode(200);
+}
+
 void ServerHandler::doGet()
 {
+	if (_input.path.back() == '/' && locSettings->isAutoIndex() == true)
+	{
+		generateIndex();
+		return;
+	}
+	//check if it is asking for a directory and if autoindex is on
+	//if so, generate the directory index
+
+
 	if (getFile(_input.path) == 1)
 	{
 		if (_input.errorFlag < 0)
