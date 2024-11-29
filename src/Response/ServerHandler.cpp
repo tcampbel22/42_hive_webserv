@@ -203,9 +203,8 @@ int ServerHandler::getFile(std::string path)
 	if (!infile.is_open())
 	{
 		//should set flag to failed for status code
-		_response.setResponseCode(404);
-		getFile("root/etc/response/404.html");
-		//std::cerr << "File failed to open\n";
+		// _input.errorFlag = 404;
+		// _response.setResponseCode(404);
 		return (1);
 	}
 	stream << infile.rdbuf();
@@ -217,13 +216,55 @@ int ServerHandler::getFile(std::string path)
 	return (0);
 }
 
+void ServerHandler::defaultError()
+{
+	std::string code = std::to_string(_input.errorFlag);
+	std::string body;
+
+	body = "	<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n    <title>" + code + "</title>\n</head>\n<body>\n    <h1>";
+	body += code + " Error</h1>\n</body>\n</html>";
+
+	_response.set_body(body);
+	_response.setContentType("text/html");
+	_response.setContentLength(body.length());
+}
+
 void ServerHandler::doError()
 {
 	_response.setResponseCode(_input.errorFlag);
+
+	std::string errorPath;
+	std::vector<std::string> errorVector;
+	try
+	{
+		errorVector = _input.settings->getErrorPages(_input.errorFlag);
+		errorPath = errorVector.at(0);
+	}
+	catch(const std::exception& e)
+	{
+	}
+	if (!errorPath.empty())
+	{
+		if (getFile(errorPath) == 0)
+			return;
+	}
+
+	//could getErrorPages perhaps return just a string path to the correct Error page?
+	//errorPath = _input.settings->getErrorPages(_input.errorFlag);
 	// getFile(locSettings->//get error path)
 	//This needs to check the error pyramid for correct error file
-	getFile("root/etc/response/" +  std::to_string(_input.errorFlag) + ".html");
+	
+	// getFile("root/etc/response/" +  std::to_string(_input.errorFlag) + ".html");
+	
 	//should get a error file from the directory
+
+
+	//location based error pages not yet set up, but they should be checked first
+
+	//then server based error pages
+
+	//and finally generic default pages to be generated/used;
+	defaultError();
 }
 
 void ServerHandler::doPost()
@@ -273,7 +314,11 @@ void ServerHandler::doPost()
 void ServerHandler::doGet()
 {
 	if (getFile(_input.path) == 1)
+	{
+		if (_input.errorFlag < 0)
+			_input.errorFlag = 404;
 		return ;
+	}
 	_response.setResponseCode(200);
 }
 

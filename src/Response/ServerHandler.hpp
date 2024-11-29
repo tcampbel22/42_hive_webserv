@@ -44,6 +44,7 @@ public:
 	ServerHandler(int fd, HttpRequest& _newInput);
 	void getLocationSettings();
 	int 	checkMethod();
+	void 	defaultError();
 	void	setContentType(std::string path);
 	void 	parsePath();
 	void 	executeInput();
