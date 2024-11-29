@@ -51,7 +51,8 @@ void	HttpParser::recieveRequest(int out_fd)
 //Empty the vector to the requestMap, needs to be parsed in the response.
 void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, std::shared_ptr<ServerSettings>& configSettings)
 {
-    try {
+    (void)configSettings; //NEED TO CHECK
+	try {
 		std::string data(clientData.begin(), clientData.end());
     	std::istringstream requestStream(data);
     	std::string line;
@@ -60,18 +61,19 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			request.errorFlag = 400;//error shit in here if first line is bad: ERROR 400 according to RFC
 			std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl; 
 		}
-		LocationSettings *block = configSettings->getLocationBlock(request.path); //parse path and method according to config file instructions. //requires information from config file
-		if (!block)
-			request.errorFlag = 404;
+		// LocationSettings *block = configSettings->getLocationBlock(request.path); //parse path and method according to config file instructions. //requires information from config file
+		// if (!block)
+		// 	request.errorFlag = 404; NEED TO DOUBLE CHECK THIS LOGIC
 		//else
 			//validateLocation(block, &request.errorFlag);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
-		if (request.method == "GET" && this->_contentLength != 0) {
+		if (request.method == GET && this->_contentLength != 0) {
 			request.errorFlag = 404;
 		}
 		parseBody(request, requestStream);
 		} catch (std::exception& e) {
+			std::cout << "WHY U DO DIS\n";
 			std::cerr << e.what() << '\n';
 		}
 }
@@ -114,7 +116,7 @@ void	HttpParser::bigSend(int out_fd, std::shared_ptr<ServerSettings>& configSett
 {
 	HttpParser parser;
 	HttpRequest request;
-	request.settings = settingsPtr; //added by Casi to get settings to response
+	request.settings = configSetting; //added by Casi to get settings to response
 	request.errorFlag = -1; //added by Casi to initialize the errorflag
 	parser.recieveRequest(out_fd);
 	parser.parseClientRequest(parser._clientDataBuffer, request, configSetting);

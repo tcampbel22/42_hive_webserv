@@ -134,6 +134,38 @@ void	LocationSettings::parseMethods(std::vector<std::string>& location, std::vec
 	checkLocationValues(it);
 }
 
+void	LocationSettings::parseLocationErrorPages(std::vector<std::string>& location, std::vector<std::string>::iterator& it)  
+{
+	ConfigUtilities::checkVectorEnd(location, it, "error_pages: empty error code value");
+	ConfigUtilities::checkVectorEnd(location, it, "error_pages: empty error page value");
+	int error_code;
+	try {
+		error_code = stoi(*(it - 1));
+	} catch(std::exception& e) {
+		throw std::invalid_argument("error_pages: (nan)");
+	}
+	if (error_code > 400 && error_code <= 505)
+	{
+		ConfigUtilities::checkSemiColon(location, it, "error_pages: syntax error");
+		addLocationErrorPage(error_code, *it);
+		std::cout << "Error code: " <<*(it - 1) << " Path: " << *it << '\n';
+	}
+	else
+		throw std::runtime_error("error_pages: invalid error code");
+	ConfigUtilities::checkVectorEnd(location, it, "error_pages: syntax error");
+	checkLocationValues(it);
+}
+
+void	LocationSettings::addLocationErrorPage(int status, std::string path) 
+{ 
+	if (location_error_pages.find(status) != location_error_pages.end())
+	{
+		if (std::find(location_error_pages[status].begin(), location_error_pages[status].end(), path) != location_error_pages[status].end())
+			throw std::runtime_error("error_pages: duplicate path");
+	}
+	location_error_pages[status].push_back(path);
+}
+
 //GETTERS
 std::string&				LocationSettings::getPath() { return path; }
 std::string&				LocationSettings::getRoot() { return root; }

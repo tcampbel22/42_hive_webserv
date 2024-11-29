@@ -44,12 +44,12 @@ public:
 	void	parseAutoIndex(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
 	void	parseMethods(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
 	void	parseRedirect(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
+	void	parseLocationErrorPages(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
+	void	addLocationErrorPage(int status, std::string path);
 	std::string&					getPath(); //URI
 	std::string&					getRoot(); //root
 	std::string&					getDefaultFile(); //default homepage
 	std::vector<int>&				getMethods(); //Methods POST GET DELETE
 	bool							isAutoIndex(); //directory listing
 	std::string&					getRedirect();
-	
-
 };
