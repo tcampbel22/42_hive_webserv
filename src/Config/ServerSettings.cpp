@@ -18,7 +18,7 @@ ServerSettings::ServerSettings() : isDefault(false), host(""), port(-1), max_cli
 ServerSettings::~ServerSettings() {}
 
 
-void	ServerSettings::parseServerBlock(std::vector<std::string>& serverBlock)
+void	ServerSettings::parseServerBlock(std::vector<std::string>& serverBlock) //need to chnage to accept iterator from tokens vector
 {
 	ConfigUtilities::checkBrackets(serverBlock);
 	auto it = serverBlock.begin();
@@ -179,11 +179,8 @@ void	ServerSettings::parseErrorPages(std::vector<std::string>& directive, std::v
 
 void		ServerSettings::parseServerSettings(std::vector<std::string>& tokens) 
 {
-	if (tokens.begin()->compare("server"))
-		throw std::runtime_error("Configuration file should start with server block");
-	if (tokens[1] != "{")
-		throw std::runtime_error("Server block missing curly bracket");
-	//splitServerBlocks() //Need to create map of vectors of server blocks
+
+	//Need to create map of vectors of server blocks
 	// for (auto it = tokens.begin(); it != tokens.end(); it++)
 	// {
 	parseServerBlock(tokens); //needs to send in each server block individually
@@ -196,7 +193,7 @@ void	ServerSettings::parseLocationBlockSettings(std::vector<std::string>& locati
 	auto it2 = locations.insert({*it, LocationSettings(*it)});
 	if (!it2.second)
 		throw std::runtime_error("location: duplicate URI");
-	std::string directives[6] = {"root", "index", "methods", "autoindex", "redirect", "error_pages"};
+	std::string directives[6] = {"root", "index", "methods", "autoindex", "redirect", "error_page"};
 	std::string	key = *it;
 	bool		isValid = false;
 	ConfigUtilities::checkVectorEnd(location, it, "location: invalid syntax");
@@ -204,7 +201,7 @@ void	ServerSettings::parseLocationBlockSettings(std::vector<std::string>& locati
 	for (;*it != "}"; it++)
 	{
 		isValid = false;
-		for (int i = 0; i < 5; i++)
+		for (int i = 0; i < 6; i++)
 		{
 			if (!it->compare(directives[i]))
 			{
@@ -225,6 +222,9 @@ void	ServerSettings::parseLocationBlockSettings(std::vector<std::string>& locati
 						break;
 					case 5:
 						locations[key].parseRedirect(location, it);
+						break;
+					case 6:
+						locations[key].parseLocationErrorPages(location, it);
 						break;
 					default:
 						throw std::logic_error("Something went very wrong...");

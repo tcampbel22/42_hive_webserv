@@ -123,3 +123,8 @@ void	ConfigUtilities::checkMethodDuplicates(std::vector<int>& method)
 	if (std::count(method.begin(), method.end(), DELETE) > 1)
 		throw std::runtime_error("method: duplicate method");
 }
+
+// void	ConfigUtilities::checkServerNameDuplicates(std::vector<int>& names)
+// {
+// 	if ()
+// }

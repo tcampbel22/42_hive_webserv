@@ -33,7 +33,7 @@ private:
 	std::vector<std::string>	tokens; 
 	int							server_count;
 public:
-	std::vector<ServerSettings> settings;
+	std::unordered_map<std::string, ServerSettings> settings;
 	ConfigParser();
 	ConfigParser(std::string file);
 	~ConfigParser();
@@ -44,4 +44,5 @@ public:
 	std::string	getConfigFileStr();
 	void		countServers();
 	void		tokenise(const std::string& config);
+	void		splitServerBlocks();
 };

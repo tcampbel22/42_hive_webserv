@@ -50,10 +50,12 @@ void	ConfigParser::readConfigFile(std::string file)
 
 void		ConfigParser::parseConfigFile() 
 {
-	initialParse(); //need to check how many servers there are, then create that many instances
-	for (int i = 0; i < server_count; i++)
-		settings.push_back(ServerSettings());
-	settings[0].parseServerSettings(tokens);
+	initialParse();
+	splitServerBlocks();
+	 //need to check how many servers there are, then create that many instances
+	// for (int i = 0; i < server_count; i++)
+	// 	settings.push_back(ServerSettings());
+	// settings[0].parseServerSettings(tokens);
 }
 
 void	ConfigParser::removeComments()
@@ -117,12 +119,56 @@ void	ConfigParser::tokenise(const std::string& c)
 void	ConfigParser::initialParse()
 {
 	removeComments();
-	countServers();
+	// countServers();
 	tokenise(configFileStr);
-	// for (auto it = tokens.begin() + 2; it != tokens.end() - 1; it++)
-	// 	std::cout << *it << '\n';
 }
 
 std::string	ConfigParser::getConfigFileStr() { return configFileStr; }
+
+void	createKey(std::vector<std::string>::iterator start,  std::vector<std::string>::iterator end, std::string& key)
+{
+	std::string	_host;
+	std::string	_port;
+	auto host_it = std::find(start, end, "host");
+	if (host_it->compare("host"))
+		throw std::runtime_error("no host in server block");
+	if (std::next(host_it) != end)
+		_host = *(host_it + 1);
+	auto port_it = std::find(start, end, "port");
+	if (port_it->compare("port"))
+		throw std::runtime_error("no port in server block");
+	if (std::next(port_it) != end)
+		_port = *(port_it + 1);
+	key = _host + ":" + _port;
+	std::cout << key << '\n';
+	
+}
+
+void	ConfigParser::splitServerBlocks() 
+{
+	if (tokens.begin()->compare("server") && tokens[1] != "{")
+		throw std::runtime_error("Configuration file should start with server block");
+	auto it = tokens.begin();
+	for (; it != tokens.end(); it++)
+	{
+		if (!it->compare("server") && !std::next(it)->compare("{"))
+		{
+			auto start = it + 2;
+			std::string key;
+			for (; it != tokens.end(); it++)
+			{
+				if (!it->compare("}") && (!std::next(it)->compare("server") || std::next(it) == tokens.end()))
+				{
+					createKey(start, it, key);
+					auto dup = settings.insert({key, ServerSettings()});
+					if (!dup.second)
+						throw std::runtime_error("config: duplicate host/port");
+					//settings[key].parseServerSettings(tokens); //PRIORITY
+					break ;
+				}
+			} 
+		}
+	}
+}
 
 ConfigParser::~ConfigParser() {}

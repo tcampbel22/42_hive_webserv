@@ -136,23 +136,23 @@ void	LocationSettings::parseMethods(std::vector<std::string>& location, std::vec
 
 void	LocationSettings::parseLocationErrorPages(std::vector<std::string>& location, std::vector<std::string>::iterator& it)  
 {
-	ConfigUtilities::checkVectorEnd(location, it, "error_pages: empty error code value");
-	ConfigUtilities::checkVectorEnd(location, it, "error_pages: empty error page value");
+	ConfigUtilities::checkVectorEnd(location, it, "location_error_pages: empty error code value");
+	ConfigUtilities::checkVectorEnd(location, it, "location_error_pages: empty error page value");
 	int error_code;
 	try {
 		error_code = stoi(*(it - 1));
 	} catch(std::exception& e) {
-		throw std::invalid_argument("error_pages: (nan)");
+		throw std::invalid_argument("location_error_pages: (nan)");
 	}
 	if (error_code > 400 && error_code <= 505)
 	{
-		ConfigUtilities::checkSemiColon(location, it, "error_pages: syntax error");
+		ConfigUtilities::checkSemiColon(location, it, "location_error_pages: syntax error");
 		addLocationErrorPage(error_code, *it);
 		std::cout << "Error code: " <<*(it - 1) << " Path: " << *it << '\n';
 	}
 	else
-		throw std::runtime_error("error_pages: invalid error code");
-	ConfigUtilities::checkVectorEnd(location, it, "error_pages: syntax error");
+		throw std::runtime_error("location_error_pages: invalid error code");
+	ConfigUtilities::checkVectorEnd(location, it, "location_error_pages: syntax error");
 	checkLocationValues(it);
 }
 
