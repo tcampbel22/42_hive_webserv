@@ -23,7 +23,7 @@ _response(), _input(_newInput)
 
 	// std::cout << _input.path << std::endl;
 	// std::cout << "ERROR CODE FROM PARSING = " << _input.errorFlag << std::endl;
-	//std::cout << "error flag = " << _input.errorFlag << std::endl;
+	// std::cout << "error flag = " << _input.errorFlag << std::endl;
 	try
 	{
 		makeMIME();
@@ -46,7 +46,7 @@ _response(), _input(_newInput)
 
 int ServerHandler::checkMethod()
 {
-	std::vector<std::string> allowedMethods = locSettings->getMethods();
+	std::vector<int> allowedMethods = locSettings->getMethods();
 	for (const auto& method : allowedMethods)
 	{
 		if (_input.method == method)
@@ -79,8 +79,8 @@ void ServerHandler::parsePath()
 		_input.path = _input.path.substr(1, _input.path.length() -1);
 	// std::cout << "DEFAULT FILE = " << locSettings->getDefaultFilePath() << std::endl;
 	if (_input.path.back() == '/')
-		_input.path = _input.path + locSettings->getDefaultFilePath();
-		// std::cout << _input.path << std::endl;
+		_input.path = _input.path + locSettings->getDefaultFile();
+	// std::cout << _input.path << std::endl;
 
 	std::regex validPathRegex("^[a-zA-Z0-9/_.-]+$");
 	if (!std::regex_match(_input.path, validPathRegex))
@@ -97,11 +97,11 @@ void ServerHandler::executeInput()
 	
 	if (_input.errorFlag == true)
 		doError();
-	else if (_input.method == "POST")
+	else if (_input.method == POST)
 		doPost();
-	else if (_input.method == "GET")
+	else if (_input.method == GET)
 		doGet();
-	else if (_input.method == "DELETE")
+	else if (_input.method == DELETE)
 		doDelete();
 	else
 		throw std::invalid_argument("Invalid argument");

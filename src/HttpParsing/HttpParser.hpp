@@ -27,7 +27,7 @@
 class ServerSettings;
 
 struct HttpRequest {
-	std::string method;
+	int	method;
 	std::string path;
 	std::map<std::string, std::string> headers;
 	std::string body;
