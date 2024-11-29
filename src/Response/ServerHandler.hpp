@@ -24,8 +24,7 @@ class ServerHandler
 private:
 	Response _response;
 	HttpRequest& _input;
-	//std::string _responsePath;
-	//std::string _pagePath = "root/var/html";
+	bool	home = false;
 	LocationSettings *locSettings;
 
 	std::unordered_map<std::string, std::string> MIMEs;
@@ -43,6 +42,7 @@ private:
 
 public:
 	ServerHandler(int fd, HttpRequest& _newInput);
+	void getLocationSettings();
 	int 	checkMethod();
 	void	setContentType(std::string path);
 	void 	parsePath();
