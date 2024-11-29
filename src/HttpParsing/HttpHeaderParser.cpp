@@ -34,7 +34,7 @@ void HttpHeaderParser::procesHeaderFields(HttpRequest& request, int& contentLeng
 		request.connection = false;
 	else
 		request.connection = true;
-	request.host.append(request.headers.at("Host")); //not sure if needed
+	request.host.append(request.headers.at("Host"));
 	if (request.headers.count("Content-Length") == 0) {
     	return;
 	}
@@ -47,5 +47,16 @@ void HttpHeaderParser::procesHeaderFields(HttpRequest& request, int& contentLeng
 		contentLength = 0;
 	}
 }
+bool HttpHeaderParser::HostParse(std::unordered_map<std::string, ServerSettings>& config, HttpRequest& request) 
+{
+	for (auto &it : config) {
+		if (!it.first.compare(request.host)) {
+			*request.settings = it.second;
+			return true;
+		}
+	}
+	return false;
+}
+
 
 HttpHeaderParser::~HttpHeaderParser() {}

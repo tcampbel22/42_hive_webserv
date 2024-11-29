@@ -80,14 +80,14 @@ void HttpServer::startListening()
 	_events.data.fd = _serverFd;
 	 _events.events = EPOLLIN;
 	epoll_ctl(epollFd, EPOLL_CTL_ADD, _serverFd, &_events); //maybe protect
-	
+	time_t current_time;
 	while (true)
 	{
 		numEvents = epoll_wait(epollFd, _eventsArr, MAX_EVENTS, 0);
 		if (numEvents < 0){
 			std::cout << "Epoll wait failed\n";
 			break ;}
-			
+		current_time = std::time(nullptr);
 		for (int i = 0; i < numEvents; i++)
 		{
 			if (_eventsArr[i].data.fd == _serverFd)
@@ -106,6 +106,7 @@ void HttpServer::startListening()
                 _events.data.fd = _clientSocket;
 				
 				epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events); //guard later
+				_fd_activity_map[_clientSocket] = current_time;
 			}
 			else if (_eventsArr[i].events & EPOLLIN)
 			{	
@@ -113,19 +114,34 @@ void HttpServer::startListening()
 				//testSend(_fd_out);
 
 				//ServerHandler handle_request(_fd_out, );
-				HttpParser::bigSend(_fd_out, this->settings);
+				HttpParser::bigSend(_fd_out, this->settings); //this will change on monday
+				_fd_activity_map[_fd_out] = current_time;
 				// _events.events = EPOLLIN; 
                 // _events.data.fd = _fd_out;
 				epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events); //guard later
 				close (_fd_out); //needs to be handled in http parsing, client will send whether to close connection or not
-			
 			}
+			fdActivityLoop(current_time);
 		}
 	}
 	std::cout << "outofloop" << std::endl;
 	//close (_clientSocket);
 	close (epollFd);
 }
+// If the client has been inactive for too long, close the socket
+void HttpServer::fdActivityLoop(const time_t current_time) {
+	for (auto it = _fd_activity_map.begin(); it != _fd_activity_map.end();) {
+            if (current_time - it->second > TIME_OUT_PERIOD) {
+                std::cout << "Timeout: Closing client socket " << it->first << std::endl;
+                close(it->first);
+                epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, &_events);
+                it = _fd_activity_map.erase(it);
+            } else {
+                ++it;
+            }
+        }
+}
+
 
 void HttpServer::closeServer()
 {

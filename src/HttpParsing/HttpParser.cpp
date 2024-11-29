@@ -19,15 +19,14 @@ HttpParser::HttpParser() : _fullyRead(true), _contentLength(0) {}
 
 HttpParser::~HttpParser() {}
 
-HttpRequest::HttpRequest() : connection(true), errorFlag(-1) {}
-
+HttpRequest::HttpRequest() : connection(true), errorFlag(-1), settings(nullptr) {}
 
 //Reads the client request and stores it in a vector<char>
 void	HttpParser::recieveRequest(int out_fd)
 {
 	ssize_t bytesRead = 0;
 	size_t bytes = 1024;
-	_fullyRead = true; //Added so it would compile
+	_fullyRead = true;
 	
 	while(true)
 	{
@@ -49,7 +48,7 @@ void	HttpParser::recieveRequest(int out_fd)
 	_clientDataBuffer.resize(_clientDataBuffer.size() - (bytes + bytesRead));
 }
 //Empty the vector to the requestMap, needs to be parsed in the response.
-void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, std::shared_ptr<ServerSettings>& configSettings)
+void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, std::unordered_map<std::string, ServerSettings>& configSettings)
 {
     (void)configSettings; //NEED TO CHECK
 	try {
@@ -68,12 +67,16 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			//validateLocation(block, &request.errorFlag);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
+		if (!HttpHeaderParser::HostParse(configSettings, request)) {
+			request.errorFlag = 400;
+			request.connection = false;
+		}
 		if (request.method == GET && this->_contentLength != 0) {
 			request.errorFlag = 404;
 		}
-		parseBody(request, requestStream);
+		if (_contentLength || request.headers.find("Transfer-Encoding") != request.headers.end())
+			parseBody(request, requestStream);
 		} catch (std::exception& e) {
-			std::cout << "WHY U DO DIS\n";
 			std::cerr << e.what() << '\n';
 		}
 }
@@ -111,13 +114,11 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 }
 
 
-void	HttpParser::bigSend(int out_fd, std::shared_ptr<ServerSettings>& configSetting) 
+void	HttpParser::bigSend(int out_fd, std::unordered_map<std::string, ServerSettings>& configSetting) 
 
 {
 	HttpParser parser;
 	HttpRequest request;
-	request.settings = configSetting; //added by Casi to get settings to response
-	request.errorFlag = -1; //added by Casi to initialize the errorflag
 	parser.recieveRequest(out_fd);
 	parser.parseClientRequest(parser._clientDataBuffer, request, configSetting);
 	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
@@ -125,12 +126,9 @@ void	HttpParser::bigSend(int out_fd, std::shared_ptr<ServerSettings>& configSett
 
 	// std::cout << request.body << std::endl;
 
-
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value:" << pair.second << std::endl;
     // }
-
-
 	ServerHandler response(out_fd, request);
 }
 
