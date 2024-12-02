@@ -19,6 +19,7 @@
 #include <variant>
 #include <algorithm>
 
+class ServerSettings;
 class LocationSettings;
 
 class ConfigUtilities
@@ -32,6 +33,8 @@ public:
 	static	void	checkVectorEnd(std::vector<std::string>& vec, std::vector<std::string>::iterator& it, std::string msg);
 	static	void	checkSemiColon(std::vector<std::string>& vec, std::vector<std::string>::iterator it, std::string msg);
 	static	void	checkDuplicates(std::variant<int, bool, std::string, std::vector<int>> val, std::string msg);
+	static	void	printServerBlock(ServerSettings server);
 	static	void	printLocationBlock(LocationSettings location);
 	static	void	checkMethodDuplicates(std::vector<int>& location);
+	static	void	checkDefaultBlock(ServerSettings block, bool server);
 };

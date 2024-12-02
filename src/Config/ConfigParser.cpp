@@ -14,7 +14,7 @@
 
 ConfigParser::ConfigParser() {}
 
-ConfigParser::ConfigParser(std::string file)
+ConfigParser::ConfigParser(std::string file) : defaultServer(false)
 {
 	readConfigFile(file);
 }
@@ -50,12 +50,9 @@ void	ConfigParser::readConfigFile(std::string file)
 
 void		ConfigParser::parseConfigFile() 
 {
-	initialParse();
+	removeComments();
+	tokenise(configFileStr);
 	splitServerBlocks();
-	 //need to check how many servers there are, then create that many instances
-	// for (int i = 0; i < server_count; i++)
-	// 	settings.push_back(ServerSettings());
-	// settings[0].parseServerSettings(tokens);
 }
 
 void	ConfigParser::removeComments()
@@ -73,14 +70,6 @@ void	ConfigParser::removeComments()
 			i = start;
 		}
 	}
-}
-
-void	ConfigParser::countServers() 
-{
-	std::regex servers("server\\s+[^\\{]*\\{[^\\}]");
-	std::sregex_iterator begin(configFileStr.begin(), configFileStr.end(), servers);
-	std::sregex_iterator end;
-	server_count = std::distance(begin, end);
 }
 
 void	ConfigParser::tokenise(const std::string& c)
@@ -116,13 +105,6 @@ void	ConfigParser::tokenise(const std::string& c)
 		tokens.push_back(token);
 }
 
-void	ConfigParser::initialParse()
-{
-	removeComments();
-	// countServers();
-	tokenise(configFileStr);
-}
-
 std::string	ConfigParser::getConfigFileStr() { return configFileStr; }
 
 void	createKey(std::vector<std::string>::iterator start,  std::vector<std::string>::iterator end, std::string& key)
@@ -140,7 +122,7 @@ void	createKey(std::vector<std::string>::iterator start,  std::vector<std::strin
 	if (std::next(port_it) != end)
 		_port = *(port_it + 1);
 	key = _host + ":" + _port;
-	std::cout << key << '\n';
+	// std::cout << key << '\n';
 	
 }
 
@@ -148,27 +130,56 @@ void	ConfigParser::splitServerBlocks()
 {
 	if (tokens.begin()->compare("server") && tokens[1] != "{")
 		throw std::runtime_error("Configuration file should start with server block");
+	ConfigUtilities::checkBrackets(tokens);
 	auto it = tokens.begin();
 	for (; it != tokens.end(); it++)
 	{
 		if (!it->compare("server") && !std::next(it)->compare("{"))
 		{
 			auto start = it + 2;
+			auto end = start;
 			std::string key;
-			for (; it != tokens.end(); it++)
+			for (; end != tokens.end(); end++)
 			{
-				if (!it->compare("}") && (!std::next(it)->compare("server") || std::next(it) == tokens.end()))
+				if (!end->compare("}") && (!std::next(end)->compare("server") || std::next(end) == tokens.end()))
 				{
-					createKey(start, it, key);
-					auto dup = settings.insert({key, ServerSettings()});
+					createKey(start, end, key);
+					ServerSettings temp(key);
+					ConfigUtilities::checkDefaultBlock(temp, defaultServer);
+					auto dup = settings.insert({key, temp});
 					if (!dup.second)
 						throw std::runtime_error("config: duplicate host/port");
-					//settings[key].parseServerSettings(tokens); //PRIORITY
 					break ;
 				}
 			} 
+			settings[key].parseServerBlock(tokens, it, end);
 		}
 	}
+	checkHostPortDuplicates();
 }
+
+ServerSettings*	ConfigParser::getServerBlock(const std::string key)
+{
+	auto it = settings.find(key);
+	if (it != settings.end())
+		return &(it->second);
+	else
+		return nullptr;
+}
+
+void			ConfigParser::checkHostPortDuplicates()
+{
+	std::vector<std::string> dup;
+	for (auto& pair : settings)
+		dup.push_back(pair.second.getKey());
+	std::sort(dup.begin(), dup.end());
+	for (auto it = dup.begin(); it != dup.end(); it++)
+	{
+		if (it == std::next(it))
+			throw std::runtime_error("Config: duplicate host and port");
+	}
+}
+
+bool ConfigParser::getDefaultServer() { return defaultServer; }
 
 ConfigParser::~ConfigParser() {}

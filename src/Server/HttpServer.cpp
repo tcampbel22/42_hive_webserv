@@ -36,25 +36,38 @@ void HttpServer::signalHandler(int signal)
 void HttpServer::startServer()
 {
 	//make socket
-	_serverFd = socket(AF_INET, SOCK_STREAM, 0);
-	if (_serverFd == -1)
-		return ; //change later
-	//std::cout << _serverFd << std::endl;
-	
-	//store socket addr info
-	int optionValue = 1;
-	setsockopt(_serverFd, SOL_SOCKET, SO_REUSEADDR, &optionValue, sizeof(optionValue));
-	_socketInfo.sin_family = AF_INET; //macro for IPV4
-	_socketInfo.sin_port = htons(_port); //converts port number to network byte order
-	_socketInfo.sin_addr.s_addr = inet_addr(_ipAddress.c_str()); //converts ip address from string to uint
-
-	//bind socket to port
-	if (bind(_serverFd, (sockaddr *)&_socketInfo, sizeof(_socketInfo)) < 0)
-		return ; //change later and remember to close all fds
-	if (listen(_serverFd, 5) < 0)
+	for (auto it : _ip_port_list) //Iterate through host and port pairs (host is first and port is second)
 	{
-		std::cout << "listen failed\n";
-		return ; //change later, also close all fds
+		int serverFd = socket(AF_INET, SOCK_STREAM, 0);
+		if (serverFd == -1)
+		{
+			ft_perror("failed to create socket: " + it.first);
+			continue;
+		}
+		//std::cout << _serverFd << std::endl;
+		
+		//store socket addr info
+		int optionValue = 1;
+		setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &optionValue, sizeof(optionValue));
+		_socketInfo.sin_family = AF_INET; //macro for IPV4
+		_socketInfo.sin_port = htons(it.second); //converts port number to network byte order
+		_socketInfo.sin_addr.s_addr = inet_addr(it.first.c_str()); //converts ip address from string to uint
+
+		//bind socket to port
+		if (bind(serverFd, (sockaddr *)&_socketInfo, sizeof(_socketInfo)) < 0)
+		{
+			ft_perror("failed to bind socket: " + it.first);
+			close(serverFd);
+			continue;
+		}
+		if (listen(serverFd, 5) < 0)
+		{
+			ft_perror("failed to listen");
+			close(serverFd);
+			continue;
+		}
+		_server_fds.push_back(serverFd); //add fd to vector to use later in listening function
+		std::cout << "Listening on host: " << it.first << " Port: " << it.second << '\n';
 	}
 }
 
@@ -70,16 +83,17 @@ void HttpServer::startListening()
 	std::signal(SIGINT, signalHandler);
 	//std::cout << "Server listening on port " << _port << std::endl;
 
-	std::cout << "Server listening on " << settings->getPort() << std::endl;
-
-	std::string response = "HTTP/1.1 200 OK\nContent-Type: text/html; charset=UTF-8\nContent-Length: 137\n\n<!DOCTYPE html>\n<html>\n<head>\n    <title>Simple C++ Web Server</title>\n</head>\n<body>\n    <h1>Hello from a C++ web server!</h1>\n</body>\n</html>\n";
-
-	std::string response2 = "HTTP/1.1 200 OK\nContent-Type: text/html; charset=UTF-8\nContent-Length: 137\n\n<!DOCTYPE html>\n<html>\n<head>\n    <title>Simple C++ Web Server</title>\n</head>\n<body>\n    <h1>Hello from a shitty C++ web server!</h1>\n</body>\n</html>\n";
-
-	 epollFd = epoll_create1(0);
-	_events.data.fd = _serverFd;
-	 _events.events = EPOLLIN;
-	epoll_ctl(epollFd, EPOLL_CTL_ADD, _serverFd, &_events); //maybe protect
+	 epollFd = epoll_create1(0); //create epoll instance
+	 for (int fd : _server_fds) //iterate through fd vector and add to epoll
+	 {
+		_events.data.fd = fd;
+		_events.events = EPOLLIN;
+		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &_events) == -1)
+		{
+			ft_perror("Failed to add to epoll");
+			continue; 
+		}
+	 }
 	
 	while (true)
 	{
@@ -90,32 +104,38 @@ void HttpServer::startListening()
 			
 		for (int i = 0; i < numEvents; i++)
 		{
-			if (_eventsArr[i].data.fd == _serverFd)
+			int	eventFd = _eventsArr[i].data.fd;
+			if (std::find(_server_fds.begin(), _server_fds.end(), eventFd) != _server_fds.end())
 			{
-				socklen_t _sockLen = sizeof(_socketInfo);
-				_clientSocket = accept(_serverFd, (sockaddr *)&_socketInfo, &_sockLen);
-				if (_clientSocket < 0) 
-				{
-					std::cerr << "accept failed\n" << strerror(errno) << '\n';
-					continue;
-				}
-				std::cout << "New client connected: " << _clientSocket << std::endl;
-				setNonBlocking(_clientSocket);
-				
-				_events.events = EPOLLIN | EPOLLOUT;
-                _events.data.fd = _clientSocket;
-				
-				epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events); //guard later
+					socklen_t _sockLen = sizeof(_socketInfo);
+					_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
+					if (_clientSocket < 0) 
+					{
+						std::cerr << "accept failed\n" << strerror(errno) << '\n';
+						continue;
+					}
+					std::cout << "New client connected: " << _clientSocket << std::endl;
+					setNonBlocking(_clientSocket);
+					
+					_events.events = EPOLLIN | EPOLLOUT;
+					_events.data.fd = _clientSocket;
+					
+					if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events) == -1)
+					{
+						ft_perror("failed to add fd to epoll");
+						close(_clientSocket);
+						continue;
+					}
 			}
 			else if (_eventsArr[i].events & EPOLLIN)
 			{	
 				int _fd_out = _eventsArr[i].data.fd;
 				//testSend(_fd_out);
-
+				
 				//ServerHandler handle_request(_fd_out, );
-				HttpParser::bigSend(_fd_out, this->settings);
+				// HttpParser::bigSend(_fd_out, settings); // Need to update this with Eromon
 				// _events.events = EPOLLIN; 
-                // _events.data.fd = _fd_out;
+				// _events.data.fd = _fd_out;
 				epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events); //guard later
 				close (_fd_out); //needs to be handled in http parsing, client will send whether to close connection or not
 			
@@ -124,13 +144,14 @@ void HttpServer::startListening()
 	}
 	std::cout << "outofloop" << std::endl;
 	//close (_clientSocket);
-	close (epollFd);
+	close (epollFd); //Probably not needed
 }
 
 void HttpServer::closeServer()
 {
 	close(epollFd);
-	close(_serverFd);
+	for (auto it = _server_fds.begin(); it != _server_fds.end(); it++)
+		close(*it);
 }
 
 HttpServer::~HttpServer()
@@ -138,12 +159,32 @@ HttpServer::~HttpServer()
 	closeServer();
 
 };
-HttpServer::HttpServer(std::shared_ptr<ServerSettings> _settings)
+// HttpServer::HttpServer(std::shared_ptr<ServerSettings> _settings)
+// {
+// 	this->_instance = this;
+// 	settings = _settings;
+// 	_port = settings->getPort();
+// 	_ipAddress = settings->getHost();
+// 	_clientSocket = -1;
+// 	startServer();
+// };
+
+void	HttpServer::fillHostPortPairs()
+{
+	for (auto& pair : settings)
+	{
+		_ip_port_list.push_back( {pair.second.getHost(), pair.second.getPort()} );
+	}
+}
+
+
+HttpServer::HttpServer(std::unordered_map<std::string, ServerSettings>& _settings)
 {
 	this->_instance = this;
 	settings = _settings;
-	_port = settings->getPort();
-	_ipAddress = settings->getHost();
+	fillHostPortPairs();
+	// _port = settings->getPort();
+	// _ipAddress = settings->getHost();
 	_clientSocket = -1;
 	startServer();
-};
+}

@@ -18,8 +18,6 @@ LocationSettings::LocationSettings()
 	path = "/root";
 	root = "";
 	default_file = "";
-
-	
 	autoindex = false;
 	redirect = false;
 }
@@ -34,6 +32,8 @@ LocationSettings::LocationSettings(const std::string& new_path)
 		isFile = true;
 	root = "";
 	default_file = "";
+	is_default_file = false;
+	is_redirect = false;
 	autoindex = false;
 	redirect = "";
 }
@@ -82,6 +82,7 @@ void	LocationSettings::parseDefaultFile(std::vector<std::string>& location, std:
 	ConfigUtilities::checkVectorEnd(location, it, "location: default file: invalid syntax");
 	ConfigUtilities::checkSemiColon(location, it, "location: default file: syntax error");
 	default_file = *it;
+	is_default_file = true;
 	checkLocationValues(it);
 	ConfigUtilities::checkVectorEnd(location, it, "location: autoindex: invalid syntax");
 }
@@ -107,6 +108,7 @@ void	LocationSettings::parseRedirect(std::vector<std::string>& location, std::ve
 	ConfigUtilities::checkVectorEnd(location, it, "location: redirect: invalid syntax");
 	ConfigUtilities::checkSemiColon(location, it, "location: redirect: syntax error");
 	redirect = *it;
+	is_redirect = true;
 	checkLocationValues(it);
 	ConfigUtilities::checkVectorEnd(location, it, "location: autoindex: invalid syntax");
 }
@@ -148,7 +150,6 @@ void	LocationSettings::parseLocationErrorPages(std::vector<std::string>& locatio
 	{
 		ConfigUtilities::checkSemiColon(location, it, "location_error_pages: syntax error");
 		addLocationErrorPage(error_code, *it);
-		std::cout << "Error code: " <<*(it - 1) << " Path: " << *it << '\n';
 	}
 	else
 		throw std::runtime_error("location_error_pages: invalid error code");
@@ -173,3 +174,5 @@ std::string&				LocationSettings::getDefaultFile() { return default_file; }
 std::string&				LocationSettings::getRedirect() { return redirect; }
 std::vector<int>&			LocationSettings::getMethods() { return methods; }
 bool						LocationSettings::isAutoIndex() { return autoindex; }
+bool						LocationSettings::isDefaultFile() { return is_default_file; }
+bool						LocationSettings::isRedirect() { return is_redirect; }

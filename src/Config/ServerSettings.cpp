@@ -13,22 +13,21 @@
 #include "ServerSettings.hpp"
 #include "ConfigParser.hpp"
 
-ServerSettings::ServerSettings() : isDefault(false), host(""), port(-1), max_client_body_size(-1) {}
+ServerSettings::ServerSettings() : _isDefaultServer(false), host(""), port(-1), max_client_body_size(-1) {}
+
+ServerSettings::ServerSettings(std::string& key) : _isDefaultServer(false), _key(key), host(""), port(-1), max_client_body_size(-1) {}
 
 ServerSettings::~ServerSettings() {}
 
 
-void	ServerSettings::parseServerBlock(std::vector<std::string>& serverBlock) //need to chnage to accept iterator from tokens vector
+void	ServerSettings::parseServerBlock(std::vector<std::string>& serverBlock, std::vector<std::string>::iterator& it, std::vector<std::string>::iterator end)
 {
-	ConfigUtilities::checkBrackets(serverBlock);
-	auto it = serverBlock.begin();
 	ConfigUtilities::trimServerBlock(serverBlock, it);
-	//check if the server is first and set as default
 	const std::string	directives[6] = {"host", "port", "client_max_body_size", "server_names", "location", "error_page"};
 	bool				isValid = false;
 	bool				dupServerName = false;
 	
-	for (; it != serverBlock.end(); it++)
+	for (; it != end; it++)
 	{
 		isValid = false;
 		for (int i = 0; i < 6; i++)
@@ -79,7 +78,6 @@ void	ServerSettings::parseHost(std::vector<std::string>& directive, std::vector<
 	{
 		setHost(ip);
 		it++;
-		// std::cout << "Host: " << host << '\n';
 		checkConfigValues(directive, it);
 	}
 	else
@@ -101,7 +99,6 @@ void	ServerSettings::parsePort(std::vector<std::string>& directive, std::vector<
 	{
 		port = port_num;
 		it++;
-		// std::cout << "Port: " << port << '\n';
 		checkConfigValues(directive, it);
 	}
 	else
@@ -123,7 +120,6 @@ void	ServerSettings::parseMaxBodySize(std::vector<std::string>& directive, std::
 	{
 		max_client_body_size = size;
 		it++;
-		// std::cout << "Max: " << getMaxClientBody() << '\n';
 		checkConfigValues(directive, it);
 	}
 	else
@@ -143,7 +139,6 @@ void	ServerSettings::parseServerNames(std::vector<std::string>& directive, std::
 		{
 			*dup = true;
 			addServerName(*it);
-			// std::cout << "Server name: " << *it << '\n';
 		}
 		else
 			throw std::runtime_error("server_names: invalid server name/syntax error");
@@ -168,7 +163,6 @@ void	ServerSettings::parseErrorPages(std::vector<std::string>& directive, std::v
 	{
 		ConfigUtilities::checkSemiColon(directive, it, "error_pages: syntax error");
 		addErrorPage(error_code, *it);
-		// std::cout << "Error code: " <<*(it - 1) << " Path: " << *it << '\n';
 	}
 	else
 		throw std::runtime_error("error_pages: invalid error code");
@@ -176,16 +170,6 @@ void	ServerSettings::parseErrorPages(std::vector<std::string>& directive, std::v
 	checkConfigValues(directive, it);
 }
 
-
-void		ServerSettings::parseServerSettings(std::vector<std::string>& tokens) 
-{
-
-	//Need to create map of vectors of server blocks
-	// for (auto it = tokens.begin(); it != tokens.end(); it++)
-	// {
-	parseServerBlock(tokens); //needs to send in each server block individually
-	// }		
-}
 
 void	ServerSettings::parseLocationBlockSettings(std::vector<std::string>& location, std::vector<std::string>::iterator& it)
 {
@@ -247,110 +231,4 @@ void	ServerSettings::parseLocationBlock(std::vector<std::string>& location, std:
 		parseLocationBlockSettings(location, it);
 	else
 		throw std::runtime_error("location: syntax error");
-}
-
-//GETTERS
-
-bool						ServerSettings::isDefaultServer() { return isDefault; }
-int							ServerSettings::getPort() { return port; }
-std::string&				ServerSettings::getHost() { return host; }
-std::vector<std::string>&	ServerSettings::getServerNames() { return server_names; } //retuns vector containing all server names
-int							ServerSettings::getMaxClientBody() { return max_client_body_size; } //in bytes
-
-std::vector<std::string>& ServerSettings::getErrorPages(int status) 
-{
-	if (error_pages.find(status) != error_pages.end())
-	{
-		auto it = error_pages.find(status);
-		return it->second;
-	}
-	else 
-		throw std::runtime_error("status not found");
-}
-
-std::string&	ServerSettings::getLocationPath(std::string key) 
-{
-	auto it = locations.find(key);
-	if (it != locations.end())
-		return locations[key].getPath();
-	else
-		throw std::runtime_error(key + ": key not found in location setting block");
-}
-
-std::string&	ServerSettings::getLocationRoot(std::string key) 
-{
-	auto it = locations.find(key);
-	if (it != locations.end())
-		return locations[key].getRoot();
-	else
-		throw std::runtime_error(key + ": key not found in location setting block");
-}
-
-std::string&	ServerSettings::getLocationDefaultFile(std::string key)
-{
-	auto it = locations.find(key);
-	if (it != locations.end())
-		return locations[key].getDefaultFile();
-	else
-		throw std::runtime_error(key + ": key not found in location setting block");
-}
-
-bool	ServerSettings::getLocationAutoIndex(std::string key)
-{
-	auto it = locations.find(key);
-	if (it != locations.end())
-		return locations[key].isAutoIndex();
-	else
-	{
-		ft_perror(key +": not found");
-		return false;
-	}
-}
-std::vector<int>&	ServerSettings::getLocationMethods(std::string key)
-{
-	auto it = locations.find(key);
-	if (it != locations.end())
-		return locations[key].getMethods();
-	else
-		throw std::runtime_error(key + "not found in location block");
-}
-
-LocationSettings*			ServerSettings::getLocationBlock(const std::string key)
-{
-	auto it = locations.find(key);
-	if (it != locations.end())
-		return &(it->second);
-	else
-		return nullptr;
-}
-
-//SETTERS
-
-void	ServerSettings::addServerName(std::string name) { server_names.push_back(name); } //Need to check for duplicates
-void	ServerSettings::addErrorPage(int status, std::string path) 
-{ 
-	if (error_pages.find(status) != error_pages.end())
-	{
-		if (std::find(error_pages[status].begin(), error_pages[status].end(), path) != error_pages[status].end())
-			throw std::runtime_error("error_pages: duplicate path");
-	}
-	error_pages[status].push_back(path);
-}
-
-void	ServerSettings::setHost(std::string ip) { host = ip; }
-void	ServerSettings::setPort(int port_num) { port = port_num; }
-void	ServerSettings::setMaxClientBodySize(int size) { max_client_body_size = size; }
-
-
-void	ServerSettings::checkConfigValues(std::vector<std::string>& directive, std::vector<std::string>::iterator& it)
-{
-	if (it == directive.end() || std::next(it) == directive.end())
-	{
-		if (port == -1 || host.empty())
-			throw std::runtime_error("host or port missing from configuration file");
-		if (locations.find("/") == locations.end())
-			throw std::runtime_error("root directory missing from configuration file");
-		if (max_client_body_size == -1)
-			max_client_body_size = MAX_BODY_SIZE;
-	}
 }

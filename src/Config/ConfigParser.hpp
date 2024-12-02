@@ -23,6 +23,8 @@
 #include <sstream>
 #include <fstream>
 #include <cctype>
+#include <algorithm>
+#include <iterator>
 
 class ServerSettings;
 
@@ -31,18 +33,19 @@ class ConfigParser
 private:
 	std::string					configFileStr;
 	std::vector<std::string>	tokens; 
-	int							server_count;
+	bool						defaultServer;
 public:
 	std::unordered_map<std::string, ServerSettings> settings;
 	ConfigParser();
 	ConfigParser(std::string file);
 	~ConfigParser();
-	void		readConfigFile(std::string);
-	void		parseConfigFile();
-	void		initialParse();
-	void		removeComments();
-	std::string	getConfigFileStr();
-	void		countServers();
-	void		tokenise(const std::string& config);
-	void		splitServerBlocks();
+	void			readConfigFile(std::string);
+	void			parseConfigFile();
+	void			removeComments();
+	std::string		getConfigFileStr();
+	void			tokenise(const std::string& config);
+	void			splitServerBlocks();
+	bool			getDefaultServer();
+	ServerSettings*	getServerBlock(const std::string key);
+	void			checkHostPortDuplicates();
 };
