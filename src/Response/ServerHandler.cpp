@@ -46,15 +46,15 @@ _response(), _input(_newInput)
 
 int ServerHandler::checkMethod()
 {
-	ConfigUtilities::printLocationBlock(*locSettings);
+	// ConfigUtilities::printLocationBlock(*locSettings);
 	std::vector<int> allowedMethods = locSettings->getMethods();
 	for (auto& method : allowedMethods)
 	{
 		if (_input.method == method)
 			return 0;
 	}
-	if (_input.method == GET && home == true)
-		return 0;
+	// if (_input.method == GET && home == true)
+	// 	return 0;
 	return (1);
 }
 
@@ -68,7 +68,7 @@ void ServerHandler::getLocationSettings()
 	while (42)
 	{
 		locSettings = _input.settings->getLocationBlock(key);
-		std::cout << "KEY = " << key << std::endl;
+		// std::cout << "KEY = " << key << std::endl;
 		if (locSettings || len < 2)
 			break ;		
 		
@@ -93,8 +93,8 @@ void ServerHandler::parsePath()
 		_input.errorFlag = 401;		
 		return ;
 	}
-	if (_input.path.length() == 1)
-		home = true;
+	// if (_input.path.length() == 1)
+	// 	home = true;
 	getLocationSettings();
 	if (!locSettings)
 	{
@@ -107,7 +107,10 @@ void ServerHandler::parsePath()
 		_input.path = _input.path.substr(1, _input.path.length() -1);
 	// std::cout << "DEFAULT FILE = " << locSettings->getDefaultFilePath() << std::endl;
 	if (_input.path.back() == '/')
+	{
+		//use bool from config to see if there is a deafault file & if directory listing is on
 		_input.path = _input.path + locSettings->getDefaultFile();
+	}
 	// std::cout << _input.path << std::endl;
 
 	//sanitize the path, and set error if needed
@@ -189,8 +192,8 @@ void	ServerHandler::setContentType(std::string path)
 			return ; 
 		}
 	}
-	//default if no file extension
-	_response.setContentType("text/html");
+	//default if no file extension // we need to decide the base
+	_response.setContentType("text/plain");
 }
 
 int ServerHandler::getFile(std::string path)
@@ -203,9 +206,8 @@ int ServerHandler::getFile(std::string path)
 	if (!infile.is_open())
 	{
 		//should set flag to failed for status code
-		_response.setResponseCode(404);
-		getFile("root/etc/response/404.html");
-		//std::cerr << "File failed to open\n";
+		// _input.errorFlag = 404;
+		// _response.setResponseCode(404);
 		return (1);
 	}
 	stream << infile.rdbuf();
@@ -217,13 +219,55 @@ int ServerHandler::getFile(std::string path)
 	return (0);
 }
 
+void ServerHandler::defaultError()
+{
+	std::string code = std::to_string(_input.errorFlag);
+	std::string body;
+
+	body = "	<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n    <title>" + code + "</title>\n</head>\n<body>\n    <h1>";
+	body += code + " Error</h1>\n</body>\n</html>";
+
+	_response.set_body(body);
+	_response.setContentType("text/html");
+	_response.setContentLength(body.length());
+}
+
 void ServerHandler::doError()
 {
 	_response.setResponseCode(_input.errorFlag);
-	// getFile(locSettings->//get error path)
+
+	std::string errorPath;
+	std::vector<std::string> errorVector;
+	//could getErrorPages perhaps return just a string path to the correct Error page?
+	try
+	{
+		errorVector = _input.settings->getErrorPages(_input.errorFlag);
+		errorPath = errorVector.at(0);
+	}
+	catch(const std::exception& e)
+	{
+	}
+	if (!errorPath.empty())
+	{
+		if (getFile(errorPath) == 0)
+			return;
+	}
+
+
+
 	//This needs to check the error pyramid for correct error file
-	getFile("root/etc/response/" +  std::to_string(_input.errorFlag) + ".html");
+	
+	// getFile("root/etc/response/" +  std::to_string(_input.errorFlag) + ".html");
+	
 	//should get a error file from the directory
+
+
+	//location based error pages not yet set up, but they should be checked first
+
+	//then server based error pages
+
+	//and finally generic default pages to be generated/used;
+	defaultError();
 }
 
 void ServerHandler::doPost()
@@ -270,10 +314,57 @@ void ServerHandler::doPost()
 		_input.errorFlag = 404;
 }
 
+void ServerHandler::generateIndex()
+{
+	std::filesystem::path dirPath(_input.path);
+	std::string body;
+
+	body = "	<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n    <title>" + _input.path + " Directory listing</title>\n</head>\n<body>\n    <h1>";
+	body += _input.path + " directory listing:</h1>\n<ul>";
+
+	try
+	{
+		if(std::filesystem::exists(dirPath) && std::filesystem::is_directory(dirPath))
+		{
+			for (const auto& file : std::filesystem::directory_iterator(dirPath))
+			{
+				if (file.is_directory())
+					body += "    <li>[DIR] <a href=\"" + file.path().filename().string() + "/\">" + file.path().filename().string();
+				else
+					body += "    <li>[FILE] <a href=\"" + file.path().filename().string() + "\">" + file.path().filename().string();
+				body += "</a></li>\n";
+			}
+		}
+	}
+	catch(const std::exception& e)
+	{
+		_input.errorFlag = 403; //probably other code
+		return ;
+	}
+	body += "</ul>\n</body>\n</html>";
+
+	_response.set_body(body);
+	_response.setContentType("text/html");
+	_response.setContentLength(body.length());
+	_response.setResponseCode(200);
+}
+
 void ServerHandler::doGet()
 {
+	if (_input.path.back() == '/' && locSettings->isAutoIndex() == true)
+	{
+		generateIndex();
+		return;
+	}
+	//check if it is asking for a directory and if autoindex is on
+	//if so, generate the directory index
+
 	if (getFile(_input.path) == 1)
+	{
+		if (_input.errorFlag < 0)
+			_input.errorFlag = 404;
 		return ;
+	}
 	_response.setResponseCode(200);
 }
 
@@ -316,5 +407,5 @@ void ServerHandler::doDelete()
 	}
 	else
 		_input.errorFlag = 404;
-	std::cout << "GOT TO DELETE\n";
+	// std::cout << "GOT TO DELETE\n";
 }

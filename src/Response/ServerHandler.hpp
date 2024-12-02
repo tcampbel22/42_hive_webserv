@@ -24,26 +24,16 @@ class ServerHandler
 private:
 	Response _response;
 	HttpRequest& _input;
-	bool	home = false;
+	// bool	home = false;
 	LocationSettings *locSettings;
-
 	std::unordered_map<std::string, std::string> MIMEs;
-
-// struct HttpRequest {
-// 	std::string method;
-// 	std::string path;
-// 	std::map<std::string, std::string> headers;
-// 	std::string body;
-// 	std::string connection;
-// 	std::string host;
-// 	int errorFlag;
-// };
-
 
 public:
 	ServerHandler(int fd, HttpRequest& _newInput);
-	void getLocationSettings();
+	void	getLocationSettings();
+	void	generateIndex();
 	int 	checkMethod();
+	void 	defaultError();
 	void	setContentType(std::string path);
 	void 	parsePath();
 	void 	executeInput();
