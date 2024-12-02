@@ -46,15 +46,15 @@ _response(), _input(_newInput)
 
 int ServerHandler::checkMethod()
 {
-	ConfigUtilities::printLocationBlock(*locSettings);
+	// ConfigUtilities::printLocationBlock(*locSettings);
 	std::vector<int> allowedMethods = locSettings->getMethods();
 	for (auto& method : allowedMethods)
 	{
 		if (_input.method == method)
 			return 0;
 	}
-	if (_input.method == GET && home == true)
-		return 0;
+	// if (_input.method == GET && home == true)
+	// 	return 0;
 	return (1);
 }
 
@@ -68,7 +68,7 @@ void ServerHandler::getLocationSettings()
 	while (42)
 	{
 		locSettings = _input.settings->getLocationBlock(key);
-		std::cout << "KEY = " << key << std::endl;
+		// std::cout << "KEY = " << key << std::endl;
 		if (locSettings || len < 2)
 			break ;		
 		
@@ -93,8 +93,8 @@ void ServerHandler::parsePath()
 		_input.errorFlag = 401;		
 		return ;
 	}
-	if (_input.path.length() == 1)
-		home = true;
+	// if (_input.path.length() == 1)
+	// 	home = true;
 	getLocationSettings();
 	if (!locSettings)
 	{
@@ -107,7 +107,10 @@ void ServerHandler::parsePath()
 		_input.path = _input.path.substr(1, _input.path.length() -1);
 	// std::cout << "DEFAULT FILE = " << locSettings->getDefaultFilePath() << std::endl;
 	if (_input.path.back() == '/')
+	{
+		//use bool from config to see if there is a deafault file & if directory listing is on
 		_input.path = _input.path + locSettings->getDefaultFile();
+	}
 	// std::cout << _input.path << std::endl;
 
 	//sanitize the path, and set error if needed
@@ -189,8 +192,8 @@ void	ServerHandler::setContentType(std::string path)
 			return ; 
 		}
 	}
-	//default if no file extension
-	_response.setContentType("text/html");
+	//default if no file extension // we need to decide the base
+	_response.setContentType("text/plain");
 }
 
 int ServerHandler::getFile(std::string path)
@@ -317,7 +320,7 @@ void ServerHandler::generateIndex()
 	std::string body;
 
 	body = "	<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n    <title>" + _input.path + " Directory listing</title>\n</head>\n<body>\n    <h1>";
-	body += _input.path + " directory listing:</h1>\n";
+	body += _input.path + " directory listing:</h1>\n<ul>";
 
 	try
 	{
@@ -325,12 +328,11 @@ void ServerHandler::generateIndex()
 		{
 			for (const auto& file : std::filesystem::directory_iterator(dirPath))
 			{
-				body += "<p>";
 				if (file.is_directory())
-					body += "[DIR] " + file.path().filename().string();
+					body += "    <li>[DIR] <a href=\"" + file.path().filename().string() + "/\">" + file.path().filename().string();
 				else
-					body += "[FILE] " + file.path().filename().string();
-				body += "</p>\n";
+					body += "    <li>[FILE] <a href=\"" + file.path().filename().string() + "\">" + file.path().filename().string();
+				body += "</a></li>\n";
 			}
 		}
 	}
@@ -339,7 +341,7 @@ void ServerHandler::generateIndex()
 		_input.errorFlag = 403; //probably other code
 		return ;
 	}
-	body += "</body>\n</html>";
+	body += "</ul>\n</body>\n</html>";
 
 	_response.set_body(body);
 	_response.setContentType("text/html");
@@ -356,7 +358,6 @@ void ServerHandler::doGet()
 	}
 	//check if it is asking for a directory and if autoindex is on
 	//if so, generate the directory index
-
 
 	if (getFile(_input.path) == 1)
 	{
@@ -406,5 +407,5 @@ void ServerHandler::doDelete()
 	}
 	else
 		_input.errorFlag = 404;
-	std::cout << "GOT TO DELETE\n";
+	// std::cout << "GOT TO DELETE\n";
 }

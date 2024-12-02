@@ -24,7 +24,7 @@ class ServerHandler
 private:
 	Response _response;
 	HttpRequest& _input;
-	bool	home = false;
+	// bool	home = false;
 	LocationSettings *locSettings;
 	std::unordered_map<std::string, std::string> MIMEs;
 
