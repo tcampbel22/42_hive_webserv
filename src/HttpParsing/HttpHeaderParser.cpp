@@ -19,7 +19,7 @@ void HttpHeaderParser::parseHeaders(std::istringstream& requestStream, HttpReque
 			ssize_t colonPos = line.find(':');
 			if ((size_t)colonPos != std::string::npos) {
 				std::string key = line.substr(0, colonPos);
-				std::string value = line.substr(colonPos + 1);
+				std::string value = line.substr(colonPos + 2);
 				request.headers[key] = value;
 			}
 			else 
@@ -34,7 +34,7 @@ void HttpHeaderParser::procesHeaderFields(HttpRequest& request, int& contentLeng
 		request.connection = false;
 	else
 		request.connection = true;
-	request.host.append(request.headers.at("Host"));
+	request.host.append(trim(request.headers.at("Host")));
 	if (request.headers.count("Content-Length") == 0) {
     	return;
 	}
@@ -50,13 +50,18 @@ void HttpHeaderParser::procesHeaderFields(HttpRequest& request, int& contentLeng
 bool HttpHeaderParser::HostParse(std::unordered_map<std::string, ServerSettings>& config, HttpRequest& request) 
 {
 	for (auto &it : config) {
-		if (!it.first.compare(request.host)) {
-			*request.settings = it.second;
+		if (it.first == request.host) {
+			request.settings = &it.second;
 			return true;
 		}
 	}
 	return false;
 }
 
+std::string trim(const std::string& str) {
+    size_t first = str.find_first_not_of(" \t\n\r\f\v");
+    size_t last = str.find_last_not_of(" \t\n\r\f\v");
+    return (first == std::string::npos) ? "" : str.substr(first, (last - first + 1));
+}
 
 HttpHeaderParser::~HttpHeaderParser() {}

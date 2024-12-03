@@ -115,15 +115,15 @@ void	HttpParser::bigSend(int out_fd, std::unordered_map<std::string, ServerSetti
 	HttpRequest request;
 	parser.recieveRequest(out_fd);
 	parser.parseClientRequest(parser._clientDataBuffer, request, configSetting);
+	// for (const auto& pair : request.headers) {
+    //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
+    // }
 	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
    	// std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
 
 	// std::cout << request.body << std::endl;
 
 
-	// for (const auto& pair : request.headers) {
-    //     std::cout << "Key: " << pair.first << " Value:" << pair.second << std::endl;
-    // }
 
 
 	ServerHandler response(out_fd, request);
