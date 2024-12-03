@@ -34,8 +34,8 @@ void	ConfigUtilities::trimServerBlock(std::vector<std::string>& serverBlock, std
 {
 	if (std::next(it) != serverBlock.end() && !it->compare("server") && !std::next(it)->compare("{"))
 		it += 2;
-	if (!serverBlock.back().compare("}"))
-		serverBlock.pop_back();
+	// if (!serverBlock.back().compare("}"))
+	// 	serverBlock.pop_back();
 }
 
 void	ConfigUtilities::shiftLocationBlock(std::vector<std::string>& location, std::vector<std::string>::iterator& it)
@@ -84,8 +84,33 @@ void	ConfigUtilities::checkDuplicates(std::variant<int, bool, std::string, std::
 	}
 }
 
+
+void	ConfigUtilities::printServerBlock(ServerSettings server)
+{
+	
+	std::string key(server.getHost() + ":");
+	std::cout << "SERVER BLOCK SETTINGS: " << key << server.getPort() << "\n\n";
+	std::cout << "Host: " << server.getHost() << '\n';
+	std::cout << "Port: " << server.getPort() << '\n';
+	std::cout << "Max Client Body: " << server.getMaxClientBody() << '\n';
+	std::cout << "Error Pages:\n";
+	if (server.getAllErrorPages().empty())
+		std::cout << "No error pages\n";
+	else
+	{
+		for (auto& pair : server.getAllErrorPages())
+		{
+			for (auto it = pair.second.begin(); it != pair.second.end(); it++)
+				std::cout << pair.first << ": " << *it << '\n'; 
+		}
+	}
+	std::cout << '\n';
+}
+
+
 void	ConfigUtilities::printLocationBlock(LocationSettings location)
 {
+	std::cout << "\nLOCATION SETTINGS BLOCK: " << location.getPath() << "\n\n";
 	std::cout << "Path: " << location.getPath() << '\n';
 	if (!location.getRoot().empty())
 		std::cout << "Root: " << location.getRoot() << '\n';
@@ -112,6 +137,7 @@ void	ConfigUtilities::printLocationBlock(LocationSettings location)
 		}
 		std::cout << '\n';
 	}
+	std::cout << '\n';
 }
 
 void	ConfigUtilities::checkMethodDuplicates(std::vector<int>& method)
@@ -122,4 +148,14 @@ void	ConfigUtilities::checkMethodDuplicates(std::vector<int>& method)
 		throw std::runtime_error("method: duplicate method");
 	if (std::count(method.begin(), method.end(), DELETE) > 1)
 		throw std::runtime_error("method: duplicate method");
+}
+
+
+void ConfigUtilities::checkDefaultBlock(ServerSettings block, bool server)
+{
+	if (server == false)
+	{
+		block.setDefaultServer(true);
+		server = true;
+	}
 }

@@ -29,9 +29,11 @@ private:
 	std::string 				root; //directory
 	std::vector<int>			methods; //allowed methods
 	std::string					default_file; //index index.html
+	bool						is_default_file;
 	std::unordered_map<int, std::vector<std::string>> location_error_pages;
 	bool						autoindex; //enable or disable directory listing
 	std::string					redirect;
+	bool						is_redirect;
 	bool						isDirectory = false;
 	bool						isFile = false;
 public:
@@ -52,4 +54,6 @@ public:
 	std::vector<int>&				getMethods(); //Methods POST GET DELETE
 	bool							isAutoIndex(); //directory listing
 	std::string&					getRedirect();
+	bool							isDefaultFile();
+	bool							isRedirect();
 };

@@ -39,9 +39,11 @@ class HttpServer
 {
 private:
 	static HttpServer *_instance;
-	std::string 	_ipAddress;
-	int				_port;
-	int				_serverFd;
+	std::vector<std::pair<std::string, int>> _ip_port_list;
+	std::vector<int> _server_fds;
+	// std::string 	_ipAddress;
+	// int				_port;
+	// int				_serverFd;
 	int 			_clientSocket;
 	sockaddr_in 	_socketInfo; //reusable
 	int				epollFd;
@@ -51,11 +53,13 @@ private:
 	std::unordered_map<int, time_t> _fd_activity_map;
 	
 public:
-	std::shared_ptr<ServerSettings> settings;
+	// std::shared_ptr<ServerSettings> settings;
+	std::unordered_map<std::string, ServerSettings> settings;
 	//constructors & destructors
-	HttpServer(std::shared_ptr<ServerSettings> _settings);
+	// HttpServer(std::shared_ptr<ServerSettings> _settings);
+	HttpServer(std::unordered_map<std::string, ServerSettings>& _settings);
 	~HttpServer();
-	//operator overloads
+	void	fillHostPortPairs();
 	
 	//methods
 	static void signalHandler(int signal);
