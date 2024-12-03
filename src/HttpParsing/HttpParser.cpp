@@ -19,14 +19,15 @@ HttpParser::HttpParser() : _fullyRead(true), _contentLength(0) {}
 
 HttpParser::~HttpParser() {}
 
-HttpRequest::HttpRequest() : connection(true), errorFlag(-1), settings(nullptr) {}
+HttpRequest::HttpRequest() : connection(true), errorFlag(-1) {}
+
 
 //Reads the client request and stores it in a vector<char>
 void	HttpParser::recieveRequest(int out_fd)
 {
 	ssize_t bytesRead = 0;
 	size_t bytes = 1024;
-	_fullyRead = true;
+	_fullyRead = true; //Added so it would compile
 	
 	while(true)
 	{
@@ -50,7 +51,6 @@ void	HttpParser::recieveRequest(int out_fd)
 //Empty the vector to the requestMap, needs to be parsed in the response.
 void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, std::unordered_map<std::string, ServerSettings>& configSettings)
 {
-    (void)configSettings; //NEED TO CHECK
 	try {
 		std::string data(clientData.begin(), clientData.end());
     	std::istringstream requestStream(data);
@@ -60,11 +60,6 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			request.errorFlag = 400;//error shit in here if first line is bad: ERROR 400 according to RFC
 			std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl; 
 		}
-		// LocationSettings *block = configSettings->getLocationBlock(request.path); //parse path and method according to config file instructions. //requires information from config file
-		// if (!block)
-		// 	request.errorFlag = 404; NEED TO DOUBLE CHECK THIS LOGIC
-		//else
-			//validateLocation(block, &request.errorFlag);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(configSettings, request)) {
@@ -115,7 +110,6 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 
 
 void	HttpParser::bigSend(int out_fd, std::unordered_map<std::string, ServerSettings>& configSetting) 
-
 {
 	HttpParser parser;
 	HttpRequest request;
@@ -126,9 +120,12 @@ void	HttpParser::bigSend(int out_fd, std::unordered_map<std::string, ServerSetti
 
 	// std::cout << request.body << std::endl;
 
+
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value:" << pair.second << std::endl;
     // }
+
+
 	ServerHandler response(out_fd, request);
 }
 
