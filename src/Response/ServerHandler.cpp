@@ -88,13 +88,12 @@ void ServerHandler::parsePath()
 		return ;
 	}
 	std::regex validPathRegex("^[a-zA-Z0-9/_.-]+$");
-	if (!std::regex_match(_input.path, validPathRegex) || _input.path.find("..") != std::string::npos)
+	if (!std::regex_match(_input.path, validPathRegex) || _input.path.find("..") != std::string::npos \
+		|| _input.path.find("//") != std::string::npos)
 	{
 		_input.errorFlag = 401;		
 		return ;
 	}
-	// if (_input.path.length() == 1)
-	// 	home = true;
 	getLocationSettings();
 	if (!locSettings)
 	{
@@ -239,6 +238,25 @@ void ServerHandler::doError()
 	std::string errorPath;
 	std::vector<std::string> errorVector;
 	//could getErrorPages perhaps return just a string path to the correct Error page?
+	//check if there are location level error pages for the requested code
+
+	// try
+	// {
+	// 	errorVector = locSettings->getErrorPages(_input.errorFlag);
+	// 	errorPath = errorVector.at(0);
+	// }
+	// catch(const std::exception& e)
+	// {
+	// }
+	// if (!errorPath.empty())
+	// {
+	// 	//check that the path is valid
+	// 	if (getFile(errorPath) == 0)
+	// 		return;
+	// }
+	errorVector.clear();
+
+	//if no location level pages, check if there is server level pages
 	try
 	{
 		errorVector = _input.settings->getErrorPages(_input.errorFlag);
@@ -249,11 +267,10 @@ void ServerHandler::doError()
 	}
 	if (!errorPath.empty())
 	{
+		//check that the path is valid
 		if (getFile(errorPath) == 0)
 			return;
 	}
-
-
 
 	//This needs to check the error pyramid for correct error file
 	
@@ -266,7 +283,7 @@ void ServerHandler::doError()
 
 	//then server based error pages
 
-	//and finally generic default pages to be generated/used;
+	//and finally, if no pages found, generate deafult pages;
 	defaultError();
 }
 
