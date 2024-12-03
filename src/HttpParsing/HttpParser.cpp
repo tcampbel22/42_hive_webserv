@@ -73,7 +73,6 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		}
 		parseBody(request, requestStream);
 		} catch (std::exception& e) {
-			std::cout << "WHY U DO DIS\n";
 			std::cerr << e.what() << '\n';
 		}
 }

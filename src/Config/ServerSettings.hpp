@@ -35,7 +35,8 @@ class LocationSettings;
 class ServerSettings
 {
 private:
-	bool		isDefault;
+	bool		_isDefaultServer;
+	std::string	_key;
 	std::string host;
 	int			port;
 	int			max_client_body_size;
@@ -45,10 +46,10 @@ private:
 
 public:
 	ServerSettings();
+	ServerSettings(std::string& key);
 	~ServerSettings();
 	//PARSERS
-	void						parseServerSettings(std::vector<std::string>& tokens);
-	void						parseServerBlock(std::vector<std::string>& serverBlock);
+	void						parseServerBlock(std::vector<std::string>& serverBlock, std::vector<std::string>::iterator& it, std::vector<std::string>::iterator end);
 	void						parseHost(std::vector<std::string>& directive, std::vector<std::string>::iterator& it);
 	void						parsePort(std::vector<std::string>& directive, std::vector<std::string>::iterator& it);
 	void						parseServerNames(std::vector<std::string>& directive, std::vector<std::string>::iterator& it, bool *dup);
@@ -59,24 +60,25 @@ public:
 	void						parseLocationBlockSettings(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
 	
 	//SETTERS
+	void						setDefaultServer(bool val);
 	void						setHost(std::string ip);
 	void						setPort(int port_num);
 	void						setMaxClientBodySize(int size);
 	void						addErrorPage(int status, std::string path);
 	void						addServerName(std::string name);
-	void						setLocationSettings(const std::string& key);
 	//GETTERS
-	bool						isDefaultServer();
-	int							getPort();
-	std::string&				getHost();
-	std::vector<std::string>& 	getServerNames();
-	int							getMaxClientBody();
-	std::vector<std::string>&	getErrorPages(int key);
-	std::string& 				getLocationPath(std::string key);
-	std::string& 				getLocationRoot(std::string key);
-	std::string& 				getLocationDefaultFile(std::string key);
-	bool 						getLocationAutoIndex(std::string key);
-	std::vector<int>&			getLocationMethods(std::string key);
-	LocationSettings*			getLocationBlock(const std::string key);
-	// std::unordered_map<std::string, LocationSettings> getLocationSettings();
+	bool												isDefaultServer();
+	std::string											getKey();
+	int													getPort();
+	std::string&										getHost();
+	std::vector<std::string>& 							getServerNames();
+	int													getMaxClientBody();
+	std::unordered_map<int, std::vector<std::string>>&	getAllErrorPages();
+	std::vector<std::string>&							getErrorPages(int key);
+	std::string& 										getLocationPath(std::string key);
+	std::string& 										getLocationRoot(std::string key);
+	std::string& 										getLocationDefaultFile(std::string key);
+	bool 												getLocationAutoIndex(std::string key);
+	std::vector<int>&									getLocationMethods(std::string key);
+	LocationSettings*									getLocationBlock(const std::string key);
 };
