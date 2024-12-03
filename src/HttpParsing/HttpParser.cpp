@@ -49,9 +49,8 @@ void	HttpParser::recieveRequest(int out_fd)
 	_clientDataBuffer.resize(_clientDataBuffer.size() - (bytes + bytesRead));
 }
 //Empty the vector to the requestMap, needs to be parsed in the response.
-void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, std::shared_ptr<ServerSettings>& configSettings)
+void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, std::unordered_map<std::string, ServerSettings>& configSettings)
 {
-    (void)configSettings; //NEED TO CHECK
 	try {
 		std::string data(clientData.begin(), clientData.end());
     	std::istringstream requestStream(data);
@@ -61,17 +60,17 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			request.errorFlag = 400;//error shit in here if first line is bad: ERROR 400 according to RFC
 			std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl; 
 		}
-		// LocationSettings *block = configSettings->getLocationBlock(request.path); //parse path and method according to config file instructions. //requires information from config file
-		// if (!block)
-		// 	request.errorFlag = 404; NEED TO DOUBLE CHECK THIS LOGIC
-		//else
-			//validateLocation(block, &request.errorFlag);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
+		if (!HttpHeaderParser::HostParse(configSettings, request)) {
+			request.errorFlag = 400;
+			request.connection = false;
+		}
 		if (request.method == GET && this->_contentLength != 0) {
 			request.errorFlag = 404;
 		}
-		parseBody(request, requestStream);
+		if (_contentLength || request.headers.find("Transfer-Encoding") != request.headers.end())
+			parseBody(request, requestStream);
 		} catch (std::exception& e) {
 			std::cerr << e.what() << '\n';
 		}
@@ -110,24 +109,21 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 }
 
 
-void	HttpParser::bigSend(int out_fd, std::shared_ptr<ServerSettings>& configSetting) 
-
+void	HttpParser::bigSend(int out_fd, std::unordered_map<std::string, ServerSettings>& configSetting) 
 {
 	HttpParser parser;
 	HttpRequest request;
-	request.settings = configSetting; //added by Casi to get settings to response
-	request.errorFlag = -1; //added by Casi to initialize the errorflag
 	parser.recieveRequest(out_fd);
 	parser.parseClientRequest(parser._clientDataBuffer, request, configSetting);
+	// for (const auto& pair : request.headers) {
+    //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
+    // }
 	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
    	// std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
 
 	// std::cout << request.body << std::endl;
 
 
-	// for (const auto& pair : request.headers) {
-    //     std::cout << "Key: " << pair.first << " Value:" << pair.second << std::endl;
-    // }
 
 
 	ServerHandler response(out_fd, request);

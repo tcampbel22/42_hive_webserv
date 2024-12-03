@@ -34,7 +34,7 @@ struct HttpRequest {
 	std::string host;
 	bool connection;
 	int errorFlag;
-	std::shared_ptr<ServerSettings> settings;
+	ServerSettings* settings;
 	HttpRequest();
 };
 
@@ -51,8 +51,8 @@ private:
 public:
 	HttpParser();
 	~HttpParser();
-	static void	bigSend(int out_fd, std::shared_ptr<ServerSettings>&);
-	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, std::shared_ptr<ServerSettings>&);
+	static void	bigSend(int out_fd, std::unordered_map<std::string, ServerSettings>&);
+	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, std::unordered_map<std::string, ServerSettings>&);
 	void recieveRequest(int out_fd);
 	//bool isValidRequestline(std::string, HttpRequest&);
 	//void findKeys(HttpRequest& request);
@@ -60,6 +60,6 @@ public:
 	//int hexToInt(std::string);
 	void parseBody(HttpRequest&, std::istringstream&);
 	void parseRegularBody(std::istringstream&, HttpRequest&);
-	void validateLocation(LocationSettings*, int*);
+	//void validateLocation(LocationSettings*, int*);
 	//std::string trim(const std::string& str);
 };

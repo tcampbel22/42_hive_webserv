@@ -19,5 +19,8 @@ class HttpHeaderParser
 public:
 	static void parseHeaders(std::istringstream& requestStream, HttpRequest& request);
 	static void procesHeaderFields(HttpRequest& request, int& contentLength);
+	static bool HostParse(std::unordered_map<std::string, ServerSettings>&, HttpRequest&);
 	~HttpHeaderParser();
 };
+
+std::string trim(const std::string& str);
