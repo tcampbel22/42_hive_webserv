@@ -46,9 +46,7 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 			request.errorFlag = 400; //if Path is incorrect: error handling here(HTTP Status 400 or HTTP Status 404).
 			return false;
 		}
-		std::cout << tmp << std::endl;
 		if (!checkPath(tmp)) { // checking if any there is additional slashes and that it's ascii ('/')
-			std::cout << "HERE\n";
 			request.errorFlag = 400;
 			request.connection = false;
 		}
@@ -98,10 +96,9 @@ bool requestLineValidator::checkPath(const std::string path) {
 		return false;
 	if (!path.compare("/"))
 		return true ;
-	std::regex regex("^(\\/[a-zA-Z0-9._~-]+(?:%[0-9A-Fa-f]{2}|[a-zA-Z0-9._~-])*)*$");
-	return std::regex_search(path, regex);
+	// std::regex regex("^(\\/[a-zA-Z0-9._~-]+(?:%[0-9A-Fa-f]{2}|[a-zA-Z0-9._~-])*)*$");
+	// return std::regex_search(path, regex);
+	return true;
 	
 }
-
-
 
