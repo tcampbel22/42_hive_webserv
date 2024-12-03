@@ -177,7 +177,7 @@ void	ServerSettings::parseLocationBlockSettings(std::vector<std::string>& locati
 	auto it2 = locations.insert({*it, LocationSettings(*it)});
 	if (!it2.second)
 		throw std::runtime_error("location: duplicate URI");
-	std::string directives[6] = {"root", "index", "methods", "autoindex", "redirect", "error_page"};
+	std::string directives[9] = {"root", "index", "methods", "autoindex", "redirect", "error_page", "cgi_path", "cgi_script", "upload"};
 	std::string	key = *it;
 	bool		isValid = false;
 	ConfigUtilities::checkVectorEnd(location, it, "location: invalid syntax");
@@ -185,10 +185,11 @@ void	ServerSettings::parseLocationBlockSettings(std::vector<std::string>& locati
 	for (;*it != "}"; it++)
 	{
 		isValid = false;
-		for (int i = 0; i < 6; i++)
+		for (int i = 0; i < 9; i++)
 		{
 			if (!it->compare(directives[i]))
 			{
+				std::cout << *it << '\n';
 				isValid = true;
 				switch(i + 1)
 				{
@@ -209,6 +210,15 @@ void	ServerSettings::parseLocationBlockSettings(std::vector<std::string>& locati
 						break;
 					case 6:
 						locations[key].parseLocationErrorPages(location, it);
+						break;
+					case 7:
+						locations[key].parseCgiPath(location, it);
+						break;
+					case 8:
+						locations[key].parseCgiScript(location, it);
+						break;
+					case 9:
+						locations[key].parseCgiUpload(location, it);
 						break;
 					default:
 						throw std::logic_error("Something went very wrong...");
