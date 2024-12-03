@@ -189,7 +189,6 @@ void	ServerSettings::parseLocationBlockSettings(std::vector<std::string>& locati
 		{
 			if (!it->compare(directives[i]))
 			{
-				std::cout << *it << '\n';
 				isValid = true;
 				switch(i + 1)
 				{
