@@ -34,8 +34,11 @@ LocationSettings::LocationSettings(const std::string& new_path)
 	default_file = "";
 	is_default_file = false;
 	is_redirect = false;
+	isCgi = false;
 	autoindex = false;
 	redirect = "";
+	cgi_path = "";
+	cgi_script = "";
 }
 
 LocationSettings::~LocationSettings() {}
@@ -44,21 +47,27 @@ LocationSettings::~LocationSettings() {}
 
 void	LocationSettings::checkLocationValues(std::vector<std::string>::iterator& it)
 {
+	
 	if (!std::next(it)->compare("}"))
 	{
-		if (!redirect.empty() && (!root.empty() || autoindex || !methods.empty() || !default_file.empty()))
+
+		if (isCgi && (cgi_script.empty() || upload_path.empty() || cgi_path.empty()))
+			throw std::runtime_error("location: missing directives in cgi block");
+		if (isCgi && (autoindex || !methods.empty() || !default_file.empty()))
+			throw std::runtime_error("location: extra directives in cgi block");
+		if (!isCgi && !redirect.empty() && (!root.empty() || autoindex || !methods.empty() || !default_file.empty()))
 			throw std::runtime_error("location: extra directives in redirect block");
-		if (!path.compare("/"))
+		if (!isCgi && !path.compare("/"))
 		{
-			if (default_file.empty())
+			if (default_file.empty() && !autoindex)
 				throw std::runtime_error("location: default file missing from root directory");
 		}
-		if (!path.compare("/temp/"))
+		if (!isCgi && !path.compare("/temp/"))
 		{
 			if (methods.empty())
 				throw std::runtime_error("location: methods missing from /temp/ directory");
 		}
-		if (root.empty())
+		if (!isCgi && root.empty())
 			throw std::runtime_error("location: root path missing");
 	}
 }
@@ -84,7 +93,7 @@ void	LocationSettings::parseDefaultFile(std::vector<std::string>& location, std:
 	default_file = *it;
 	is_default_file = true;
 	checkLocationValues(it);
-	ConfigUtilities::checkVectorEnd(location, it, "location: autoindex: invalid syntax");
+	ConfigUtilities::checkVectorEnd(location, it, "location: default file: invalid syntax");
 }
 
 void	LocationSettings::parseAutoIndex(std::vector<std::string>& location, std::vector<std::string>::iterator& it) 
@@ -110,7 +119,7 @@ void	LocationSettings::parseRedirect(std::vector<std::string>& location, std::ve
 	redirect = *it;
 	is_redirect = true;
 	checkLocationValues(it);
-	ConfigUtilities::checkVectorEnd(location, it, "location: autoindex: invalid syntax");
+	ConfigUtilities::checkVectorEnd(location, it, "location: redirect: invalid syntax");
 }
 
 void	LocationSettings::parseMethods(std::vector<std::string>& location, std::vector<std::string>::iterator& it)
@@ -131,7 +140,7 @@ void	LocationSettings::parseMethods(std::vector<std::string>& location, std::vec
 		else 
 			throw std::runtime_error("location: methods: invaid method type");
 	}
-	ConfigUtilities::checkSemiColon(location, std::prev(it), "location: redirect: syntax error");
+	ConfigUtilities::checkSemiColon(location, std::prev(it), "location: methods: syntax error");
 	ConfigUtilities::checkMethodDuplicates(methods);
 	checkLocationValues(it);
 }
@@ -157,14 +166,48 @@ void	LocationSettings::parseLocationErrorPages(std::vector<std::string>& locatio
 	checkLocationValues(it);
 }
 
+
+void	LocationSettings::parseCgiPath(std::vector<std::string>& location, std::vector<std::string>::iterator& it) 
+{
+	ConfigUtilities::checkDuplicates(cgi_path, "cgi_path:");
+	ConfigUtilities::checkVectorEnd(location, it, "location: cgi_path: invalid syntax");
+	ConfigUtilities::checkSemiColon(location, it, "location: cgi_path: syntax error");
+	cgi_path = *it;
+	if (isCgi == false)
+		isCgi = true;
+	ConfigUtilities::checkVectorEnd(location, it, "location: cgi_path: invalid syntax");
+	checkLocationValues(it);
+}
+
+void	LocationSettings::parseCgiScript(std::vector<std::string>& location, std::vector<std::string>::iterator& it) 
+{
+	ConfigUtilities::checkDuplicates(cgi_script, "cgi_script:");
+	ConfigUtilities::checkVectorEnd(location, it, "location: cgi_script: invalid syntax");
+	ConfigUtilities::checkSemiColon(location, it, "location: cgi_script: syntax error");
+	cgi_script = *it;
+	if (isCgi == false)
+		isCgi = true;
+	ConfigUtilities::checkVectorEnd(location, it, "location: cgi_script: invalid syntax");
+	checkLocationValues(it);
+}
+
+void	LocationSettings::parseCgiUpload(std::vector<std::string>& location, std::vector<std::string>::iterator& it) 
+{
+	ConfigUtilities::checkDuplicates(upload_path, "upload:");
+	ConfigUtilities::checkVectorEnd(location, it, "location: upload: invalid syntax");
+	ConfigUtilities::checkSemiColon(location, it, "location: upload: syntax error");
+	upload_path = *it;
+	if (isCgi == false)
+		isCgi = true;
+	ConfigUtilities::checkVectorEnd(location, it, "location: upload: invalid syntax");
+	checkLocationValues(it);
+}
+
 void	LocationSettings::addLocationErrorPage(int status, std::string path) 
 { 
 	if (location_error_pages.find(status) != location_error_pages.end())
-	{
-		if (std::find(location_error_pages[status].begin(), location_error_pages[status].end(), path) != location_error_pages[status].end())
-			throw std::runtime_error("error_pages: duplicate path");
-	}
-	location_error_pages[status].push_back(path);
+		throw std::runtime_error("error_pages: duplicate path");
+	location_error_pages[status] = path;
 }
 
 //GETTERS
@@ -176,3 +219,17 @@ std::vector<int>&			LocationSettings::getMethods() { return methods; }
 bool						LocationSettings::isAutoIndex() { return autoindex; }
 bool						LocationSettings::isDefaultFile() { return is_default_file; }
 bool						LocationSettings::isRedirect() { return is_redirect; }
+bool						LocationSettings::isCgiBlock() { return isCgi; }
+std::string&				LocationSettings::getCgiPath() { return  cgi_path; }
+std::string&				LocationSettings::getCgiScript() { return cgi_script; }
+std::string&				LocationSettings::getCgiUploadPath() { return upload_path; }
+std::string					LocationSettings::getErrorPagePath(int key) 
+{ 
+	if (location_error_pages.find(key) != location_error_pages.end())
+	{
+		auto it = location_error_pages.find(key);
+		return it->second;
+	}
+	else 
+		return ""; 
+}
