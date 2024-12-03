@@ -236,31 +236,28 @@ void ServerHandler::doError()
 	_response.setResponseCode(_input.errorFlag);
 
 	std::string errorPath;
-	std::vector<std::string> errorVector;
+	// std::vector<std::string> errorVector;
 	//could getErrorPages perhaps return just a string path to the correct Error page?
 	//check if there are location level error pages for the requested code
 
-	// try
-	// {
-	// 	errorVector = locSettings->getErrorPages(_input.errorFlag);
-	// 	errorPath = errorVector.at(0);
-	// }
-	// catch(const std::exception& e)
-	// {
-	// }
-	// if (!errorPath.empty())
-	// {
-	// 	//check that the path is valid
-	// 	if (getFile(errorPath) == 0)
-	// 		return;
-	// }
-	errorVector.clear();
+	try
+	{
+		errorPath = locSettings->getErrorPagePath(_input.errorFlag);
+	}
+	catch(const std::exception& e)
+	{
+	}
+	if (!errorPath.empty())
+	{
+		//check that the path is valid
+		if (getFile(errorPath) == 0)
+			return;
+	}
 
 	//if no location level pages, check if there is server level pages
 	try
 	{
-		errorVector = _input.settings->getErrorPages(_input.errorFlag);
-		errorPath = errorVector.at(0);
+		errorPath = _input.settings->getErrorPages(_input.errorFlag);
 	}
 	catch(const std::exception& e)
 	{
