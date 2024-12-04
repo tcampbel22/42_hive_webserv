@@ -21,6 +21,7 @@ private:
 public:
 	CGIparsing(std::string&);
 	void setCGIenvironment(HttpRequest& request, const std::string&);
+	void execute();
 	std::string getMethod(int);
 	std::string getIp(std::string&);
 	std::string getPort(std::string&);

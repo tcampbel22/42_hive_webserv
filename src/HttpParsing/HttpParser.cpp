@@ -136,7 +136,7 @@ void	HttpParser::bigSend(int out_fd, std::unordered_map<std::string, ServerSetti
 		LocationSettings *cgiBlock = request.settings->getCgiBlock();
 		if (cgiBlock)
 		{
-			CGIparsing myCgi("the path");
+			CGIparsing myCgi(cgiBlock->getCgiScript());
 			myCgi.setCGIenvironment(request, parser.query);
 			myCgi.execute();
 		}
