@@ -30,12 +30,17 @@ private:
 	std::vector<int>			methods; //allowed methods
 	std::string					default_file; //index index.html
 	bool						is_default_file;
-	std::unordered_map<int, std::vector<std::string>> location_error_pages;
+	std::unordered_map<int, std::string> location_error_pages;
 	bool						autoindex; //enable or disable directory listing
 	std::string					redirect;
 	bool						is_redirect;
 	bool						isDirectory = false;
 	bool						isFile = false;
+	bool						isCgi;
+	std::string					cgi_path;
+	std::string					cgi_script;
+	std::string					upload_path;
+
 public:
 	LocationSettings();
 	LocationSettings(const std::string& new_path);
@@ -48,6 +53,10 @@ public:
 	void	parseRedirect(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
 	void	parseLocationErrorPages(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
 	void	addLocationErrorPage(int status, std::string path);
+	void	parseCgiPath(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
+	void	parseCgiScript(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
+	void	parseCgiUpload(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
+
 	std::string&					getPath(); //URI
 	std::string&					getRoot(); //root
 	std::string&					getDefaultFile(); //default homepage
@@ -56,4 +65,9 @@ public:
 	std::string&					getRedirect();
 	bool							isDefaultFile();
 	bool							isRedirect();
+	bool							isCgiBlock();
+	std::string&					getCgiPath();
+	std::string&					getCgiScript();
+	std::string&					getCgiUploadPath();
+	std::string						getErrorPagePath(int key);
 };

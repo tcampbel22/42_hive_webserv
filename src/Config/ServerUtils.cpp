@@ -14,15 +14,15 @@
 
 //GETTERS
 
-bool						ServerSettings::isDefaultServer() { return _isDefaultServer; }
-int							ServerSettings::getPort() { return port; }
-std::string&				ServerSettings::getHost() { return host; }
-std::vector<std::string>&	ServerSettings::getServerNames() { return server_names; } //retuns vector containing all server names
-int							ServerSettings::getMaxClientBody() { return max_client_body_size; } //in bytes
-std::string					ServerSettings::getKey() { return _key; }
-std::unordered_map<int, std::vector<std::string>>&	ServerSettings::getAllErrorPages() { return error_pages; }
+bool									ServerSettings::isDefaultServer() { return _isDefaultServer; }
+int										ServerSettings::getPort() { return port; }
+std::string&							ServerSettings::getHost() { return host; }
+std::vector<std::string>&				ServerSettings::getServerNames() { return server_names; } //retuns vector containing all server names
+int										ServerSettings::getMaxClientBody() { return max_client_body_size; } //in bytes
+std::string								ServerSettings::getKey() { return _key; }
+std::unordered_map<int, std::string>&	ServerSettings::getAllErrorPages() { return error_pages; }
 
-std::vector<std::string>& ServerSettings::getErrorPages(int status) 
+std::string ServerSettings::getErrorPages(int status) 
 {
 	if (error_pages.find(status) != error_pages.end())
 	{
@@ -30,7 +30,7 @@ std::vector<std::string>& ServerSettings::getErrorPages(int status)
 		return it->second;
 	}
 	else 
-		throw std::runtime_error("status not found");
+		return "";
 }
 
 std::string&	ServerSettings::getLocationPath(std::string key) 
@@ -89,6 +89,17 @@ LocationSettings*			ServerSettings::getLocationBlock(const std::string key)
 		return nullptr;
 }
 
+LocationSettings*	ServerSettings::getCgiBlock()
+{
+	for (auto pair : locations)
+	{
+		if (pair.second.isCgiBlock())
+			return &pair.second;
+	}
+	return nullptr;
+}
+
+
 //SETTERS
 
 void	ServerSettings::addServerName(std::string name) { server_names.push_back(name); } //Need to check for duplicates
@@ -100,11 +111,8 @@ void	ServerSettings::setDefaultServer(bool val) { _isDefaultServer = val; }
 void	ServerSettings::addErrorPage(int status, std::string path) 
 { 
 	if (error_pages.find(status) != error_pages.end())
-	{
-		if (std::find(error_pages[status].begin(), error_pages[status].end(), path) != error_pages[status].end())
-			throw std::runtime_error("error_pages: duplicate path");
-	}
-	error_pages[status].push_back(path);
+		throw std::runtime_error("error_pages: duplicate path");
+	error_pages[status] = path;
 }
 
 

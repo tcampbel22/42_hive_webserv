@@ -40,7 +40,7 @@ private:
 	std::string host;
 	int			port;
 	int			max_client_body_size;
-	std::unordered_map<int, std::vector<std::string>> error_pages;
+	std::unordered_map<int, std::string> error_pages;
 	std::vector<std::string> server_names;
 	std::unordered_map<std::string, LocationSettings> locations;
 
@@ -73,12 +73,13 @@ public:
 	std::string&										getHost();
 	std::vector<std::string>& 							getServerNames();
 	int													getMaxClientBody();
-	std::unordered_map<int, std::vector<std::string>>&	getAllErrorPages();
-	std::vector<std::string>&							getErrorPages(int key);
+	std::unordered_map<int, std::string>&				getAllErrorPages();
+	std::string											getErrorPages(int key);
 	std::string& 										getLocationPath(std::string key);
 	std::string& 										getLocationRoot(std::string key);
 	std::string& 										getLocationDefaultFile(std::string key);
 	bool 												getLocationAutoIndex(std::string key);
 	std::vector<int>&									getLocationMethods(std::string key);
 	LocationSettings*									getLocationBlock(const std::string key);
+	LocationSettings*									getCgiBlock();	
 };
