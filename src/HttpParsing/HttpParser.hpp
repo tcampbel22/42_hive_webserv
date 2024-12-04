@@ -48,6 +48,8 @@ private:
 	std::vector<char> _clientDataBuffer;
 	bool _fullyRead;
 	int _contentLength;
+	bool cgiflag;
+	std::string query;
 public:
 	HttpParser();
 	~HttpParser();
@@ -60,6 +62,7 @@ public:
 	//int hexToInt(std::string);
 	void parseBody(HttpRequest&, std::istringstream&);
 	void parseRegularBody(std::istringstream&, HttpRequest&);
+	void checkForCgi(std::string);
 	//void validateLocation(LocationSettings*, int*);
 	//std::string trim(const std::string& str);
 };

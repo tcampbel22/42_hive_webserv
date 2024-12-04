@@ -14,6 +14,7 @@
 #include "HttpHeaderParser.hpp"
 #include "requestLineValidator.hpp"
 #include "chunkedBodyParser.hpp"
+#include "../CGI/CGIparsing.hpp"
 
 HttpParser::HttpParser() : _fullyRead(true), _contentLength(0) {}
 
@@ -60,6 +61,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			request.errorFlag = 400;//error shit in here if first line is bad: ERROR 400 according to RFC
 			std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl; 
 		}
+		checkForCgi(line);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(configSettings, request)) {
@@ -89,6 +91,21 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 // 		*error = 404;
 // }
 
+void HttpParser::checkForCgi(std::string line) {
+	std::regex regex("/bin-cgi/"); //this needs to be changed to be compared to URL
+	if (std::regex_search(line, regex))
+	{
+		cgiflag = true;
+	}
+	else
+		return;
+	size_t colPos = line.find('?');
+	if (colPos != std::string::npos)
+	{
+		query = line.substr(colPos);
+	}
+}
+
 void HttpParser::parseBody(HttpRequest& request, std::istringstream& stream) {
         if (request.headers.count("Transfer-Encoding") == std::string::npos && _contentLength == 0)
 			return ;
@@ -115,6 +132,18 @@ void	HttpParser::bigSend(int out_fd, std::unordered_map<std::string, ServerSetti
 	HttpRequest request;
 	parser.recieveRequest(out_fd);
 	parser.parseClientRequest(parser._clientDataBuffer, request, configSetting);
+	if (!parser.cgiflag){
+		LocationSettings *cgiBlock = request.settings->getCgiBlock();
+		if (cgiBlock)
+		{
+			CGIparsing myCgi("the path");
+			myCgi.setCGIenvironment(request, parser.query);
+			myCgi.execute();
+		}
+		else
+			request.errorFlag = 400;
+	}
+
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
     // }
