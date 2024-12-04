@@ -17,14 +17,13 @@ struct HttpRequest;
 class CGIparsing
 {
 private:
-	std::string _method;
-	std::string _pathInfo; //path where to upload the file
-	std::string _path; //querry
-	std::string _contentType;
-	std::string _contentLength;
-
+	std::string _pathInfo; //path where to upload the cgi file
 public:
-	CGIparsing(HttpRequest&);
+	CGIparsing(std::string&);
+	void setCGIenvironment(HttpRequest& request, const std::string&);
+	std::string getMethod(int);
+	std::string getIp(std::string&);
+	std::string getPort(std::string&);
 	~CGIparsing();
 };
 
