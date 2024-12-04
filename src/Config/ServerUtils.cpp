@@ -89,6 +89,17 @@ LocationSettings*			ServerSettings::getLocationBlock(const std::string key)
 		return nullptr;
 }
 
+LocationSettings*	ServerSettings::getCgiBlock()
+{
+	for (auto pair : locations)
+	{
+		if (pair.second.isCgiBlock())
+			return &pair.second;
+	}
+	return nullptr;
+}
+
+
 //SETTERS
 
 void	ServerSettings::addServerName(std::string name) { server_names.push_back(name); } //Need to check for duplicates

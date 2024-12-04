@@ -81,4 +81,5 @@ public:
 	bool 												getLocationAutoIndex(std::string key);
 	std::vector<int>&									getLocationMethods(std::string key);
 	LocationSettings*									getLocationBlock(const std::string key);
+	LocationSettings*									getCgiBlock();	
 };
