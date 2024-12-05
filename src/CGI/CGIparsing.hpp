@@ -10,7 +10,13 @@
 /**                                W E B S E R V                                 **/
 /**********************************************************************************/
 
-#include "HttpParser.hpp"
+#include "../HttpParsing/HttpParser.hpp"
+#include <sys/wait.h>
+#include <fcntl.h>
+
+
+#define READ_END 0
+#define WRITE_END 1
 
 struct HttpRequest;
 
@@ -21,10 +27,11 @@ private:
 public:
 	CGIparsing(std::string&);
 	void setCGIenvironment(HttpRequest& request, const std::string&);
-	void execute();
+	void execute(HttpRequest&);
 	std::string getMethod(int);
 	std::string getIp(std::string&);
 	std::string getPort(std::string&);
+	//std::string
 	~CGIparsing();
 };
 

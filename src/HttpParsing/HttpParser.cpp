@@ -138,7 +138,7 @@ void	HttpParser::bigSend(int out_fd, std::unordered_map<std::string, ServerSetti
 		{
 			CGIparsing myCgi(cgiBlock->getCgiScript());
 			myCgi.setCGIenvironment(request, parser.query);
-			myCgi.execute();
+			myCgi.execute(request);
 		}
 		else
 			request.errorFlag = 400;
