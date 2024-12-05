@@ -10,20 +10,46 @@
 /**                                W E B S E R V                                 **/
 /**********************************************************************************/
 
-#include "../HttpParsing/HttpParser.hpp"
+#include "Logger.hpp"
 
-struct HttpRequest;
-
-class CGIparsing
+Logger::Logger(const std::string fileName)
 {
-private:
-	std::string _pathInfo; //path where to upload the cgi file
-public:
-	CGIparsing(std::string&);
-	void setCGIenvironment(HttpRequest& request, const std::string&);
-	std::string getMethod(int);
-	std::string getIp(std::string&);
-	std::string getPort(std::string&);
-	~CGIparsing();
-};
+	std::string path("log");
+	std::filesystem::create_directories(path);
 
+	log_file.open(path + "/" + fileName, std::ios::app);
+	if (!log_file)
+	{
+		// ft_perror("Log file failed to open");
+		exit(1);
+	}
+	log_file << getCurrentTime() << ": WEBSERV STARTED\n";
+}
+
+std::string Logger::getCurrentTime() 
+{
+	std::time_t now = std::time(nullptr);
+	char buf[100];
+	std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+	return std::string(buf);
+}
+
+void	Logger::log(std::string msg, e_log log_code)
+{
+	if (log_file.is_open())
+	{
+		if (log_code == ERROR)
+			log_file<< "[ERROR] " << getCurrentTime() << ": " << msg << '\n';
+		if (log_code == INFO)
+			log_file << "[INFO] " << getCurrentTime() << ": " << msg << '\n';
+	}
+}
+
+Logger::~Logger() 
+{
+	if (log_file.is_open())
+	{
+		log_file << getCurrentTime() << ": WEBSERV FINISHED\n";
+		log_file.close();
+	}
+}

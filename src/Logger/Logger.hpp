@@ -10,20 +10,32 @@
 /**                                W E B S E R V                                 **/
 /**********************************************************************************/
 
-#include "../HttpParsing/HttpParser.hpp"
+#pragma once
 
-struct HttpRequest;
 
-class CGIparsing
+#include <iostream>
+#include <fstream>
+#include <ctime>
+#include <filesystem>
+
+#define RESET   "\033[0m"
+#define RED     "\033[31m"
+#define GREEN   "\033[32m" 
+#define BLUE    "\033[34m" 
+
+enum e_log
 {
-private:
-	std::string _pathInfo; //path where to upload the cgi file
-public:
-	CGIparsing(std::string&);
-	void setCGIenvironment(HttpRequest& request, const std::string&);
-	std::string getMethod(int);
-	std::string getIp(std::string&);
-	std::string getPort(std::string&);
-	~CGIparsing();
+	ERROR,
+	INFO,
 };
 
+class Logger
+{
+private:
+	std::ofstream log_file;
+public:
+	Logger(const std::string fileName);
+	~Logger();
+	std::string getCurrentTime();
+	void log(std::string msg, e_log log_code);
+};
