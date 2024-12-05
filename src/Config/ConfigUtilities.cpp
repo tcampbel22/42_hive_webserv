@@ -110,8 +110,11 @@ void	ConfigUtilities::printServerBlock(ServerSettings server)
 
 void	ConfigUtilities::printLocationBlock(LocationSettings location)
 {
-	std::cout << "\nLOCATION SETTINGS BLOCK: " << location.getPath() << "\n\n";
-	std::cout << "Path: " << location.getPath() << '\n';
+	if (!location.getPath().empty())
+	{
+		std::cout << "\nLOCATION SETTINGS BLOCK: " << location.getPath() << "\n\n";
+		std::cout << "Path: " << location.getPath() << '\n';
+	}
 	if (!location.getRoot().empty())
 		std::cout << "Root: " << location.getRoot() << '\n';
 	else
@@ -137,6 +140,18 @@ void	ConfigUtilities::printLocationBlock(LocationSettings location)
 		}
 		std::cout << '\n';
 	}
+	if (!location.getCgiPath().empty())
+		std::cout << "CGI path: " << location.getCgiPath() << '\n';
+	else
+		std::cout << "CGI path: no cgi_path\n";
+	if (!location.getCgiScript().empty())
+		std::cout << "CGI script: " << location.getCgiScript() << '\n';
+	else
+		std::cout << "CGI script: no cgi_script\n";
+	if (!location.getCgiUploadPath().empty())
+		std::cout << "CGI upload: " << location.getCgiUploadPath() << '\n';
+	else
+		std::cout << "CGI upload: no upload\n";
 	std::cout << '\n';
 }
 

@@ -10,19 +10,43 @@
 /**                                W E B S E R V                                 **/
 /**********************************************************************************/
 
-#pragma once
+#include "Logger.hpp"
 
-#include <iostream>
-#include <poll.h> //poll
-#include <sys/socket.h> //socket
-#include <string>
-#include <dirent.h>
-#include "Logger/Logger.hpp"
+Logger::Logger(const std::string fileName)
+{
+	std::string path("log");
+	std::filesystem::create_directories(path);
 
+	log_file.open(path + "/" + fileName, std::ios::app);
+	if (!log_file)
+		throw std::runtime_error("Log file failed to open");
+	log_file << getCurrentTime() << ": WEBSERV STARTED\n";
+}
 
-#define MAX_BODY_SIZE 5000
-#define GET 1
-#define POST 2
-#define DELETE 3
+std::string Logger::getCurrentTime() 
+{
+	std::time_t now = std::time(nullptr);
+	char buf[100];
+	std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+	return std::string(buf);
+}
 
-void	ft_perror(std::string str);
+void	Logger::log(std::string msg, e_log log_code)
+{
+	if (log_file.is_open())
+	{
+		if (log_code == ERROR)
+			log_file<< "[ERROR] " << getCurrentTime() << ": " << msg << '\n';
+		if (log_code == INFO)
+			log_file << "[INFO] " << getCurrentTime() << ": " << msg << '\n';
+	}
+}
+
+Logger::~Logger() 
+{
+	if (log_file.is_open())
+	{
+		log_file << getCurrentTime() << ": WEBSERV FINISHED\n";
+		log_file.close();
+	}
+}

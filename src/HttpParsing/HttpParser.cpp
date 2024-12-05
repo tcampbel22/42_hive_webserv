@@ -132,17 +132,17 @@ void	HttpParser::bigSend(int out_fd, std::unordered_map<std::string, ServerSetti
 	HttpRequest request;
 	parser.recieveRequest(out_fd);
 	parser.parseClientRequest(parser._clientDataBuffer, request, configSetting);
-	if (!parser.cgiflag){
-		LocationSettings *cgiBlock = request.settings->getCgiBlock();
-		if (cgiBlock)
-		{
-			CGIparsing myCgi("the path");
-			myCgi.setCGIenvironment(request, parser.query);
-			myCgi.execute();
-		}
-		else
-			request.errorFlag = 400;
-	}
+	// if (!parser.cgiflag){
+	// 	LocationSettings *cgiBlock = request.settings->getCgiBlock();
+	// 	if (cgiBlock)
+	// 	{
+	// 		CGIparsing myCgi("the path");
+	// 		myCgi.setCGIenvironment(request, parser.query);
+	// 		myCgi.execute();
+	// 	}
+	// 	else
+	// 		request.errorFlag = 400;
+	// }
 
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
