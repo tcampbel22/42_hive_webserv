@@ -13,14 +13,14 @@
 #include "CGIparsing.hpp"
 #include "../HttpParsing/HttpParser.hpp"
 
-CGIparsing::CGIparsing(std::string& cgiPath) : _pathInfo(cgiPath) {}
+CGIparsing::CGIparsing(std::string cgiPath) : _pathInfo(cgiPath) {}
 
 void CGIparsing::setCGIenvironment(HttpRequest& request, const std::string& queryStr) {
 	(void)queryStr;
 	setenv("REQUEST_METHOD", getMethod(request.method).c_str(), 1);
 	//setenv("QUERY_STRING", queryStr.c_str(), 1); this can be commented out for now????
 	setenv("CONTENT_TYPE", "text.html", 1); //default text, needs parsing for images etc.
-	setenv("CONTENT_LENGTH", request.headers.at("Content-Length").c_str(), 1);
+	//setenv("CONTENT_LENGTH", request.headers.at("Content-Length").c_str(), 1);
 	//setenv("SERVER_NAME", "localhost", 1); not doing names;
 	setenv("SERVER_PORT", getPort(request.host).c_str(), 1);
 	setenv("REMOTE_ADDR", getIp(request.host).c_str(), 1);
@@ -86,8 +86,8 @@ void CGIparsing::execute(HttpRequest& request) {
 
         // Close the write end of the pipe now that it's duplicated
         close(pipe_fds[WRITE_END]);
-		char *argv[] = {"./cgi-script.cgi", NULL}; //
-        if (execve("./cgi-script.cgi", argv, environ) == -1) {
+		const char *const argv[] = {"/root/bin/cgi/cgi.py", nullptr}; //
+        if (execve("./root/bin/cgi/cgi.py", (char *const *)argv, environ) == -1) {
             perror("execlp");
             exit(1);
         }
@@ -111,6 +111,10 @@ void CGIparsing::execute(HttpRequest& request) {
         // Wait for the child process to finish
         waitpid(pid, NULL, 0);
     }
+}
+
+std::string CGIparsing::getPath() {
+	return _pathInfo;
 }
 
 CGIparsing::~CGIparsing() {}
