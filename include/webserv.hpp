@@ -17,7 +17,6 @@
 #include <sys/socket.h> //socket
 #include <string>
 #include <dirent.h>
-#include "Logger/Logger.hpp"
 
 
 #define MAX_BODY_SIZE 5000

@@ -19,7 +19,10 @@ Logger::Logger(const std::string fileName)
 
 	log_file.open(path + "/" + fileName, std::ios::app);
 	if (!log_file)
-		throw std::runtime_error("Log file failed to open");
+	{
+		// ft_perror("Log file failed to open");
+		exit(1);
+	}
 	log_file << getCurrentTime() << ": WEBSERV STARTED\n";
 }
 

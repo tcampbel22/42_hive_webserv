@@ -228,7 +228,7 @@ void	ServerSettings::parseLocationBlockSettings(std::vector<std::string>& locati
 		if (!isValid)
 			throw std::runtime_error("location: invalid directive");
 	}
-	ConfigUtilities::printLocationBlock(locations[key]);
+	// ConfigUtilities::printLocationBlock(locations[key]);
 }
 
 void	ServerSettings::parseLocationBlock(std::vector<std::string>& location, std::vector<std::string>::iterator& it)

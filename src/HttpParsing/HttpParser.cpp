@@ -132,8 +132,11 @@ void	HttpParser::bigSend(int out_fd, std::unordered_map<std::string, ServerSetti
 	HttpRequest request;
 	parser.recieveRequest(out_fd);
 	parser.parseClientRequest(parser._clientDataBuffer, request, configSetting);
-	// if (!parser.cgiflag){
-	// 	LocationSettings *cgiBlock = request.settings->getCgiBlock();
+	if (!parser.cgiflag)
+	{
+		LocationSettings *cgiBlock = request.settings->getCgiBlock();
+		std::cout << cgiBlock->getCgiScript() << '\n';
+	}
 	// 	if (cgiBlock)
 	// 	{
 	// 		CGIparsing myCgi("the path");
