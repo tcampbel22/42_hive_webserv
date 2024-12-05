@@ -143,7 +143,7 @@ void	HttpParser::bigSend(int out_fd, std::unordered_map<std::string, ServerSetti
 		else
 			request.errorFlag = 400;
 	}
-	std::cout << request.body;
+	//std::cout << request.body;
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
     // }
@@ -151,9 +151,6 @@ void	HttpParser::bigSend(int out_fd, std::unordered_map<std::string, ServerSetti
    	// std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
 
 	// std::cout << request.body << std::endl;
-
-
-
 
 	ServerHandler response(out_fd, request);
 }
