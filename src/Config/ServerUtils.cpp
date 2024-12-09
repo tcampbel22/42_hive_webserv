@@ -91,10 +91,14 @@ LocationSettings*			ServerSettings::getLocationBlock(const std::string key)
 
 LocationSettings*	ServerSettings::getCgiBlock()
 {
+	LocationSettings *ptr;
 	for (auto pair : locations)
 	{
 		if (pair.second.isCgiBlock())
-			return &pair.second;
+		{
+			ptr = &pair.second;
+			return ptr;
+		}
 	}
 	return nullptr;
 }
