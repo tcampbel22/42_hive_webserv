@@ -11,6 +11,14 @@
 /**********************************************************************************/
 
 #include "../HttpParsing/HttpParser.hpp"
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+
+
+#define READ_END 0
+#define WRITE_END 1
 
 struct HttpRequest;
 
@@ -19,11 +27,14 @@ class CGIparsing
 private:
 	std::string _pathInfo; //path where to upload the cgi file
 public:
-	CGIparsing(std::string&);
+	CGIparsing(std::string);
 	void setCGIenvironment(HttpRequest& request, const std::string&);
+	void execute(HttpRequest&);
 	std::string getMethod(int);
 	std::string getIp(std::string&);
 	std::string getPort(std::string&);
+	std::string getPath();
+	//std::string
 	~CGIparsing();
 };
 

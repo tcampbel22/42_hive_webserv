@@ -1,6 +1,15 @@
 #!/usr/bin/python3
 
-print("Content-Type: text/html\n\n");
-print("<html><body>");
-print("<h1>Hello from CGI</h1>");
-print("<body><html>");
+# Import necessary library for CGI handling
+import cgi
+
+# Set the content type to HTML
+print("Content-type: text/html\n\n")
+
+# Print the HTML content
+print("<html>")
+print("<head><title>Hello World CGI</title></head>")
+print("<body>")
+print("<h1>Hello, World! This is a Python CGI script!</h1>")
+print("</body>")
+print("</html>")

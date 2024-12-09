@@ -16,7 +16,7 @@
 #include "chunkedBodyParser.hpp"
 #include "../CGI/CGIparsing.hpp"
 
-HttpParser::HttpParser() : _fullyRead(true), _contentLength(0) {}
+HttpParser::HttpParser() : _fullyRead(true), _contentLength(0), cgiflag(false), query("") {}
 
 HttpParser::~HttpParser() {}
 
@@ -61,7 +61,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			request.errorFlag = 400;//error shit in here if first line is bad: ERROR 400 according to RFC
 			std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl; 
 		}
-		checkForCgi(line);
+		checkForCgi(request.path);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(configSettings, request)) {
@@ -92,7 +92,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 // }
 
 void HttpParser::checkForCgi(std::string line) {
-	std::regex regex("/bin-cgi/"); //this needs to be changed to be compared to URL
+	std::regex regex("/cgi-bin/"); //this needs to be changed to be compared to URL
 	if (std::regex_search(line, regex))
 	{
 		cgiflag = true;
@@ -132,21 +132,18 @@ void	HttpParser::bigSend(int out_fd, std::unordered_map<std::string, ServerSetti
 	HttpRequest request;
 	parser.recieveRequest(out_fd);
 	parser.parseClientRequest(parser._clientDataBuffer, request, configSetting);
-	if (!parser.cgiflag)
-	{
+	if (parser.cgiflag){
 		LocationSettings *cgiBlock = request.settings->getCgiBlock();
-		std::cout << cgiBlock->getCgiScript() << '\n';
+		if (cgiBlock)
+		{
+			CGIparsing myCgi("/bin/cgi/cgi.py");
+			myCgi.setCGIenvironment(request, parser.query);
+			myCgi.execute(request);
+		}
+		else
+			request.errorFlag = 400;
 	}
-	// 	if (cgiBlock)
-	// 	{
-	// 		CGIparsing myCgi("the path");
-	// 		myCgi.setCGIenvironment(request, parser.query);
-	// 		myCgi.execute();
-	// 	}
-	// 	else
-	// 		request.errorFlag = 400;
-	// }
-
+	//std::cout << request.body;
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
     // }
@@ -154,9 +151,6 @@ void	HttpParser::bigSend(int out_fd, std::unordered_map<std::string, ServerSetti
    	// std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
 
 	// std::cout << request.body << std::endl;
-
-
-
 
 	ServerHandler response(out_fd, request);
 }
