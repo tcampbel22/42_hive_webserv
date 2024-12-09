@@ -94,7 +94,8 @@ LocationSettings*	ServerSettings::getCgiBlock()
 	LocationSettings *ptr;
 	for (auto pair : locations)
 	{
-		if (pair.second.isCgiBlock()) {
+		if (pair.second.isCgiBlock())
+		{
 			ptr = &pair.second;
 			return ptr;
 		}

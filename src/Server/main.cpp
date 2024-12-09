@@ -15,6 +15,7 @@
 #include "../Config/ConfigParser.hpp"
 #include "../Config/ServerSettings.hpp"
 #include "../HttpParsing/HttpParser.hpp"
+#include "../Logger/Logger.hpp"
 
 
 void	ft_perror(std::string str) //need to make as logger instead
@@ -24,9 +25,11 @@ void	ft_perror(std::string str) //need to make as logger instead
 
 int	main(int ac, char **av)
 {
+	Logger log("log.log");
 	if (ac != 2)
 	{
 		ft_perror("expecting only configuration file as argument");
+		log.log("expecting only configuration file as argument", ERROR);
 		return 1;
 	}
 	try {

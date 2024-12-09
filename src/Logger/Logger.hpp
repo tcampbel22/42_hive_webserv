@@ -12,16 +12,30 @@
 
 #pragma once
 
+
 #include <iostream>
-#include <poll.h> //poll
-#include <sys/socket.h> //socket
-#include <string>
-#include <dirent.h>
+#include <fstream>
+#include <ctime>
+#include <filesystem>
 
+#define RESET   "\033[0m"
+#define RED     "\033[31m"
+#define GREEN   "\033[32m" 
+#define BLUE    "\033[34m" 
 
-#define MAX_BODY_SIZE 5000
-#define GET 1
-#define POST 2
-#define DELETE 3
+enum e_log
+{
+	ERROR,
+	INFO,
+};
 
-void	ft_perror(std::string str);
+class Logger
+{
+private:
+	std::ofstream log_file;
+public:
+	Logger(const std::string fileName);
+	~Logger();
+	std::string getCurrentTime();
+	void log(std::string msg, e_log log_code);
+};

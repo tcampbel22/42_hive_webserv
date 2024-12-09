@@ -39,6 +39,7 @@ LocationSettings::LocationSettings(const std::string& new_path)
 	redirect = "";
 	cgi_path = "";
 	cgi_script = "";
+	upload_path = "";
 }
 
 LocationSettings::~LocationSettings() {}
@@ -138,7 +139,7 @@ void	LocationSettings::parseMethods(std::vector<std::string>& location, std::vec
 		else if (!it->compare(method_str[2]))
 			methods.push_back(DELETE);
 		else 
-			throw std::runtime_error("location: methods: invaid method type");
+			throw std::runtime_error("location: methods: invalid method type");
 	}
 	ConfigUtilities::checkSemiColon(location, std::prev(it), "location: methods: syntax error");
 	ConfigUtilities::checkMethodDuplicates(methods);
