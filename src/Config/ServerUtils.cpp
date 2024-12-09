@@ -82,7 +82,10 @@ std::vector<int>&	ServerSettings::getLocationMethods(std::string key)
 
 LocationSettings*			ServerSettings::getLocationBlock(const std::string key)
 {
+	std::cout << "KEY = " << key << std::endl;
+
 	auto it = locations.find(key);
+	std::cout << "here2\n";
 	if (it != locations.end())
 		return &(it->second);
 	else

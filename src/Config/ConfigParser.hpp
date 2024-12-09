@@ -36,6 +36,7 @@ private:
 	bool						defaultServer;
 public:
 	std::unordered_map<std::string, ServerSettings> settings;
+	std::vector<ServerSettings> settings_vec;
 	ConfigParser();
 	ConfigParser(std::string file);
 	~ConfigParser();
@@ -48,4 +49,5 @@ public:
 	bool			getDefaultServer();
 	ServerSettings*	getServerBlock(const std::string key);
 	void			checkHostPortDuplicates();
+	void			moveToVector();
 };

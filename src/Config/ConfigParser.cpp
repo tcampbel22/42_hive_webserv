@@ -180,6 +180,14 @@ void			ConfigParser::checkHostPortDuplicates()
 	}
 }
 
+void	ConfigParser::moveToVector()
+{
+	for (auto it : settings)
+	{
+		settings_vec.push_back(it.second);
+	}
+}
+
 bool ConfigParser::getDefaultServer() { return defaultServer; }
 
 ConfigParser::~ConfigParser() {}

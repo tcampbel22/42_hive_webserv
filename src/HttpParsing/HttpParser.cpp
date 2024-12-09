@@ -20,7 +20,7 @@ HttpParser::HttpParser() : _fullyRead(true), _contentLength(0), cgiflag(false), 
 
 HttpParser::~HttpParser() {}
 
-HttpRequest::HttpRequest() : connection(true), errorFlag(-1) {}
+HttpRequest::HttpRequest(ServerSettings *serverPtr) : connection(true), errorFlag(-1), settings(serverPtr) {}
 
 
 //Reads the client request and stores it in a vector<char>
@@ -50,8 +50,9 @@ void	HttpParser::recieveRequest(int out_fd)
 	_clientDataBuffer.resize(_clientDataBuffer.size() - (bytes + bytesRead));
 }
 //Empty the vector to the requestMap, needs to be parsed in the response.
-void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, std::unordered_map<std::string, ServerSettings>& configSettings)
+void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *serverPtr)
 {
+	(void) serverPtr;
 	try {
 		std::string data(clientData.begin(), clientData.end());
     	std::istringstream requestStream(data);
@@ -61,13 +62,13 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			request.errorFlag = 400;//error shit in here if first line is bad: ERROR 400 according to RFC
 			std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl; 
 		}
-		checkForCgi(request.path);
+		// checkForCgi(request.path);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
-		if (!HttpHeaderParser::HostParse(configSettings, request)) {
-			request.errorFlag = 400;
-			request.connection = false;
-		}
+		// if (!HttpHeaderParser::HostParse(configSettings, request)) {
+		// 	request.errorFlag = 400;
+		// 	request.connection = false;
+		// }
 		if (request.method == GET && this->_contentLength != 0) {
 			request.errorFlag = 404;
 		}
@@ -126,32 +127,36 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 }
 
 
-void	HttpParser::bigSend(int out_fd, std::unordered_map<std::string, ServerSettings>& configSetting) 
+void	HttpParser::bigSend(int out_fd, ServerSettings *serverPtr) 
 {
+	// auto it2 = settings.find("127.0.0.1:8081");
+	LocationSettings* locptr = serverPtr->getLocationBlock("/");
+	ConfigUtilities::printLocationBlock(*locptr);
+
 	HttpParser parser;
-	HttpRequest request;
+	HttpRequest request(serverPtr);
 	parser.recieveRequest(out_fd);
-	parser.parseClientRequest(parser._clientDataBuffer, request, configSetting);
-	if (parser.cgiflag){
-		LocationSettings *cgiBlock = request.settings->getCgiBlock();
-		if (cgiBlock)
-		{
-			CGIparsing myCgi("/bin/cgi/cgi.py");
-			myCgi.setCGIenvironment(request, parser.query);
-			myCgi.execute(request);
-		}
-		else
-			request.errorFlag = 400;
-	}
+	parser.parseClientRequest(parser._clientDataBuffer, request, serverPtr);
+	// if (parser.cgiflag){
+	// 	LocationSettings *cgiBlock = request.settings->getCgiBlock();
+	// 	if (cgiBlock)
+	// 	{
+	// 		CGIparsing myCgi("/bin/cgi/cgi.py");
+	// 		myCgi.setCGIenvironment(request, parser.query);
+	// 		myCgi.execute(request);
+	// 	}
+	// 	else
+	// 		request.errorFlag = 400;
+	// }
 	//std::cout << request.body;
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
     // }
-	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
-   	// std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
 
 	// std::cout << request.body << std::endl;
 
+	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
+   	// std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
 	ServerHandler response(out_fd, request);
 }
 

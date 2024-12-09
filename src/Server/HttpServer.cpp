@@ -11,6 +11,7 @@
 /**********************************************************************************/
 
 #include "HttpServer.hpp"
+#include <string>
 
 HttpServer* HttpServer::_instance = nullptr;
 
@@ -36,8 +37,10 @@ void HttpServer::signalHandler(int signal)
 void HttpServer::startServer()
 {
 	//make socket
-	for (auto it : _ip_port_list) //Iterate through host and port pairs (host is first and port is second)
+	for (int i = 0 ; i < 2 ; i++)
+	// for (auto it : _ip_port_list) //Iterate through host and port pairs (host is first and port is second)
 	{
+		auto it = _ip_port_list[i];
 		int serverFd = socket(AF_INET, SOCK_STREAM, 0);
 		if (serverFd == -1)
 		{
@@ -60,15 +63,30 @@ void HttpServer::startServer()
 			close(serverFd);
 			continue;
 		}
+
+		//ADD to serverblock instance
+
+		std::cout << serverFd << " server fd\n"; 
+
 		if (listen(serverFd, 5) < 0)
 		{
 			ft_perror("failed to listen");
 			close(serverFd);
 			continue;
 		}
-		_server_fds.push_back(serverFd); //add fd to vector to use later in listening function
+		// std::string newKey = it.first + ":" + std::to_string(it.second);
+
+		settings_vec[i]._fd = serverFd;
+		// for (auto it2 : settings_vec)
+		// {
+		// 	if (it2.getKey() == newKey)
+		// 		it2._fd = serverFd;
+		// }
+		_server_fds.push_back(&serverFd); //add fd to vector to use later in listening function
 		std::cout << "Listening on host: " << it.first << " Port: " << it.second << '\n';
 	}
+	std::cout << settings_vec[0].getPort() << std::endl;
+	std::cout << settings_vec[1].getPort() << std::endl;
 }
 
 void	setNonBlocking(int socket)
@@ -79,18 +97,32 @@ void	setNonBlocking(int socket)
 
 void HttpServer::startListening()
 {
-
+	// auto it2 = settings.find("127.0.0.1:8081");
+	// LocationSettings* locptr = it2->second.getLocationBlock("/");
+	// ConfigUtilities::printLocationBlock(*locptr);
 	std::signal(SIGINT, signalHandler);
 	//std::cout << "Server listening on port " << _port << std::endl;
 
 	 epollFd = epoll_create1(0); //create epoll instance
-	 for (int fd : _server_fds) //iterate through fd vector and add to epoll
+	 //for (auto it : settings_vec) //iterate through fd vector and add to epoll
+	for (int i = 0 ; i < 2 ; i++)
 	 {
-		_events.data.fd = fd;
+		auto it = settings_vec[i];
 		_events.events = EPOLLIN;
-		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &_events) == -1)
+		// _events.data.ptr = &it;
+		// std::cout << settings_vec[i].getPort() << std::endl;
+		_events.data.ptr = &settings_vec[i];
+		// for (auto it : settings)
+		// {
+		// 	if (it.second.fdPtr == &fd)
+		// 		_events.data.ptr = &it.second;
+		// }
+		
+		std::cout << it._fd << '\n';
+		// if (epoll_ctl(epollFd, EPOLL_CTL_ADD, it._fd, &_events) == -1)
+		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, settings_vec[i]._fd, &_events) == -1)		
 		{
-			ft_perror("Failed to add to epoll");
+			ft_perror("Failed to add to epol11l");
 			continue; 
 		}
 	 }
@@ -104,8 +136,9 @@ void HttpServer::startListening()
 		time_t current_time = std::time(nullptr);
 		for (int i = 0; i < numEvents; i++)
 		{
-			int	eventFd = _eventsArr[i].data.fd;
-			if (std::find(_server_fds.begin(), _server_fds.end(), eventFd) != _server_fds.end())
+			ServerSettings *serverPtr = static_cast <ServerSettings*>(_eventsArr[i].data.ptr);
+			int	eventFd = serverPtr->_fd;
+			if (std::find(_server_fds.begin(), _server_fds.end(), &eventFd) != _server_fds.end())
 			{
 					socklen_t _sockLen = sizeof(_socketInfo);
 					_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
@@ -130,11 +163,18 @@ void HttpServer::startListening()
 			}
 			else if (_eventsArr[i].events & EPOLLIN)
 			{	
-				int _fd_out = _eventsArr[i].data.fd;
+
+				// ServerSettings *serverPtr = static_cast <ServerSettings*>(_eventsArr[i].data.ptr);
+				int _fd_out = serverPtr->_fd;
+
 				//testSend(_fd_out);
-				
+				int hdd = serverPtr->getPort();
+				std::cout << hdd << std::endl;
+				if (serverPtr == nullptr)
+					 std::cout << "We're fucked!!!\n";
+
 				//ServerHandler handle_request(_fd_out, );
-				HttpParser::bigSend(_fd_out, settings); // Need to update this with Eromon
+				HttpParser::bigSend(_fd_out, serverPtr); // Need to update this with Eromon
 				// _events.events = EPOLLIN; 
 				// _events.data.fd = _fd_out;
 				epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events); //guard later
@@ -165,8 +205,9 @@ void HttpServer::fdActivityLoop(const time_t current_time) {
 void HttpServer::closeServer()
 {
 	close(epollFd);
-	for (auto it = _server_fds.begin(); it != _server_fds.end(); it++)
-		close(*it);
+	for (auto it = settings_vec.begin(); it != settings_vec.end(); it++)
+		close(it->_fd); 
+
 }
 
 HttpServer::~HttpServer()
@@ -174,15 +215,6 @@ HttpServer::~HttpServer()
 	closeServer();
 
 };
-// HttpServer::HttpServer(std::shared_ptr<ServerSettings> _settings)
-// {
-// 	this->_instance = this;
-// 	settings = _settings;
-// 	_port = settings->getPort();
-// 	_ipAddress = settings->getHost();
-// 	_clientSocket = -1;
-// 	startServer();
-// };
 
 void	HttpServer::fillHostPortPairs()
 {
@@ -193,13 +225,12 @@ void	HttpServer::fillHostPortPairs()
 }
 
 
-HttpServer::HttpServer(std::unordered_map<std::string, ServerSettings>& _settings)
+HttpServer::HttpServer(std::unordered_map<std::string, ServerSettings>& _settings, std::vector<ServerSettings>& vec)
 {
 	this->_instance = this;
 	settings = _settings;
+	settings_vec = vec;
 	fillHostPortPairs();
-	// _port = settings->getPort();
-	// _ipAddress = settings->getHost();
 	_clientSocket = -1;
 	startServer();
 }
