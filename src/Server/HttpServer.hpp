@@ -39,6 +39,7 @@ struct fdNode
 {
 	int				fd;
 	ServerSettings *serverPtr = nullptr;
+	std::vector<char> _clientDataBuffer;
 };
 
 class HttpServer
@@ -66,6 +67,10 @@ public:
 	//methods
 	static void signalHandler(int signal);
 	void fdActivityLoop(const time_t);
+	bool isRequestComplete(const std::vector<char>& data, size_t bytesRead);
+	bool isChunkedTransferEncoding(const std::string& requestStr);
+	bool isRequestWithBody(std::string requestStr);
+	size_t getContentLength(const std::string& requestStr);
 	void startServer();
 	void closeServer();
 	void startListening();

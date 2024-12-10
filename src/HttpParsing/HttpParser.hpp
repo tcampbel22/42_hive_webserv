@@ -23,7 +23,7 @@
 # include <memory>
 # include <filesystem>
 
-
+struct fdNode;
 class ServerSettings;
 
 struct HttpRequest {
@@ -53,9 +53,9 @@ private:
 public:
 	HttpParser();
 	~HttpParser();
-	static void	bigSend(int out_fd, ServerSettings *ptr);
+	static void	bigSend(fdNode *);
 	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *);
-	void recieveRequest(int out_fd);
+	//void recieveRequest(int out_fd);
 	//bool isValidRequestline(std::string, HttpRequest&);
 	//void findKeys(HttpRequest& request);
 	//void handleChunkedBody(HttpRequest&, std::istringstream&);

@@ -24,35 +24,34 @@ HttpRequest::HttpRequest(ServerSettings *serverPtr) : connection(true), errorFla
 
 
 //Reads the client request and stores it in a vector<char>
-void	HttpParser::recieveRequest(int out_fd)
-{
-	ssize_t bytesRead = 0;
-	size_t bytes = 1024;
-	_fullyRead = true; //Added so it would compile
+// void	HttpParser::recieveRequest(int out_fd)
+// {
+// 	ssize_t bytesRead = 0;
+// 	size_t bytes = 1024;
+// 	_fullyRead = true; //Added so it would compile
 	
-	while(true)
-	{
-		_clientDataBuffer.resize(_clientDataBuffer.size() + bytes);
-		bytesRead = read(out_fd, &_clientDataBuffer[_clientDataBuffer.size() - bytes], bytes);
-		if (bytesRead < 0) {
-			// if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            //     std::cout << "Everything read succesfully to the vector" << std::endl;
-            //     break;
-			// }
-            // std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
-            break ;
-        }
-		else if (bytesRead == 0) {
-			std::cout << "Everything read succesfully to the vector" << std::endl;
-			break ;
-		}
-	}
-	_clientDataBuffer.resize(_clientDataBuffer.size() - (bytes + bytesRead));
-}
+// 	while(true)
+// 	{
+// 		_clientDataBuffer.resize(_clientDataBuffer.size() + bytes);
+// 		bytesRead = read(out_fd, &_clientDataBuffer[_clientDataBuffer.size() - bytes], bytes);
+// 		if (bytesRead < 0) {
+// 			// if (errno == EAGAIN || errno == EWOULDBLOCK) {
+//             //     std::cout << "Everything read succesfully to the vector" << std::endl;
+//             //     break;
+// 			// }
+//             // std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
+//             break ;
+//         }
+// 		else if (bytesRead == 0) {
+// 			std::cout << "Everything read succesfully to the vector" << std::endl;
+// 			break ;
+// 		}
+// 	}
+// 	_clientDataBuffer.resize(_clientDataBuffer.size() - (bytes + bytesRead));
+// }
 //Empty the vector to the requestMap, needs to be parsed in the response.
 void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *serverPtr)
 {
-	(void) serverPtr;
 	try {
 		std::string data(clientData.begin(), clientData.end());
     	std::istringstream requestStream(data);
@@ -65,10 +64,10 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		// checkForCgi(request.path);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
-		// if (!HttpHeaderParser::HostParse(configSettings, request)) {
-		// 	request.errorFlag = 400;
-		// 	request.connection = false;
-		// }
+		if (!HttpHeaderParser::HostParse(serverPtr, request)) {
+		 	request.errorFlag = 400;
+		 	request.connection = false;
+		}
 		if (request.method == GET && this->_contentLength != 0) {
 			request.errorFlag = 404;
 		}
@@ -127,16 +126,17 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 }
 
 
-void	HttpParser::bigSend(int out_fd, ServerSettings *serverPtr) 
+void	HttpParser::bigSend(fdNode *requestNode) 
 {
 	// auto it2 = settings.find("127.0.0.1:8081");
 	// LocationSettings* locptr = serverPtr->getLocationBlock("/");
 	// ConfigUtilities::printLocationBlock(*locptr);
 
 	HttpParser parser;
-	HttpRequest request(serverPtr);
-	parser.recieveRequest(out_fd);
-	parser.parseClientRequest(parser._clientDataBuffer, request, serverPtr);
+	HttpRequest request(requestNode->serverPtr);
+	parser._fullyRead = true;
+	//parser.recieveRequest(requestNode->fd);
+	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
 	// if (parser.cgiflag){
 	// 	LocationSettings *cgiBlock = request.settings->getCgiBlock();
 	// 	if (cgiBlock)
@@ -157,7 +157,7 @@ void	HttpParser::bigSend(int out_fd, ServerSettings *serverPtr)
 
 	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
    	// std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
-	ServerHandler response(out_fd, request);
+	ServerHandler response(requestNode->fd, request);
 }
 
 // util function to trim off the white spaces and delimit the read when making key value pair

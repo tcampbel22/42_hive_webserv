@@ -47,13 +47,16 @@ void HttpHeaderParser::procesHeaderFields(HttpRequest& request, int& contentLeng
 		contentLength = 0;
 	}
 }
-bool HttpHeaderParser::HostParse(std::unordered_map<std::string, ServerSettings>& config, HttpRequest& request) 
+bool HttpHeaderParser::HostParse(ServerSettings* serverPtr, HttpRequest& request) 
 {
-	for (auto &it : config) {
-		if (it.first == request.host) {
-			request.settings = &it.second;
-			return true;
-		}
+	if (request.host.find("localhost") != std::string::npos) {
+		std::string host = "localhost";
+		request.host.erase(0 , host.length());
+		request.host.insert(0, "127.0.0.1");
+		std::cout << request.host << std::endl;
+	}
+	if (request.host  == serverPtr->getKey()) {
+		return true;
 	}
 	return false;
 }
