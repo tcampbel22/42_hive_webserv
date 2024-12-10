@@ -68,7 +68,7 @@ void ServerHandler::getLocationSettings()
 	while (42)
 	{
 		locSettings = _input.settings->getLocationBlock(key);
-		// std::cout << "KEY = " << key << std::endl;
+		// std::cout << "here2\n";	// std::cout << "KEY = " << key << std::endl;
 		if (locSettings || len < 2)
 			break ;		
 		

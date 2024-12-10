@@ -45,6 +45,7 @@ private:
 	std::unordered_map<std::string, LocationSettings> locations;
 
 public:
+	int			_fd = 0;
 	ServerSettings();
 	ServerSettings(std::string& key);
 	~ServerSettings();

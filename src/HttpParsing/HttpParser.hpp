@@ -35,7 +35,7 @@ struct HttpRequest {
 	bool connection;
 	int errorFlag;
 	ServerSettings* settings;
-	HttpRequest();
+	HttpRequest(ServerSettings *);
 };
 
 class ServerSettings;
@@ -53,8 +53,8 @@ private:
 public:
 	HttpParser();
 	~HttpParser();
-	static void	bigSend(int out_fd, std::unordered_map<std::string, ServerSettings>&);
-	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, std::unordered_map<std::string, ServerSettings>&);
+	static void	bigSend(int out_fd, ServerSettings *ptr);
+	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *);
 	void recieveRequest(int out_fd);
 	//bool isValidRequestline(std::string, HttpRequest&);
 	//void findKeys(HttpRequest& request);
