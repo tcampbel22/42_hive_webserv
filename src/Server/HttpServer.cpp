@@ -37,8 +37,9 @@ void HttpServer::signalHandler(int signal)
 void HttpServer::startServer()
 {
 	//make socket
-	for (int i = 0 ; i < 2 ; i++)
+	// for (int i = 0 ; i < 2 ; i++)
 	// for (auto it : _ip_port_list) //Iterate through host and port pairs (host is first and port is second)
+	for (u_long i = 0 ; i < _ip_port_list.size() ; i++)
 	{
 		auto it = _ip_port_list[i];
 		int serverFd = socket(AF_INET, SOCK_STREAM, 0);
@@ -47,7 +48,6 @@ void HttpServer::startServer()
 			ft_perror("failed to create socket: " + it.first);
 			continue;
 		}
-		//std::cout << _serverFd << std::endl;
 		
 		//store socket addr info
 		int optionValue = 1;
@@ -63,11 +63,6 @@ void HttpServer::startServer()
 			close(serverFd);
 			continue;
 		}
-
-		//ADD to serverblock instance
-
-		std::cout << serverFd << " server fd\n"; 
-
 		if (listen(serverFd, 5) < 0)
 		{
 			ft_perror("failed to listen");
@@ -82,11 +77,9 @@ void HttpServer::startServer()
 		// 	if (it2.getKey() == newKey)
 		// 		it2._fd = serverFd;
 		// }
-		_server_fds.push_back(&serverFd); //add fd to vector to use later in listening function
+		_server_fds.push_back(serverFd); //add fd to vector to use later in listening function
 		std::cout << "Listening on host: " << it.first << " Port: " << it.second << '\n';
 	}
-	std::cout << settings_vec[0].getPort() << std::endl;
-	std::cout << settings_vec[1].getPort() << std::endl;
 }
 
 void	setNonBlocking(int socket)
@@ -105,20 +98,15 @@ void HttpServer::startListening()
 
 	 epollFd = epoll_create1(0); //create epoll instance
 	 //for (auto it : settings_vec) //iterate through fd vector and add to epoll
-	for (int i = 0 ; i < 2 ; i++)
+	for (u_long i = 0 ; i < settings_vec.size() ; i++)
 	 {
 		auto it = settings_vec[i];
 		_events.events = EPOLLIN;
-		// _events.data.ptr = &it;
-		// std::cout << settings_vec[i].getPort() << std::endl;
-		_events.data.ptr = &settings_vec[i];
-		// for (auto it : settings)
-		// {
-		// 	if (it.second.fdPtr == &fd)
-		// 		_events.data.ptr = &it.second;
-		// }
+		fdNode *node = new fdNode;
+		node->fd = settings_vec[i]._fd;
+		node->serverPtr = &settings_vec[i];
+		_events.data.ptr = node;
 		
-		std::cout << it._fd << '\n';
 		// if (epoll_ctl(epollFd, EPOLL_CTL_ADD, it._fd, &_events) == -1)
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, settings_vec[i]._fd, &_events) == -1)		
 		{
@@ -136,9 +124,9 @@ void HttpServer::startListening()
 		time_t current_time = std::time(nullptr);
 		for (int i = 0; i < numEvents; i++)
 		{
-			ServerSettings *serverPtr = static_cast <ServerSettings*>(_eventsArr[i].data.ptr);
-			int	eventFd = serverPtr->_fd;
-			if (std::find(_server_fds.begin(), _server_fds.end(), &eventFd) != _server_fds.end())
+			fdNode *nodePtr = static_cast <fdNode*>(_eventsArr[i].data.ptr);
+			int	eventFd = nodePtr->fd;
+			if (std::find(_server_fds.begin(), _server_fds.end(), eventFd) != _server_fds.end())
 			{
 					socklen_t _sockLen = sizeof(_socketInfo);
 					_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
@@ -151,7 +139,11 @@ void HttpServer::startListening()
 					setNonBlocking(_clientSocket);
 					
 					_events.events = EPOLLIN | EPOLLOUT;
-					_events.data.fd = _clientSocket;
+					fdNode *node = new fdNode;
+					node->fd = _clientSocket;
+					node->serverPtr = nodePtr->serverPtr;
+					_events.data.ptr = node;
+					// _events.data.fd = _clientSocket;
 					
 					if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events) == -1)
 					{
@@ -163,22 +155,15 @@ void HttpServer::startListening()
 			}
 			else if (_eventsArr[i].events & EPOLLIN)
 			{	
-
-				// ServerSettings *serverPtr = static_cast <ServerSettings*>(_eventsArr[i].data.ptr);
-				int _fd_out = serverPtr->_fd;
-
-				//testSend(_fd_out);
-				int hdd = serverPtr->getPort();
-				std::cout << hdd << std::endl;
-				if (serverPtr == nullptr)
+				int _fd_out = nodePtr->fd;
+				if (nodePtr == nullptr)
 					 std::cout << "We're fucked!!!\n";
-
-				//ServerHandler handle_request(_fd_out, );
-				HttpParser::bigSend(_fd_out, serverPtr); // Need to update this with Eromon
+				HttpParser::bigSend(_fd_out, nodePtr->serverPtr); // Need to update this with Eromon
 				// _events.events = EPOLLIN; 
 				// _events.data.fd = _fd_out;
 				epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events); //guard later
 				close (_fd_out); //needs to be handled in http parsing, client will send whether to close connection or not
+				delete nodePtr;
 			}
 			fdActivityLoop(current_time);
 		}

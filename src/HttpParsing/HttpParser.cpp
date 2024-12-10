@@ -130,8 +130,8 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 void	HttpParser::bigSend(int out_fd, ServerSettings *serverPtr) 
 {
 	// auto it2 = settings.find("127.0.0.1:8081");
-	LocationSettings* locptr = serverPtr->getLocationBlock("/");
-	ConfigUtilities::printLocationBlock(*locptr);
+	// LocationSettings* locptr = serverPtr->getLocationBlock("/");
+	// ConfigUtilities::printLocationBlock(*locptr);
 
 	HttpParser parser;
 	HttpRequest request(serverPtr);

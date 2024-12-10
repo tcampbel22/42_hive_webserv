@@ -35,12 +35,18 @@
 # define MAX_EVENTS 20 //Can define this in config file or create a funct based on cpu load or leave it
 # define TIME_OUT_PERIOD 10
 
+struct fdNode
+{
+	int				fd;
+	ServerSettings *serverPtr = nullptr;
+};
+
 class HttpServer
 {
 private:
 	static HttpServer *_instance;
 	std::vector<std::pair<std::string, int>> _ip_port_list;
-	std::vector<int*> _server_fds;
+	std::vector<int> _server_fds;
 	int 			_clientSocket;
 	sockaddr_in 	_socketInfo; //reusable
 	int				epollFd;
