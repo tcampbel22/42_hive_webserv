@@ -25,13 +25,12 @@ void	ft_perror(std::string str) //need to make as logger instead
 
 int	main(int ac, char **av)
 {
-	Logger log("log.log");
-	if (ac != 2)
+	if (ac != 2 || av[1] == nullptr || av[1][0] == '\0')
 	{
 		ft_perror("expecting only configuration file as argument");
-		log.log("expecting only configuration file as argument", ERROR);
 		return 1;
 	}
+	std::string infile(av[1]);
 	try {
 		if (opendir(av[1]) != NULL)
 			throw std::invalid_argument("argument is a directory");
@@ -39,18 +38,17 @@ int	main(int ac, char **av)
 		ft_perror(e.what());
 		return 1; }
 	//Program will exit if an error is found with the config file
-	ConfigParser config((std::string)av[1]);
+	ConfigParser config;
 	try {
-		config.parseConfigFile();
+		config.parseConfigFile(infile);
 	}
 	catch (std::exception& e)
 	{
 		ft_perror(e.what());
-		exit(1);
+		return 1;
 	}
-	config.moveToVector();
 	//start server class, calls the socket creation function in constructor, closes the socket in the destructor.
-	HttpServer server(config.settings, config.settings_vec);
+	HttpServer server(config.settings_vec);
 	server.startListening();
 	return (0);
 }

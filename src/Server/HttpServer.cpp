@@ -11,7 +11,6 @@
 /**********************************************************************************/
 
 #include "HttpServer.hpp"
-#include <string>
 
 HttpServer* HttpServer::_instance = nullptr;
 
@@ -36,10 +35,7 @@ void HttpServer::signalHandler(int signal)
 
 void HttpServer::startServer()
 {
-	//make socket
-	// for (int i = 0 ; i < 2 ; i++)
-	// for (auto it : _ip_port_list) //Iterate through host and port pairs (host is first and port is second)
-	for (u_long i = 0 ; i < _ip_port_list.size() ; i++)
+	for (u_long i = 0 ; i < _ip_port_list.size() ; i++)  //Iterate through host and port pairs (host is first and port is second)
 	{
 		auto it = _ip_port_list[i];
 		int serverFd = socket(AF_INET, SOCK_STREAM, 0);
@@ -48,7 +44,7 @@ void HttpServer::startServer()
 			ft_perror("failed to create socket: " + it.first);
 			continue;
 		}
-		
+
 		//store socket addr info
 		int optionValue = 1;
 		setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &optionValue, sizeof(optionValue));
@@ -69,14 +65,7 @@ void HttpServer::startServer()
 			close(serverFd);
 			continue;
 		}
-		// std::string newKey = it.first + ":" + std::to_string(it.second);
-
 		settings_vec[i]._fd = serverFd;
-		// for (auto it2 : settings_vec)
-		// {
-		// 	if (it2.getKey() == newKey)
-		// 		it2._fd = serverFd;
-		// }
 		_server_fds.push_back(serverFd); //add fd to vector to use later in listening function
 		std::cout << "Listening on host: " << it.first << " Port: " << it.second << '\n';
 	}
@@ -90,15 +79,10 @@ void	setNonBlocking(int socket)
 
 void HttpServer::startListening()
 {
-	// auto it2 = settings.find("127.0.0.1:8081");
-	// LocationSettings* locptr = it2->second.getLocationBlock("/");
-	// ConfigUtilities::printLocationBlock(*locptr);
 	std::signal(SIGINT, signalHandler);
-	//std::cout << "Server listening on port " << _port << std::endl;
 
-	 epollFd = epoll_create1(0); //create epoll instance
-	 //for (auto it : settings_vec) //iterate through fd vector and add to epoll
-	for (u_long i = 0 ; i < settings_vec.size() ; i++)
+	epollFd = epoll_create1(0); //create epoll instance
+	for (u_long i = 0 ; i < settings_vec.size() ; i++)  //iterate through fd vector and add to epoll
 	 {
 		auto it = settings_vec[i];
 		_events.events = EPOLLIN;
@@ -107,7 +91,6 @@ void HttpServer::startListening()
 		node->serverPtr = &settings_vec[i];
 		_events.data.ptr = node;
 		
-		// if (epoll_ctl(epollFd, EPOLL_CTL_ADD, it._fd, &_events) == -1)
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, settings_vec[i]._fd, &_events) == -1)		
 		{
 			ft_perror("Failed to add to epol11l");
@@ -143,7 +126,6 @@ void HttpServer::startListening()
 					node->fd = _clientSocket;
 					node->serverPtr = nodePtr->serverPtr;
 					_events.data.ptr = node;
-					// _events.data.fd = _clientSocket;
 					
 					if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events) == -1)
 					{
@@ -173,7 +155,8 @@ void HttpServer::startListening()
 	close (epollFd); //Probably not needed
 }
 // If the client has been inactive for too long, close the socket
-void HttpServer::fdActivityLoop(const time_t current_time) {
+void HttpServer::fdActivityLoop(const time_t current_time)
+{
 	for (auto it = _fd_activity_map.begin(); it != _fd_activity_map.end();) {
             if (current_time - it->second > TIME_OUT_PERIOD) {
                 std::cout << "Timeout: Closing client socket " << it->first << std::endl;
@@ -185,7 +168,6 @@ void HttpServer::fdActivityLoop(const time_t current_time) {
             }
         }
 }
-
 
 void HttpServer::closeServer()
 {
@@ -210,10 +192,9 @@ void	HttpServer::fillHostPortPairs()
 }
 
 
-HttpServer::HttpServer(std::unordered_map<std::string, ServerSettings>& _settings, std::vector<ServerSettings>& vec)
+HttpServer::HttpServer(std::vector<ServerSettings>& vec)
 {
 	this->_instance = this;
-	settings = _settings;
 	settings_vec = vec;
 	fillHostPortPairs();
 	_clientSocket = -1;

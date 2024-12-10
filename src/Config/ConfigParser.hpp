@@ -35,13 +35,11 @@ private:
 	std::vector<std::string>	tokens; 
 	bool						defaultServer;
 public:
-	std::unordered_map<std::string, ServerSettings> settings;
 	std::vector<ServerSettings> settings_vec;
 	ConfigParser();
-	ConfigParser(std::string file);
 	~ConfigParser();
-	void			readConfigFile(std::string);
-	void			parseConfigFile();
+	void			readConfigFile(const std::string& file);
+	void			parseConfigFile(const std::string& file);
 	void			removeComments();
 	std::string		getConfigFileStr();
 	void			tokenise(const std::string& config);
@@ -49,5 +47,4 @@ public:
 	bool			getDefaultServer();
 	ServerSettings*	getServerBlock(const std::string key);
 	void			checkHostPortDuplicates();
-	void			moveToVector();
 };
