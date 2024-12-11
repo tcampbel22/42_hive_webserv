@@ -35,7 +35,6 @@ void HttpServer::signalHandler(int signal)
 
 void HttpServer::startServer()
 {
-	ConfigUtilities::printServerBlock(settings_vec[0]);
 	for (u_long i = 0 ; i < _ip_port_list.size() ; i++)  //Iterate through host and port pairs (host is first and port is second)
 	{
 		auto it = _ip_port_list[i];
@@ -45,7 +44,6 @@ void HttpServer::startServer()
 			ft_perror("failed to create socket: " + it.first);
 			continue;
 		}
-
 		//store socket addr info
 		int optionValue = 1;
 		setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &optionValue, sizeof(optionValue));

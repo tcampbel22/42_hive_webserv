@@ -25,18 +25,24 @@ void	ft_perror(std::string str) //need to make as logger instead
 
 int	main(int ac, char **av)
 {
+	Logger log("log.log");
 	if (ac != 2 || av[1] == nullptr || av[1][0] == '\0')
 	{
 		ft_perror("expecting only configuration file as argument");
+		log.log("expecting only configuration file as argument",  ERROR);
 		return 1;
 	}
 	std::string infile(av[1]);
 	try {
 		if (opendir(av[1]) != NULL)
 			throw std::invalid_argument("argument is a directory");
-	} catch (std::exception& e) {
+	} 
+	catch (std::exception& e)
+	{
+		log.log(e.what(), ERROR);
 		ft_perror(e.what());
-		return 1; }
+		return 1; 
+	}
 	//Program will exit if an error is found with the config file
 	ConfigParser config;
 	try {
@@ -44,6 +50,7 @@ int	main(int ac, char **av)
 	}
 	catch (std::exception& e)
 	{
+		log.log(e.what(), ERROR);
 		ft_perror(e.what());
 		return 1;
 	}

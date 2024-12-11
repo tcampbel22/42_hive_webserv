@@ -17,7 +17,6 @@
 bool									ServerSettings::isDefaultServer() { return _isDefaultServer; }
 int										ServerSettings::getPort() { return port; }
 std::string&							ServerSettings::getHost() { return host; }
-std::vector<std::string>&				ServerSettings::getServerNames() { return server_names; } //retuns vector containing all server names
 int										ServerSettings::getMaxClientBody() { return max_client_body_size; } //in bytes
 std::string								ServerSettings::getKey() { return _key; }
 std::unordered_map<int, std::string>&	ServerSettings::getAllErrorPages() { return error_pages; }
@@ -31,53 +30,6 @@ std::string ServerSettings::getErrorPages(int status)
 	}
 	else 
 		return "";
-}
-
-std::string&	ServerSettings::getLocationPath(std::string key) 
-{
-	auto it = locations.find(key);
-	if (it != locations.end())
-		return locations[key].getPath();
-	else
-		throw std::runtime_error(key + ": key not found in location setting block");
-}
-
-std::string&	ServerSettings::getLocationRoot(std::string key) 
-{
-	auto it = locations.find(key);
-	if (it != locations.end())
-		return locations[key].getRoot();
-	else
-		throw std::runtime_error(key + ": key not found in location setting block");
-}
-
-std::string&	ServerSettings::getLocationDefaultFile(std::string key)
-{
-	auto it = locations.find(key);
-	if (it != locations.end())
-		return locations[key].getDefaultFile();
-	else
-		throw std::runtime_error(key + ": key not found in location setting block");
-}
-
-bool	ServerSettings::getLocationAutoIndex(std::string key)
-{
-	auto it = locations.find(key);
-	if (it != locations.end())
-		return locations[key].isAutoIndex();
-	else
-	{
-		ft_perror(key +": not found");
-		return false;
-	}
-}
-std::vector<int>&	ServerSettings::getLocationMethods(std::string key)
-{
-	auto it = locations.find(key);
-	if (it != locations.end())
-		return locations[key].getMethods();
-	else
-		throw std::runtime_error(key + "not found in location block");
 }
 
 LocationSettings*			ServerSettings::getLocationBlock(const std::string key)
@@ -103,10 +55,8 @@ LocationSettings*	ServerSettings::getCgiBlock()
 	return nullptr;
 }
 
-
 //SETTERS
 
-void	ServerSettings::addServerName(std::string name) { server_names.push_back(name); } //Need to check for duplicates
 void	ServerSettings::setHost(std::string ip) { host = ip; }
 void	ServerSettings::setPort(int port_num) { port = port_num; }
 void	ServerSettings::setMaxClientBodySize(int size) { max_client_body_size = size; }
@@ -119,8 +69,6 @@ void	ServerSettings::addErrorPage(int status, std::string path)
 	error_pages[status] = path;
 }
 
-
-
 void	ServerSettings::checkConfigValues(std::vector<std::string>& directive, std::vector<std::string>::iterator& it)
 {
 	if (it == directive.end() || std::next(it) == directive.end())
@@ -132,4 +80,15 @@ void	ServerSettings::checkConfigValues(std::vector<std::string>& directive, std:
 		if (max_client_body_size == -1)
 			max_client_body_size = MAX_BODY_SIZE;
 	}
+}
+
+bool	ServerSettings::checkErrorCode(int code)
+{
+	int	error_codes[7] = { 400, 401, 403, 404, 500, 502, 503 };
+	for (int i = 0; i < 7; i++)
+	{
+		if (code == error_codes[i])
+			return true;
+	}
+	return false;
 }
