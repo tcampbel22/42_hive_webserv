@@ -35,6 +35,7 @@ void HttpServer::signalHandler(int signal)
 
 void HttpServer::startServer()
 {
+	ConfigUtilities::printServerBlock(settings_vec[0]);
 	for (u_long i = 0 ; i < _ip_port_list.size() ; i++)  //Iterate through host and port pairs (host is first and port is second)
 	{
 		auto it = _ip_port_list[i];
@@ -280,9 +281,9 @@ HttpServer::~HttpServer()
 
 void	HttpServer::fillHostPortPairs()
 {
-	for (auto& pair : settings)
+	for (auto& it : settings_vec)
 	{
-		_ip_port_list.push_back( {pair.second.getHost(), pair.second.getPort()} );
+		_ip_port_list.push_back( {it.getHost(), it.getPort()} );
 	}
 }
 
