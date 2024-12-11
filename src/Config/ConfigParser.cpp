@@ -12,44 +12,41 @@
 
 #include "ConfigParser.hpp"
 
-ConfigParser::ConfigParser() {}
+ConfigParser::ConfigParser() : defaultServer(false) {}
 
-ConfigParser::ConfigParser(std::string file) : defaultServer(false)
+int	checkConfName(const std::string& file)
 {
-	readConfigFile(file);
-}
-
-int	checkConfName(std::string file)
-{
-	int pos = file.find('.');
-	std::string suffix = file.substr(pos, file.length() - pos);
-	if (suffix.compare(".conf") != 0)
-		return 1;
+	int pos = 0;
+	std::string temp = file;
+	if (temp.length() > 5 && temp.at(temp.length() - 5) == '.')
+	{
+		pos = temp.length() - 5;
+		std::string suffix = temp.substr(pos, temp.length() - pos);
+		if (suffix.compare(".conf") != 0)
+			return 1;
+	}
 	return 0;
 }
-void	ConfigParser::readConfigFile(std::string file)
+void	ConfigParser::readConfigFile(const std::string& file)
 {
-	std::fstream		infile;
+	
 	std::ostringstream	stream;
-
+	std::ifstream		infile(file, std::ios::in);
+	if (!infile)
+		throw std::runtime_error("infile failed to open");
 	if (checkConfName(file))
-	{
-		std::cout << "invalid config file\n";
-		exit(1) ;
-	}
+		throw std::runtime_error("invalid config file");
 	infile.open(file);
 	if (!infile.is_open())
-	{
-		std::cout << "failed to open config file\n";
-		exit(1) ;
-	}
+		throw std::runtime_error("failed to open config file");
 	stream << infile.rdbuf();
 	configFileStr = stream.str();
 	infile.close();
 }
 
-void		ConfigParser::parseConfigFile() 
+void		ConfigParser::parseConfigFile(const std::string& file) 
 {
+	readConfigFile(file);
 	removeComments();
 	tokenise(configFileStr);
 	splitServerBlocks();
@@ -122,8 +119,6 @@ void	createKey(std::vector<std::string>::iterator start,  std::vector<std::strin
 	if (std::next(port_it) != end)
 		_port = *(port_it + 1);
 	key = _host + ":" + _port;
-	// std::cout << key << '\n';
-	
 }
 
 void	ConfigParser::splitServerBlocks() 
@@ -132,27 +127,30 @@ void	ConfigParser::splitServerBlocks()
 		throw std::runtime_error("Configuration file should start with server block");
 	ConfigUtilities::checkBrackets(tokens);
 	auto it = tokens.begin();
+	int	server_count = -1;
 	for (; it != tokens.end(); it++)
 	{
 		if (!it->compare("server") && !std::next(it)->compare("{"))
 		{
-			auto start = it + 2;
+			ConfigUtilities::checkVectorEnd(tokens, it, "splitServerBlock: syntax error");
+			ConfigUtilities::checkVectorEnd(tokens, it, "splitServerBlock: syntax error");
+			auto start = it;
 			auto end = start;
-			std::string key;
+			std::string key = "";
 			for (; end != tokens.end(); end++)
 			{
-				if (!end->compare("}") && (!std::next(end)->compare("server") || std::next(end) == tokens.end()))
+				if (end != tokens.end() && !end->compare("}") && (std::next(end) == tokens.end() || !std::next(end)->compare("server")))
 				{
 					createKey(start, end, key);
 					ServerSettings temp(key);
 					ConfigUtilities::checkDefaultBlock(temp, defaultServer);
-					auto dup = settings.insert({key, temp});
-					if (!dup.second)
-						throw std::runtime_error("config: duplicate host/port");
+					settings_vec.push_back(temp);
+					server_count++;
 					break ;
 				}
 			} 
-			settings[key].parseServerBlock(tokens, it, end);
+			if (server_count >= 0)
+				settings_vec[server_count].parseServerBlock(tokens, it, end);
 		}
 	}
 	checkHostPortDuplicates();
@@ -160,31 +158,24 @@ void	ConfigParser::splitServerBlocks()
 
 ServerSettings*	ConfigParser::getServerBlock(const std::string key)
 {
-	auto it = settings.find(key);
-	if (it != settings.end())
-		return &(it->second);
-	else
-		return nullptr;
+	for (size_t i = 0; i < settings_vec.size(); i++)
+	{
+		if (settings_vec[i].getKey().compare(key) == 0)
+			return &settings_vec[i];
+	}
+	return nullptr;
 }
 
-void			ConfigParser::checkHostPortDuplicates()
+void	ConfigParser::checkHostPortDuplicates()
 {
 	std::vector<std::string> dup;
-	for (auto& pair : settings)
-		dup.push_back(pair.second.getKey());
+	for (auto it = settings_vec.begin(); it != settings_vec.end(); it++)
+		dup.push_back(it->getKey());
 	std::sort(dup.begin(), dup.end());
-	for (auto it = dup.begin(); it != dup.end(); it++)
+	for (auto it = dup.begin()+1; it != dup.end(); it++)
 	{
-		if (it == std::next(it))
+		if (it == std::prev(it))
 			throw std::runtime_error("Config: duplicate host and port");
-	}
-}
-
-void	ConfigParser::moveToVector()
-{
-	for (auto it : settings)
-	{
-		settings_vec.push_back(it.second);
 	}
 }
 

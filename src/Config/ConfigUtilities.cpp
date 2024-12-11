@@ -34,8 +34,6 @@ void	ConfigUtilities::trimServerBlock(std::vector<std::string>& serverBlock, std
 {
 	if (std::next(it) != serverBlock.end() && !it->compare("server") && !std::next(it)->compare("{"))
 		it += 2;
-	// if (!serverBlock.back().compare("}"))
-	// 	serverBlock.pop_back();
 }
 
 void	ConfigUtilities::shiftLocationBlock(std::vector<std::string>& location, std::vector<std::string>::iterator& it)
@@ -99,12 +97,8 @@ void	ConfigUtilities::printServerBlock(ServerSettings server)
 	else
 	{
 		for (auto& pair : server.getAllErrorPages())
-		{
-			for (auto it = pair.second.begin(); it != pair.second.end(); it++)
-				std::cout << pair.first << ": " << *it << '\n'; 
-		}
+			std::cout << pair.first << ": " << pair.second << '\n'; 
 	}
-	std::cout << '\n';
 }
 
 

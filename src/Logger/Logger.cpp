@@ -14,7 +14,7 @@
 
 Logger::Logger(const std::string fileName)
 {
-	std::string path("log");
+	std::string path = "log";
 	std::filesystem::create_directories(path);
 
 	log_file.open(path + "/" + fileName, std::ios::app);
@@ -23,7 +23,7 @@ Logger::Logger(const std::string fileName)
 		// ft_perror("Log file failed to open");
 		exit(1);
 	}
-	log_file << getCurrentTime() << ": WEBSERV STARTED\n";
+	log_file << "[INFO] " << getCurrentTime() << ": WEBSERV STARTED\n";
 }
 
 std::string Logger::getCurrentTime() 
@@ -49,7 +49,7 @@ Logger::~Logger()
 {
 	if (log_file.is_open())
 	{
-		log_file << getCurrentTime() << ": WEBSERV FINISHED\n";
+		log_file << "[INFO] " << getCurrentTime() << ": WEBSERV FINISHED\n";
 		log_file.close();
 	}
 }

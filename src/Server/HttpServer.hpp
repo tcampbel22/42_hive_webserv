@@ -60,7 +60,7 @@ public:
 	std::unordered_map<std::string, ServerSettings> settings;
 	std::vector<ServerSettings> settings_vec;
 	//constructors & destructors
-	HttpServer(std::unordered_map<std::string, ServerSettings>& _settings, std::vector<ServerSettings>& vec);
+	HttpServer(std::vector<ServerSettings>& vec);
 	~HttpServer();
 	void	fillHostPortPairs();
 	
