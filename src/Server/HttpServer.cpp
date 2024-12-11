@@ -140,20 +140,115 @@ void HttpServer::startListening()
 				int _fd_out = nodePtr->fd;
 				if (nodePtr == nullptr)
 					 std::cout << "We're fucked!!!\n";
-				HttpParser::bigSend(_fd_out, nodePtr->serverPtr); // Need to update this with Eromon
+
+                ssize_t bytesReceived = 0;
+                size_t bytes = 1024;
+                bool requestComplete = false;
+                while (!requestComplete)
+                {
+                    nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
+                    bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
+
+                    if (bytesReceived < 0)
+                    {
+                        if (errno == EAGAIN || errno == EWOULDBLOCK) //these are here untill we fix the reading cycle with epoll
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
+                            break;
+                        }
+                    }
+                    else if (bytesReceived == 0)
+                    {
+                        //std::cout << "Client closed the connection." << std::endl;
+                        requestComplete = true;
+                    }
+                    else
+                    {
+                        //std::cout << "Received " << bytesReceived << " bytes from client." << std::endl;
+                        requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, bytesReceived);
+                    }
+                }
+                if (requestComplete)
+                {
+                    // Once we have the full data, process the request
+                    HttpParser::bigSend(nodePtr);  // Send response
+                    epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events);  // Remove client socket from epoll
+                    close(_fd_out);  // Close the client socket
+
+                    delete nodePtr;  // Clean up the node pointer
+                }
+                else
+                {
+					//update the epoll here after an incomplete read.
+                    std::cout << "Waiting for more data..." << std::endl;
+                }
+				//HttpParser::bigSend(_fd_out, nodePtr->serverPtr); // Need to update this with Eromon
 				// _events.events = EPOLLIN; 
 				// _events.data.fd = _fd_out;
 				epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events); //guard later
 				close (_fd_out); //needs to be handled in http parsing, client will send whether to close connection or not
-				delete nodePtr;
-			}
-			fdActivityLoop(current_time);
+				//delete nodePtr;
+            }
 		}
+			fdActivityLoop(current_time);
 	}
 	std::cout << "outofloop" << std::endl;
 	//close (_clientSocket);
 	close (epollFd); //Probably not needed
 }
+
+// Function to check if the request is fully received (for chunked encoding or complete body)
+bool HttpServer::isRequestComplete(const std::vector<char>& data, size_t bytesRead)
+{
+    std::string requestStr(data.begin(), data.end());
+
+	bool isChunked = isChunkedTransferEncoding(requestStr);
+	if (isChunked) {
+		if (requestStr.find("0\r\n\r\n") != std::string::npos) {  // End of chunked data
+        	return true;
+   		}
+		else
+			return false;
+	}
+	bool hasBody = isRequestWithBody(requestStr);
+	if (hasBody) {
+		size_t complete = getContentLength(requestStr); //with nonchunked body;
+		if (complete == bytesRead)
+			return true;
+		else
+			return false;
+	}
+	if (!isChunked && !hasBody) {
+
+		if (requestStr.find("\r\n\r\n") != std::string::npos) {  // End of nonBody data
+        	return true;
+   		}
+		else
+			return false;
+	}
+    return false;
+}
+size_t HttpServer::getContentLength(const std::string& requestStr)
+{
+    size_t pos = requestStr.find("Content-Length: ");
+    if (pos != std::string::npos)
+    {
+        size_t start = pos + 15;
+        size_t end = requestStr.find("\r\n", start);
+        std::string lengthStr = requestStr.substr(start, end - start);
+        return std::stoi(lengthStr);
+    }
+    return 0;
+}
+
+bool HttpServer::isRequestWithBody(std::string requestStr) { return requestStr.find("Content-Length:") != std::string::npos; }
+
+bool HttpServer::isChunkedTransferEncoding(const std::string& requestStr) { return requestStr.find("Transfer-Encoding: chunked") != std::string::npos; }
+
 // If the client has been inactive for too long, close the socket
 void HttpServer::fdActivityLoop(const time_t current_time)
 {
