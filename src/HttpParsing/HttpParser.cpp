@@ -61,7 +61,9 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			request.errorFlag = 400;//error shit in here if first line is bad: ERROR 400 according to RFC
 			std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl; 
 		}
+		checkRedirect(request, serverPtr);
 		// checkForCgi(request.path);
+		
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request)) {
@@ -77,19 +79,13 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			std::cerr << e.what() << '\n';
 		}
 }
-
-// void HttpParser::validateLocation(LocationSettings* block, int* error) {
-// 	std::string path = block->getPath();
-// 	std::cout << block->getPath() << std::endl;
-// 	if (std::filesystem::exists(path)) {
-// 		if (std::filesystem::is_directory(path)){
-// 			return;
-// 		}
-// 		//TBD: might need to add a error or further parsing, if the path exist but is not a directory.
-// 	}
-// 	else
-// 		*error = 404;
-// }
+void HttpParser::checkRedirect(HttpRequest& request, ServerSettings *serverPtr) {
+	LocationSettings *block = serverPtr->getLocationBlock(request.path);
+	if (!block)
+		return;
+	if (block->isRedirect())
+		request.path = block->getRedirect();
+}
 
 void HttpParser::checkForCgi(std::string line) {
 	std::regex regex("/cgi-bin/"); //this needs to be changed to be compared to URL
