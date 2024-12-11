@@ -19,7 +19,7 @@ LocationSettings::LocationSettings()
 	root = "";
 	default_file = "";
 	autoindex = false;
-	redirect = false;
+	is_redirect = false;
 }
 
 
