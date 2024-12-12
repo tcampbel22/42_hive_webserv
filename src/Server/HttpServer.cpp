@@ -142,6 +142,8 @@ void HttpServer::startListening()
                 {
 					_events.events = EPOLLIN;  //update the epoll here after an incomplete read.
                     std::cout << "Waiting for more data..." << std::endl;
+					// std::string data(nodePtr->_clientDataBuffer.begin(), nodePtr->_clientDataBuffer.end());
+					// std::cout << data << std::endl;
 					break ;
                 }
             }

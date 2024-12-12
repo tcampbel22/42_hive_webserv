@@ -19,7 +19,7 @@ private:
 	uint _responseCode = 999;
 	std::string _contentType;
 	uint _contentLength = 0;
-	std::string _body; //could also be vector
+	std::string _body;
 	bool _closeConnection = false;
 	bool _redirect = false;
 	std::string _location;
