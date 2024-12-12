@@ -39,6 +39,7 @@ struct fdNode
 {
 	int				fd;
 	ServerSettings *serverPtr = nullptr;
+	std::vector<char> _clientDataBuffer;
 };
 
 class HttpServer
@@ -47,6 +48,8 @@ private:
 	static HttpServer *_instance;
 	std::vector<std::pair<std::string, int>> _ip_port_list;
 	std::vector<int> _server_fds;
+	std::vector<fdNode*> server_nodes;
+	std::map<int, fdNode*> client_nodes;
 	int 			_clientSocket;
 	sockaddr_in 	_socketInfo; //reusable
 	int				epollFd;
@@ -56,17 +59,22 @@ private:
 	std::unordered_map<int, time_t> _fd_activity_map;
 	
 public:
-	std::unordered_map<std::string, ServerSettings> settings;
 	std::vector<ServerSettings> settings_vec;
 	//constructors & destructors
-	HttpServer(std::unordered_map<std::string, ServerSettings>& _settings, std::vector<ServerSettings>& vec);
+	HttpServer(std::vector<ServerSettings>& vec);
 	~HttpServer();
 	void	fillHostPortPairs();
 	
 	//methods
 	static void signalHandler(int signal);
-	void fdActivityLoop(const time_t);
-	void startServer();
-	void closeServer();
-	void startListening();
+	void	fdActivityLoop(const time_t);
+	bool	isRequestComplete(const std::vector<char>& data, size_t bytesRead);
+	bool	isChunkedTransferEncoding(const std::string& requestStr);
+	bool	isRequestWithBody(std::string requestStr);
+	size_t	getContentLength(const std::string& requestStr);
+	void	startServer();
+	void	closeServer();
+	void	startListening();
+	void	acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_time);
+	void	addServerToEpoll();
 };
