@@ -42,4 +42,6 @@ public:
 	void 	doError();
 	int		getFile(std::string path);
 	void	makeMIME();
+	void 	responseCode(int code);
+	void 	checkPath();
 };
