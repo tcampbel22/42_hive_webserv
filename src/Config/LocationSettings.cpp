@@ -36,7 +36,8 @@ LocationSettings::LocationSettings(const std::string& new_path)
 	is_redirect = false;
 	isCgi = false;
 	autoindex = false;
-	redirect = "";
+	redirect.first = -1;
+	redirect.second = "";
 	cgi_path = "";
 	cgi_script = "";
 	upload_path = "";
@@ -56,7 +57,7 @@ void	LocationSettings::checkLocationValues(std::vector<std::string>::iterator& i
 			throw std::runtime_error("location: missing directives in cgi block");
 		if (isCgi && (autoindex || !methods.empty() || !default_file.empty()))
 			throw std::runtime_error("location: extra directives in cgi block");
-		if (!isCgi && !redirect.empty() && (!root.empty() || autoindex || !methods.empty() || !default_file.empty()))
+		if (!isCgi && redirect.first > 0 && (!root.empty() || autoindex || !methods.empty() || !default_file.empty()))
 			throw std::runtime_error("location: extra directives in redirect block");
 		if (!isCgi && !path.compare("/"))
 		{
@@ -116,9 +117,22 @@ void	LocationSettings::parseRedirect(std::vector<std::string>& location, std::ve
 {
 	ConfigUtilities::checkDuplicates(redirect, "redirect:");
 	ConfigUtilities::checkVectorEnd(location, it, "location: redirect: invalid syntax");
-	ConfigUtilities::checkSemiColon(location, it, "location: redirect: syntax error");
-	redirect = *it;
-	is_redirect = true;
+	int error_code;
+	try {
+		error_code = stoi(*it);
+	} catch(std::exception& e) {
+		throw std::invalid_argument("location_error_pages: (nan)");
+	}
+	if (ConfigUtilities::checkErrorCode(error_code, false) && it->length() == 3)
+	{
+		redirect.first = error_code;
+		ConfigUtilities::checkVectorEnd(location, it, "location: redirect: invalid syntax");
+		redirect.second = *it;
+		ConfigUtilities::checkSemiColon(location, it, "location: redirect: syntax error");
+		is_redirect = true;
+	}
+	else
+		throw std::runtime_error("location: redirect: invalid status code: " + *it);
 	checkLocationValues(it);
 	ConfigUtilities::checkVectorEnd(location, it, "location: redirect: invalid syntax");
 }
@@ -156,7 +170,7 @@ void	LocationSettings::parseLocationErrorPages(std::vector<std::string>& locatio
 	} catch(std::exception& e) {
 		throw std::invalid_argument("location_error_pages: (nan)");
 	}
-	if (error_code > 400 && error_code <= 505)
+	if (ConfigUtilities::checkErrorCode(error_code, true) && (it - 1)->length() == 3)
 	{
 		ConfigUtilities::checkSemiColon(location, it, "location_error_pages: syntax error");
 		addLocationErrorPage(error_code, *it);
@@ -215,7 +229,7 @@ void	LocationSettings::addLocationErrorPage(int status, std::string path)
 std::string&				LocationSettings::getPath() { return path; }
 std::string&				LocationSettings::getRoot() { return root; }
 std::string&				LocationSettings::getDefaultFile() { return default_file; }
-std::string&				LocationSettings::getRedirect() { return redirect; }
+std::pair<int, std::string>	LocationSettings::getRedirect() { return redirect; }
 std::vector<int>&			LocationSettings::getMethods() { return methods; }
 bool						LocationSettings::isAutoIndex() { return autoindex; }
 bool						LocationSettings::isDefaultFile() { return is_default_file; }
