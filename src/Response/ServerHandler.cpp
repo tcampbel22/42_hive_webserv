@@ -29,9 +29,7 @@ _response(), _input(_newInput)
 	{
 		makeMIME();
 		if (_input.errorFlag < 0)
-		{
 			parsePath();
-		}
 		executeInput();
 		_response.sendResponse(fd);
 	}
@@ -68,7 +66,7 @@ void ServerHandler::getLocationSettings()
 	while (42)
 	{
 		locSettings = _input.settings->getLocationBlock(key);
-		std::cout << "KEY = " << key << std::endl;
+		// std::cout << "KEY = " << key << std::endl;
 		if (locSettings != nullptr || len < 2)
 			break ;
 		len = key.rfind('/');
@@ -101,11 +99,13 @@ void ServerHandler::parsePath()
 	}
 	else
 	{
-		if(locSettings->isRedirect() == true)
+		if(locSettings->isRedirect() == true && _input.method == GET)
 		{
-			// std::cout << "GOT HERE = " << _input.path << std::endl;
-			_input.path = locSettings->getRedirect();
-			std::cout << _input.path << std::endl;
+			_response.setRedirect(true);
+			_response.setLocation("Location: " + locSettings->getRedirect() + "\n");
+			_input.errorFlag = 302; //need to be the correct number: 301/302 etc
+			return ;
+			// std::cout << _input.path << std::endl;
 		}
 		else
 			_input.path = locSettings->getRoot() + _input.path;
@@ -242,7 +242,8 @@ void ServerHandler::defaultError()
 void ServerHandler::doError()
 {
 	_response.setResponseCode(_input.errorFlag);
-
+	if (locSettings->isRedirect() == true)
+		return ;
 	std::string errorPath;
 	//check if there are location level error pages for the requested code
 
@@ -278,17 +279,6 @@ void ServerHandler::doError()
 		if (getFile(errorPath) == 0)
 			return;
 	}
-
-	//This needs to check the error pyramid for correct error file
-	
-	// getFile("root/etc/response/" +  std::to_string(_input.errorFlag) + ".html");
-	
-	//should get a error file from the directory
-
-
-	//location based error pages not yet set up, but they should be checked first
-
-	//then server based error pages
 
 	//and finally, if no pages found, generate deafult pages;
 	defaultError();
