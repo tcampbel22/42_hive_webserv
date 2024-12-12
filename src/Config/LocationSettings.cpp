@@ -248,3 +248,6 @@ std::string					LocationSettings::getErrorPagePath(int key)
 	else 
 		return ""; 
 }
+
+int								LocationSettings::getRedirectStatus() { return redirect.first; }
+std::string&					LocationSettings::getRedirectPath() { return redirect.second; }

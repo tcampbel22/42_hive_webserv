@@ -108,7 +108,6 @@ void HttpServer::startListening()
                 {
                     nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
                     bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
-					std::cout << bytesReceived << '\n';
                     if (bytesReceived < 0)
                     {
                         if (errno == EAGAIN || errno == EWOULDBLOCK) //these are here untill we fix the reading cycle with epoll

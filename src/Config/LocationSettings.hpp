@@ -63,6 +63,8 @@ public:
 	std::vector<int>&				getMethods(); //Methods POST GET DELETE
 	bool							isAutoIndex(); //directory listing
 	std::pair<int, std::string>		getRedirect();
+	int								getRedirectStatus();
+	std::string&					getRedirectPath();
 	bool							isDefaultFile();
 	bool							isRedirect();
 	bool							isCgiBlock();

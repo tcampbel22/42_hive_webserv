@@ -102,8 +102,8 @@ void ServerHandler::parsePath()
 		if(locSettings->isRedirect() == true && _input.method == GET)
 		{
 			_response.setRedirect(true);
-			_response.setLocation("Location: " + locSettings->getRedirect() + "\n");
-			_input.errorFlag = 302; //need to be the correct number: 301/302 etc
+			_response.setLocation("Location: " + locSettings->getRedirectPath() + "\n");
+			_input.errorFlag = locSettings->getRedirectStatus(); //UPDATED currently acccepting 300-308
 			return ;
 			// std::cout << _input.path << std::endl;
 		}
