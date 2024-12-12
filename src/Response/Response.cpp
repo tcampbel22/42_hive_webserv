@@ -30,7 +30,11 @@ void Response::set_body(std::string _newBody){_body = _newBody;}
 
 void Response::setCloseConnection(bool _close){_closeConnection = _close;}
 
+void Response::setRedirect(bool _redir){_redirect = _redir;}
+
 uint Response::getResponseCode(){return (_responseCode);}
+
+void Response::setLocation(std::string _newLocation){_location = _newLocation;}
 
 std::string Response::getResponseCodeStr()
 {
@@ -58,7 +62,7 @@ std::string Response::getResponseCodeStr()
 	case 503:
 		return(status += "503 Service Unavailable\n");
 	default:
-		return(status += std::to_string(_responseCode) + " non implemented code\n");
+		return(status += std::to_string(_responseCode) + "\n");
 	}
 }
 
@@ -156,12 +160,12 @@ void Response::sendResponse(int fd)
 	std::string _buffer = getResponseCodeStr();
 	
 	if (!_contentType.empty())
-	{
 		_buffer += getContentType();
-		_buffer += getContentLength();
-	}
+	_buffer += getContentLength();
 	if (_closeConnection == true)
 		_buffer += "Connection: close\n";
+	if (_redirect == true)
+		_buffer += _location;
 	_buffer += makeDate();
 	_buffer += "\r\n";
 
