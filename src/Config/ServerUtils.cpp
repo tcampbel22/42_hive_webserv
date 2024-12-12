@@ -82,13 +82,13 @@ void	ServerSettings::checkConfigValues(std::vector<std::string>& directive, std:
 	}
 }
 
-bool	ServerSettings::checkErrorCode(int code)
-{
-	int	error_codes[7] = { 400, 401, 403, 404, 500, 502, 503 };
-	for (int i = 0; i < 7; i++)
-	{
-		if (code == error_codes[i])
-			return true;
-	}
-	return false;
-}
+// bool	ServerSettings::checkErrorCode(int code, bool error)
+// {
+// 	int	error_codes[7] = { 400, 401, 403, 404, 500, 502, 503 };
+// 	for (int i = 0; i < 7; i++)
+// 	{
+// 		if (code == error_codes[i])
+// 			return true;
+// 	}
+// 	return false;
+// }

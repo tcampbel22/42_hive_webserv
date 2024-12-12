@@ -25,21 +25,21 @@
 class LocationSettings
 {
 private:
-	std::string					path; //URI
-	std::string 				root; //directory
-	std::vector<int>			methods; //allowed methods
-	std::string					default_file; //index index.html
-	bool						is_default_file;
-	std::unordered_map<int, std::string> location_error_pages;
-	bool						autoindex; //enable or disable directory listing
-	std::string					redirect;
-	bool						is_redirect;
-	bool						isDirectory = false;
-	bool						isFile = false;
-	bool						isCgi;
-	std::string					cgi_path;
-	std::string					cgi_script;
-	std::string					upload_path;
+	std::string								path; //URI
+	std::string 							root; //directory
+	std::vector<int>						methods; //allowed methods
+	std::string								default_file; //index index.html
+	bool									is_default_file;
+	std::unordered_map<int, std::string>	location_error_pages;
+	bool									autoindex; //enable or disable directory listing
+	std::pair<int, std::string>				redirect;
+	bool									is_redirect;
+	bool									isDirectory = false;
+	bool									isFile = false;
+	bool									isCgi;
+	std::string								cgi_path;
+	std::string								cgi_script;
+	std::string								upload_path;
 
 public:
 	LocationSettings();
@@ -62,7 +62,9 @@ public:
 	std::string&					getDefaultFile(); //default homepage
 	std::vector<int>&				getMethods(); //Methods POST GET DELETE
 	bool							isAutoIndex(); //directory listing
-	std::string&					getRedirect();
+	std::pair<int, std::string>		getRedirect();
+	int								getRedirectStatus();
+	std::string&					getRedirectPath();
 	bool							isDefaultFile();
 	bool							isRedirect();
 	bool							isCgiBlock();
