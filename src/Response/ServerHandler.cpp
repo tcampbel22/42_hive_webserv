@@ -24,13 +24,12 @@ _response(), _input(_newInput)
 	// std::cout << _input.path << std::endl;
 	// std::cout << "ERROR CODE FROM PARSING = " << _input.errorFlag << std::endl;
 	// std::cout << "error flag = " << _input.errorFlag << std::endl;
+	// std::cout << _input.settings->getErrorPages(404) << std::endl;
 	try
 	{
 		makeMIME();
 		if (_input.errorFlag < 0)
-		{
 			parsePath();
-		}
 		executeInput();
 		_response.sendResponse(fd);
 	}
@@ -61,17 +60,15 @@ int ServerHandler::checkMethod()
 //tries to get the location settings by using location block matching rules, defaults to / if unsuccessful
 void ServerHandler::getLocationSettings()
 {
-	int len = _input.path.rfind('/');
-	if (len < 1)
-		len = 1;
-	std::string key = _input.path.substr(0, len);
+	std::string key = _input.path;
+	int len = 2;
+
 	while (42)
 	{
 		locSettings = _input.settings->getLocationBlock(key);
-		// std::cout << "here2\n";	// std::cout << "KEY = " << key << std::endl;
-		if (locSettings || len < 2)
-			break ;		
-		
+		// std::cout << "KEY = " << key << std::endl;
+		if (locSettings != nullptr || len < 2)
+			break ;
 		len = key.rfind('/');
 		if (len < 1)
 			len = 1;
@@ -101,7 +98,18 @@ void ServerHandler::parsePath()
 		return;
 	}
 	else
-		_input.path = locSettings->getRoot() + _input.path;
+	{
+		if(locSettings->isRedirect() == true && _input.method == GET)
+		{
+			_response.setRedirect(true);
+			_response.setLocation("Location: " + locSettings->getRedirect() + "\n");
+			_input.errorFlag = 302; //need to be the correct number: 301/302 etc
+			return ;
+			// std::cout << _input.path << std::endl;
+		}
+		else
+			_input.path = locSettings->getRoot() + _input.path;
+	}
 	if (_input.path.length() > 1 && _input.path.at(0) == '/')
 		_input.path = _input.path.substr(1, _input.path.length() -1);
 	// std::cout << "DEFAULT FILE = " << locSettings->getDefaultFilePath() << std::endl;
@@ -234,10 +242,9 @@ void ServerHandler::defaultError()
 void ServerHandler::doError()
 {
 	_response.setResponseCode(_input.errorFlag);
-
+	if (locSettings->isRedirect() == true)
+		return ;
 	std::string errorPath;
-	// std::vector<std::string> errorVector;
-	//could getErrorPages perhaps return just a string path to the correct Error page?
 	//check if there are location level error pages for the requested code
 
 	try
@@ -249,6 +256,8 @@ void ServerHandler::doError()
 	}
 	if (!errorPath.empty())
 	{
+		if (errorPath.at(0) == '/')
+			errorPath = errorPath.substr(1, errorPath.size() -1);
 		//check that the path is valid
 		if (getFile(errorPath) == 0)
 			return;
@@ -264,21 +273,12 @@ void ServerHandler::doError()
 	}
 	if (!errorPath.empty())
 	{
+		if (errorPath.at(0) == '/')
+			errorPath = errorPath.substr(1, errorPath.size() -1);
 		//check that the path is valid
 		if (getFile(errorPath) == 0)
 			return;
 	}
-
-	//This needs to check the error pyramid for correct error file
-	
-	// getFile("root/etc/response/" +  std::to_string(_input.errorFlag) + ".html");
-	
-	//should get a error file from the directory
-
-
-	//location based error pages not yet set up, but they should be checked first
-
-	//then server based error pages
 
 	//and finally, if no pages found, generate deafult pages;
 	defaultError();
