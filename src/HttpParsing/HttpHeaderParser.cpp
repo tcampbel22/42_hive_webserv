@@ -35,11 +35,9 @@ void HttpHeaderParser::procesHeaderFields(HttpRequest& request, int& contentLeng
 	else
 		request.connection = true;
 	request.host.append(trim(request.headers.at("Host")));
-	if (request.headers.count("Content-Length") == 0) {
-    	return;
-	}
 	try
 	{
+		request.headers.count("Content-Length");
 		contentLength = std::stoi(request.headers.at("Content-Length"));
 	}
 	catch(const std::exception& e)
@@ -51,9 +49,8 @@ bool HttpHeaderParser::HostParse(ServerSettings* serverPtr, HttpRequest& request
 {
 	if (request.host.find("localhost") != std::string::npos) {
 		std::string host = "localhost";
-		request.host.erase(0 , host.length());
+		request.host.erase(0, host.length());
 		request.host.insert(0, "127.0.0.1");
-		std::cout << request.host << std::endl;
 	}
 	if (request.host  == serverPtr->getKey()) {
 		return true;

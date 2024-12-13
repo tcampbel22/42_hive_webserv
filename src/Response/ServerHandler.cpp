@@ -244,6 +244,7 @@ void ServerHandler::doError()
 
 	try
 	{
+		//please initialize locSettings before using it...
 		errorPath = locSettings->getErrorPagePath(_input.errorFlag);
 		if (!errorPath.empty())
 		{
