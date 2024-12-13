@@ -85,7 +85,7 @@ void HttpParser::checkRedirect(HttpRequest& request, ServerSettings *serverPtr) 
 	if (!block)
 		return;
 	if (block->isRedirect())
-		request.path = block->getRedirect();
+		request.path = block->getRedirectPath();
 }
 
 void HttpParser::checkForCgi(std::string line) {
@@ -120,6 +120,8 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 	_contentLength = std::stoi(request.headers.at("Content-Length"));
 	for (int i = 0; i < _contentLength && stream.get(c); i++)
 		request.body += c;
+	if (!stream.eof())
+		request.errorFlag = 400;
 }
 
 
