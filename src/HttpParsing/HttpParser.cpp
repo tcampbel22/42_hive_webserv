@@ -22,34 +22,6 @@ HttpParser::~HttpParser() {}
 
 HttpRequest::HttpRequest(ServerSettings *serverPtr) : connection(true), errorFlag(-1), settings(serverPtr) {}
 
-
-//Reads the client request and stores it in a vector<char>
-// void	HttpParser::recieveRequest(int out_fd)
-// {
-// 	ssize_t bytesRead = 0;
-// 	size_t bytes = 1024;
-// 	_fullyRead = true; //Added so it would compile
-	
-// 	while(true)
-// 	{
-// 		_clientDataBuffer.resize(_clientDataBuffer.size() + bytes);
-// 		bytesRead = read(out_fd, &_clientDataBuffer[_clientDataBuffer.size() - bytes], bytes);
-// 		if (bytesRead < 0) {
-// 			// if (errno == EAGAIN || errno == EWOULDBLOCK) {
-//             //     std::cout << "Everything read succesfully to the vector" << std::endl;
-//             //     break;
-// 			// }
-//             // std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
-//             break ;
-//         }
-// 		else if (bytesRead == 0) {
-// 			std::cout << "Everything read succesfully to the vector" << std::endl;
-// 			break ;
-// 		}
-// 	}
-// 	_clientDataBuffer.resize(_clientDataBuffer.size() - (bytes + bytesRead));
-// }
-//Empty the vector to the requestMap, needs to be parsed in the response.
 void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *serverPtr)
 {
 	try {
