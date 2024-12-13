@@ -72,6 +72,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		}
 		if (request.method == GET && this->_contentLength != 0) {
 			request.errorFlag = 404;
+			return;
 		}
 		if (_contentLength || request.headers.find("Transfer-Encoding") != request.headers.end())
 			parseBody(request, requestStream);

@@ -168,7 +168,7 @@ void HttpServer::startListening()
                     else
                     {
                         //std::cout << "Received " << bytesReceived << " bytes from client." << std::endl;
-                        requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, bytesReceived);
+                        requestComplete = isRequestComplete(nodePtr->_clientDataBuffer);
                     }
                 }
                 if (requestComplete)
@@ -183,6 +183,7 @@ void HttpServer::startListening()
                 else
                 {
 					//update the epoll here after an incomplete read.
+					
                     std::cout << "Waiting for more data..." << std::endl;
                 }
 				//HttpParser::bigSend(_fd_out, nodePtr->serverPtr); // Need to update this with Eromon
@@ -201,7 +202,7 @@ void HttpServer::startListening()
 }
 
 // Function to check if the request is fully received (for chunked encoding or complete body)
-bool HttpServer::isRequestComplete(const std::vector<char>& data, size_t bytesRead)
+bool HttpServer::isRequestComplete(const std::vector<char>& data)
 {
     std::string requestStr(data.begin(), data.end());
 
@@ -216,7 +217,7 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, size_t bytesRe
 	bool hasBody = isRequestWithBody(requestStr);
 	if (hasBody) {
 		size_t complete = getContentLength(requestStr); //with nonchunked body;
-		if (complete == bytesRead)
+		if (complete > 0)
 			return true;
 		else
 			return false;

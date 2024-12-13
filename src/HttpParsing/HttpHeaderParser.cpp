@@ -35,11 +35,9 @@ void HttpHeaderParser::procesHeaderFields(HttpRequest& request, int& contentLeng
 	else
 		request.connection = true;
 	request.host.append(trim(request.headers.at("Host")));
-	if (request.headers.count("Content-Length") == 0) {
-    	return;
-	}
 	try
 	{
+		request.headers.count("Content-Length");
 		contentLength = std::stoi(request.headers.at("Content-Length"));
 	}
 	catch(const std::exception& e)
