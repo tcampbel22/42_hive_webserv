@@ -81,21 +81,8 @@ void HttpServer::startListening()
 	std::signal(SIGINT, signalHandler);
 
 	epollFd = epoll_create1(0); //create epoll instance
-	for (u_long i = 0 ; i < settings_vec.size() ; i++)  //iterate through fd vector and add to epoll
-	 {
-		auto it = settings_vec[i];
-		_events.events = EPOLLIN;
-		fdNode *node = new fdNode;
-		node->fd = settings_vec[i]._fd;
-		node->serverPtr = &settings_vec[i];
-		_events.data.ptr = node;
-		
-		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, settings_vec[i]._fd, &_events) == -1)		
-		{
-			ft_perror("Failed to add to epol11l");
-			continue; 
-		}
-	 }
+	
+	addServerToEpoll();
 	
 	while (true)
 	{
@@ -106,39 +93,13 @@ void HttpServer::startListening()
 		time_t current_time = std::time(nullptr);
 		for (int i = 0; i < numEvents; i++)
 		{
-			fdNode *nodePtr = static_cast <fdNode*>(_eventsArr[i].data.ptr);
+			fdNode *nodePtr = static_cast <fdNode*>(_eventsArr[i].data.ptr);  //retrieving current serversettings and client fd
 			int	eventFd = nodePtr->fd;
-			if (std::find(_server_fds.begin(), _server_fds.end(), eventFd) != _server_fds.end())
-			{
-					socklen_t _sockLen = sizeof(_socketInfo);
-					_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
-					if (_clientSocket < 0) 
-					{
-						std::cerr << "accept failed\n" << strerror(errno) << '\n';
-						continue;
-					}
-					std::cout << "New client connected: " << _clientSocket << std::endl;
-					setNonBlocking(_clientSocket);
-					
-					_events.events = EPOLLIN | EPOLLOUT;
-					fdNode *node = new fdNode;
-					node->fd = _clientSocket;
-					node->serverPtr = nodePtr->serverPtr;
-					_events.data.ptr = node;
-					
-					if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events) == -1)
-					{
-						ft_perror("failed to add fd to epoll");
-						close(_clientSocket);
-						continue;
-					}
-					_fd_activity_map[_clientSocket] = current_time;
-			}
-			else if (_eventsArr[i].events & EPOLLIN)
+			if (std::find(_server_fds.begin(), _server_fds.end(), eventFd) != _server_fds.end()) //eventFd is a server_socket meaning a new request is incoming
+				acceptNewClient(nodePtr, eventFd, current_time);
+			else if (_eventsArr[i].events & EPOLLIN) //client socket has data to read from
 			{	
 				int _fd_out = nodePtr->fd;
-				if (nodePtr == nullptr)
-					 std::cout << "We're fucked!!!\n";
 
                 ssize_t bytesReceived = 0;
                 size_t bytes = 1024;
@@ -147,13 +108,10 @@ void HttpServer::startListening()
                 {
                     nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
                     bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
-
                     if (bytesReceived < 0)
                     {
                         if (errno == EAGAIN || errno == EWOULDBLOCK) //these are here untill we fix the reading cycle with epoll
-                        {
                             break;
-                        }
                         else
                         {
                             std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
@@ -162,7 +120,7 @@ void HttpServer::startListening()
                     }
                     else if (bytesReceived == 0)
                     {
-                        //std::cout << "Client closed the connection." << std::endl;
+                        std::cout << "Client closed the connection." << std::endl;
                         requestComplete = true;
                     }
                     else
@@ -176,29 +134,70 @@ void HttpServer::startListening()
                     // Once we have the full data, process the request
                     HttpParser::bigSend(nodePtr);  // Send response
                     epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events);  // Remove client socket from epoll
-                    close(_fd_out);  // Close the client socket
-
-                    delete nodePtr;  // Clean up the node pointer
+                    delete nodePtr;
+					client_nodes.erase(_fd_out); //delete node pointer
+					close(_fd_out);  // Close the client socket
                 }
                 else
                 {
-					//update the epoll here after an incomplete read.
-					
+					_events.events = EPOLLIN;  //update the epoll here after an incomplete read.
                     std::cout << "Waiting for more data..." << std::endl;
+					// std::string data(nodePtr->_clientDataBuffer.begin(), nodePtr->_clientDataBuffer.end());
+					// std::cout << data << std::endl;
+					break ;
                 }
-				//HttpParser::bigSend(_fd_out, nodePtr->serverPtr); // Need to update this with Eromon
-				// _events.events = EPOLLIN; 
-				// _events.data.fd = _fd_out;
-				epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events); //guard later
-				close (_fd_out); //needs to be handled in http parsing, client will send whether to close connection or not
-				//delete nodePtr;
             }
 		}
 			fdActivityLoop(current_time);
 	}
-	std::cout << "outofloop" << std::endl;
-	//close (_clientSocket);
-	close (epollFd); //Probably not needed
+}
+
+void	HttpServer::addServerToEpoll()
+{
+	epollFd = epoll_create1(0); //create epoll instance
+	for (u_long i = 0 ; i < settings_vec.size() ; i++)  //iterate through fd vector and add to epoll
+	 {
+		auto it = settings_vec[i];
+		_events.events = EPOLLIN;
+		fdNode* server_node = new fdNode;
+		server_node->fd = settings_vec[i]._fd;
+		server_node->serverPtr = &settings_vec[i];
+		_events.data.ptr = server_node;
+		server_nodes.push_back(server_node);
+		
+		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, settings_vec[i]._fd, &_events) == -1)		
+		{
+			ft_perror("Failed to add to epoll");
+			continue; 
+		}
+	 }
+}
+
+void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_time)
+{
+	socklen_t _sockLen = sizeof(_socketInfo);
+	_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
+	if (_clientSocket < 0) 
+	{
+		std::cerr << "accept failed\n" << strerror(errno) << '\n';
+	}
+	std::cout << "New client connected: " << _clientSocket << std::endl;
+	setNonBlocking(_clientSocket);
+	
+	_events.events = EPOLLIN | EPOLLOUT;
+	fdNode *client_node = new fdNode;
+	client_node->fd = _clientSocket;
+	client_node->serverPtr = nodePtr->serverPtr;
+	_events.data.ptr = client_node;
+	client_nodes[_clientSocket] = client_node;
+	
+	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events) == -1)
+	{
+		ft_perror("failed to add fd to epoll");
+		close(_clientSocket);
+		delete client_node;
+	}
+	_fd_activity_map[_clientSocket] = current_time;
 }
 
 // Function to check if the request is fully received (for chunked encoding or complete body)
@@ -268,8 +267,13 @@ void HttpServer::closeServer()
 {
 	close(epollFd);
 	for (auto it = settings_vec.begin(); it != settings_vec.end(); it++)
-		close(it->_fd); 
-
+		close(it->_fd);
+	for (auto it : server_nodes)
+		delete it;
+	for (auto it : client_nodes)
+	{
+		delete it.second;
+	}
 }
 
 HttpServer::~HttpServer()

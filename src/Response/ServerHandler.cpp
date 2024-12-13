@@ -24,14 +24,24 @@ _response(), _input(_newInput)
 	// std::cout << _input.path << std::endl;
 	// std::cout << "ERROR CODE FROM PARSING = " << _input.errorFlag << std::endl;
 	// std::cout << "error flag = " << _input.errorFlag << std::endl;
+	// std::cout << _input.settings->getErrorPages(404) << std::endl;
 	try
 	{
+		//populate the MIME map
 		makeMIME();
+
+		//get the correct serverblock (/ if no other found)
+		getLocationSettings();
+
+		//sanitize the path
 		if (_input.errorFlag < 0)
-		{
+			checkPath();
+		//parse the full path together using information from the server block and check if the method is allowed
+		if (_input.errorFlag < 0)
 			parsePath();
-		}
+		//handle the request 
 		executeInput();
+		//send a response
 		_response.sendResponse(fd);
 	}
 	catch(const std::exception& e)
@@ -41,78 +51,76 @@ _response(), _input(_newInput)
 	
 }
 
-//check to see if the path domain specified is located in the server
-//and parse the root to it
+void ServerHandler::checkPath()
+{
+	if (_input.path.empty())
+		return (responseCode(400));
+	std::regex validPathRegex("^[a-zA-Z0-9/_.-]+$");
+	if (!std::regex_match(_input.path, validPathRegex) || _input.path.find("..") != std::string::npos \
+		|| _input.path.find("//") != std::string::npos)
+		return (responseCode(401));
+}
+
+void ServerHandler::responseCode(int code)
+{
+	_input.errorFlag = code;
+}
 
 int ServerHandler::checkMethod()
 {
-	// ConfigUtilities::printLocationBlock(*locSettings);
 	std::vector<int> allowedMethods = locSettings->getMethods();
 	for (auto& method : allowedMethods)
 	{
 		if (_input.method == method)
 			return 0;
 	}
-	// if (_input.method == GET && home == true)
-	// 	return 0;
 	return (1);
 }
 
 //tries to get the location settings by using location block matching rules, defaults to / if unsuccessful
 void ServerHandler::getLocationSettings()
 {
-	int len = _input.path.rfind('/');
-	if (len < 1)
-		len = 1;
-	std::string key = _input.path.substr(0, len);
+	std::string key = _input.path;
+	int len = 2;
+
 	while (42)
 	{
 		locSettings = _input.settings->getLocationBlock(key);
-		// std::cout << "here2\n";	// std::cout << "KEY = " << key << std::endl;
-		if (locSettings || len < 2)
-			break ;		
-		
+		// std::cout << "KEY = " << key << std::endl;
+		if (locSettings != nullptr || len < 2)
+			break ;
 		len = key.rfind('/');
 		if (len < 1)
 			len = 1;
 		key = key.substr(0, len);
 	}
+	if (!locSettings)
+		locSettings = _input.settings->getLocationBlock("/");
+	if (!locSettings)
+		return (responseCode(500));
 
 }
 
 void ServerHandler::parsePath()
 {
-	if (_input.path.empty())
+	if(locSettings->isRedirect() == true && _input.method == GET)
 	{
-		_input.errorFlag = 400;
+		_response.setRedirect(true);
+		_response.setLocation("Location: " + locSettings->getRedirectPath() + "\n");
+		_input.errorFlag = locSettings->getRedirectStatus(); //UPDATED currently acccepting 300-308
 		return ;
-	}
-	std::regex validPathRegex("^[a-zA-Z0-9/_.-]+$");
-	if (!std::regex_match(_input.path, validPathRegex) || _input.path.find("..") != std::string::npos \
-		|| _input.path.find("//") != std::string::npos)
-	{
-		_input.errorFlag = 401;		
-		return ;
-	}
-	getLocationSettings();
-	if (!locSettings)
-	{
-		_input.errorFlag = 404;
-		return;
+		// std::cout << _input.path << std::endl;
 	}
 	else
 		_input.path = locSettings->getRoot() + _input.path;
+	// }
 	if (_input.path.length() > 1 && _input.path.at(0) == '/')
 		_input.path = _input.path.substr(1, _input.path.length() -1);
-	// std::cout << "DEFAULT FILE = " << locSettings->getDefaultFilePath() << std::endl;
 	if (_input.path.back() == '/')
 	{
 		//use bool from config to see if there is a deafault file & if directory listing is on
 		_input.path = _input.path + locSettings->getDefaultFile();
 	}
-	// std::cout << _input.path << std::endl;
-
-	//sanitize the path, and set error if needed
 	if (checkMethod())
 		_input.errorFlag = 403;
 }
@@ -203,12 +211,7 @@ int ServerHandler::getFile(std::string path)
 	//check for file and for read permission and set error code accordingly
 	infile.open(path);
 	if (!infile.is_open())
-	{
-		//should set flag to failed for status code
-		// _input.errorFlag = 404;
-		// _response.setResponseCode(404);
 		return (1);
-	}
 	stream << infile.rdbuf();
 	_response.set_body(stream.str());
 	infile.close();
@@ -234,52 +237,40 @@ void ServerHandler::defaultError()
 void ServerHandler::doError()
 {
 	_response.setResponseCode(_input.errorFlag);
-
+	if (locSettings->isRedirect() == true)
+		return ;
 	std::string errorPath;
-	// std::vector<std::string> errorVector;
-	//could getErrorPages perhaps return just a string path to the correct Error page?
 	//check if there are location level error pages for the requested code
 
 	try
 	{
 		//please initialize locSettings before using it...
 		errorPath = locSettings->getErrorPagePath(_input.errorFlag);
+		if (!errorPath.empty())
+		{
+			if (errorPath.at(0) == '/')
+				errorPath = errorPath.substr(1, errorPath.size() -1);
+			//check that the path is valid
+			if (getFile(errorPath) == 0)
+				return;
+		}
 	}
-	catch(const std::exception& e)
-	{
-	}
-	if (!errorPath.empty())
-	{
-		//check that the path is valid
-		if (getFile(errorPath) == 0)
-			return;
-	}
+	catch(const std::exception& e){}
 
 	//if no location level pages, check if there is server level pages
 	try
 	{
 		errorPath = _input.settings->getErrorPages(_input.errorFlag);
+		if (!errorPath.empty())
+		{
+			if (errorPath.at(0) == '/')
+				errorPath = errorPath.substr(1, errorPath.size() -1);
+			//check that the path is valid
+			if (getFile(errorPath) == 0)
+				return;
+		}
 	}
-	catch(const std::exception& e)
-	{
-	}
-	if (!errorPath.empty())
-	{
-		//check that the path is valid
-		if (getFile(errorPath) == 0)
-			return;
-	}
-
-	//This needs to check the error pyramid for correct error file
-	
-	// getFile("root/etc/response/" +  std::to_string(_input.errorFlag) + ".html");
-	
-	//should get a error file from the directory
-
-
-	//location based error pages not yet set up, but they should be checked first
-
-	//then server based error pages
+	catch(const std::exception& e){}
 
 	//and finally, if no pages found, generate deafult pages;
 	defaultError();
@@ -291,42 +282,35 @@ void ServerHandler::doPost()
 	std::filesystem::path dirPath(_input.path.substr(0, _input.path.rfind('/')));
 	//check if the path ends with / meaning its a directory
 	if (_input.path.back() == '/')
-	{
-		_input.errorFlag = 403;
-		return ;
-	}
+		return (responseCode(403));
+
 	//first check if the directory where the file is / is to be created exists
 	if(std::filesystem::exists(dirPath) && std::filesystem::is_directory(dirPath))
 	{	
 		//then check if the file exists or not
 		if(std::filesystem::exists(path))
 		{
-			std::ofstream file(_input.path, std::ios::app); //to append to a existing file // will also create the file if it dose not exist
+			//test what happends when trying to write to a file without permission (once post works again in the reading)
+
+			 //to append to a existing file // will also create the file if it dose not exist also ensures there is write permission
+			std::ofstream file(_input.path, std::ios::app);
 			if (!file.is_open())
-			{
-				_input.errorFlag = 401;
-				return ;
-			}
+				return (responseCode(401));
 			file << _input.body;
 			file.close();
-			//first check for write permission ?
 		}
 		else
 		{
 			std::ofstream new_file(_input.path);
 			if (!new_file.is_open())
-			{
-				_input.errorFlag = 500;
-				return ;
-			}
+				return (responseCode(500));
 			new_file << _input.body;
 			new_file.close();
 		}
-		//mutex might be needed if multiple servers have access to same resources?
 		_response.setResponseCode(200);
 	}
 	else
-		_input.errorFlag = 404;
+		_input.errorFlag = 404; //probably wrong code
 }
 
 void ServerHandler::generateIndex()
@@ -353,8 +337,7 @@ void ServerHandler::generateIndex()
 	}
 	catch(const std::exception& e)
 	{
-		_input.errorFlag = 403; //probably other code
-		return ;
+		return (responseCode(403)); //probably other code
 	}
 	body += "</ul>\n</body>\n</html>";
 
@@ -366,13 +349,13 @@ void ServerHandler::generateIndex()
 
 void ServerHandler::doGet()
 {
+	//check if it is asking for a directory and if autoindex is on
+	//if so, generate the directory index
 	if (_input.path.back() == '/' && locSettings->isAutoIndex() == true)
 	{
 		generateIndex();
 		return;
 	}
-	//check if it is asking for a directory and if autoindex is on
-	//if so, generate the directory index
 
 	if (getFile(_input.path) == 1)
 	{
@@ -389,10 +372,8 @@ void ServerHandler::doDelete()
 	std::filesystem::path dirPath(_input.path.substr(0, _input.path.rfind('/')));
 	//check if the path ends with / meaning its a directory
 	if (_input.path.back() == '/')
-	{
-		_input.errorFlag = 403;
-		return ;
-	}
+		return (responseCode(403));
+
 	//first check if the directory where the file is exists	
 	if(std::filesystem::exists(dirPath) && std::filesystem::is_directory(dirPath))
 	{	
@@ -402,10 +383,7 @@ void ServerHandler::doDelete()
 			try
 			{
 				if (!std::filesystem::remove(path))
-				{
-					_input.errorFlag = 403;
-					return ;
-				}
+					return (responseCode(403));
 			}
 			catch(const std::exception& e)
 			{
@@ -413,14 +391,22 @@ void ServerHandler::doDelete()
 			}
 		}
 		else
-		{
-			_input.errorFlag = 404;
-			return ;
-		}
-		//mutex might be needed if multiple servers have access to same resources?
+			return (responseCode(404));
 		_response.setResponseCode(200);
 	}
 	else
 		_input.errorFlag = 404;
-	// std::cout << "GOT TO DELETE\n";
 }
+
+
+
+
+
+/*NOTES
+
+At the moment POST without a body creates a file
+Can the body variables (in/out) be strings, or do they need to be streams? due possible null in binary files
+
+
+
+ */

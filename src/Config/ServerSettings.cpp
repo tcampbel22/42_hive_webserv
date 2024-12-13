@@ -132,7 +132,7 @@ void	ServerSettings::parseErrorPages(std::vector<std::string>& directive, std::v
 	} catch(std::exception& e) {
 		throw std::invalid_argument("error_pages: (nan)");
 	}
-	if (checkErrorCode(error_code) && (it - 1)->length() == 3)
+	if (ConfigUtilities::checkErrorCode(error_code, true) && (it - 1)->length() == 3)
 	{
 		ConfigUtilities::checkSemiColon(directive, it, "error_pages: syntax error");
 		addErrorPage(error_code, *it);

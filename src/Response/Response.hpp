@@ -16,11 +16,13 @@
 class Response
 {
 private:
-	uint _responseCode;
+	uint _responseCode = 999;
 	std::string _contentType;
-	uint _contentLength;
-	std::string _body; //could also be vector
+	uint _contentLength = 0;
+	std::string _body;
 	bool _closeConnection = false;
+	bool _redirect = false;
+	std::string _location;
 
 public:	
 	Response();
@@ -32,6 +34,8 @@ public:
 	void setContentLength(uint _length);
 	void set_body(std::string _body);
 	void setCloseConnection(bool _close);
+	void setRedirect(bool _redir);
+	void setLocation(std::string _newLocation);
 
 	//Methods
 	std::string getContentLength();

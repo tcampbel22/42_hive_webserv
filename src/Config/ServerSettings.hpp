@@ -58,7 +58,6 @@ public:
 	void						checkConfigValues(std::vector<std::string>& directive, std::vector<std::string>::iterator& it);
 	void						parseLocationBlock(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
 	void						parseLocationBlockSettings(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
-	bool						checkErrorCode(int code);
 	//SETTERS
 	void						setDefaultServer(bool val);
 	void						setHost(std::string ip);

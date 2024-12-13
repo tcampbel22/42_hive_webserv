@@ -58,7 +58,7 @@ void	ConfigUtilities::checkSemiColon(std::vector<std::string>& vec, std::vector<
 		throw std::runtime_error(msg);
 }
 
-void	ConfigUtilities::checkDuplicates(std::variant<int, bool, std::string, std::vector<int>> val, std::string msg)
+void	ConfigUtilities::checkDuplicates(std::variant<int, bool, std::string, std::vector<int>, std::pair<int, std::string>> val, std::string msg)
 {
 	if (auto ptr = std::get_if<int>(&val))
 	{
@@ -80,6 +80,12 @@ void	ConfigUtilities::checkDuplicates(std::variant<int, bool, std::string, std::
 		if (!ptr->empty())
 			throw std::runtime_error(msg + " duplicate error");
 	}
+	else if (auto ptr = std::get_if<std::pair<int, std::string>>(&val))
+	{
+		if (ptr->first > 0 && !ptr->second.empty())
+			throw std::runtime_error(msg + " duplicate error");
+	}
+
 }
 
 
@@ -114,10 +120,10 @@ void	ConfigUtilities::printLocationBlock(LocationSettings location)
 	else
 		std::cout << "Root: no root\n";
 	std::cout << "Autoindex: " << std::boolalpha << location.isAutoIndex() << '\n';
-	if (location.getRedirect().empty())
+	if (!location.isRedirect())
 		std::cout << "Redirect: no redirect\n";
 	else
-		std::cout << "Redirect: " << location.getRedirect() << '\n';
+		std::cout << "Redirect: " << location.getRedirect().first << " " << location.getRedirect().second << '\n';
 	if (location.getMethods().empty())
 		std::cout << "Methods: no methods\n";
 	else
@@ -167,4 +173,24 @@ void ConfigUtilities::checkDefaultBlock(ServerSettings block, bool server)
 		block.setDefaultServer(true);
 		server = true;
 	}
+}
+
+bool	ConfigUtilities::checkErrorCode(int code, bool error)
+{
+	if (error)
+	{
+		int	error_codes[7] = { 400, 401, 403, 404, 500, 502, 503 };
+		for (int i = 0; i < 7; i++)
+		{
+			if (code == error_codes[i])
+				return true;
+		}
+
+	}
+	else
+	{
+		if (code >= 300 and code <= 308)
+			return true;
+	}
+	return false;
 }
