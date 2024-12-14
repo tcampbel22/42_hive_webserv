@@ -44,14 +44,15 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		}
 		if (request.method == GET)
 		{
+			std::getline(requestStream, line);
 			if (!requestStream.eof()) {
 				request.errorFlag = 400;
 				return;
 			}
-		}
-		if (request.method == GET && this->_contentLength != 0) {
-			request.errorFlag = 400;
-			return;
+			if (this->_contentLength != 0) {
+				request.errorFlag = 400;
+				return;
+			}
 		}
 		if (_contentLength || request.headers.find("Transfer-Encoding") != request.headers.end())
 			parseBody(request, requestStream);
@@ -97,8 +98,15 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 	std::string line;
 	char c;
 	_contentLength = std::stoi(request.headers.at("Content-Length"));
-	for (int i = 0; i < _contentLength && stream.get(c); i++)
-		request.body += c;
+	for (int i = 0; i < _contentLength && stream.get(c); i++) {
+		if (c)
+			request.body += c;
+	}
+	std::getline(stream, line);
+	if (!stream.eof() && line.compare("\r\n"))
+		request.errorFlag = 400;
+	if (_contentLength != (int)request.body.size())
+		request.errorFlag = 400;
 }
 
 void	HttpParser::bigSend(fdNode *requestNode) 
@@ -110,6 +118,8 @@ void	HttpParser::bigSend(fdNode *requestNode)
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr);
 	parser._fullyRead = true;
+	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
+   	// std::cout << "this stuff is in the map\n" << str;
 	//parser.recieveRequest(requestNode->fd);
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
 	// if (parser.cgiflag){
@@ -130,8 +140,6 @@ void	HttpParser::bigSend(fdNode *requestNode)
 
 	// std::cout << request.body << std::endl;
 
-	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
-   	// std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
 	ServerHandler response(requestNode->fd, request);
 }
 
