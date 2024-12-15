@@ -27,7 +27,7 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 
 		tmp = rLine.substr(0, rLine.find(' '));
 		if (_validMethods.find(tmp) == _validMethods.end()) {
-			request.errorFlag = 400; //error response here (error 404 bad request or 500 internal server error)
+			request.errorFlag = 405; //error response here (error 404 bad request or 500 internal server error)
 			return false;
 		}
 		if (!tmp.compare("GET"))
