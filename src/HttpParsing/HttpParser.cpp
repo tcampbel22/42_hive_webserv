@@ -99,14 +99,18 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 	char c;
 	_contentLength = std::stoi(request.headers.at("Content-Length"));
 	for (int i = 0; i < _contentLength && stream.get(c); i++) {
-		if (c)
+		// if (c)
 			request.body += c;
+			//NEED TO BE MADE ROBUST
 	}
 	std::getline(stream, line);
-	if (!stream.eof() && line.compare("\r\n"))
+	if (!stream.eof() && line.compare("\r\n")) {
 		request.errorFlag = 400;
+	}
 	if (_contentLength != (int)request.body.size())
+	{
 		request.errorFlag = 400;
+	}
 }
 
 void	HttpParser::bigSend(fdNode *requestNode) 

@@ -24,6 +24,11 @@ _response(), _input(_newInput)
 	// std::cout << _input.path << std::endl;
 	// std::cout << "ERROR CODE FROM PARSING = " << _input.errorFlag << std::endl;
 	// std::cout << "error flag = " << _input.errorFlag << std::endl;
+	// std::cout << "BODY SIZE = " << _input.body.size() << std::endl;
+	// std::cout << "BODY = " << _input.body << std::endl;
+	
+	// std::cout << "CONT LENGTH = " << _input.headers.at("Content-Length") << std::endl;
+
 	// std::cout << _input.settings->getErrorPages(404) << std::endl;
 	try
 	{

@@ -11,6 +11,7 @@
 /**********************************************************************************/
 
 #include "HttpServer.hpp"
+#include "../Logger/Logger.hpp"
 
 HttpServer* HttpServer::_instance = nullptr;
 
@@ -83,7 +84,7 @@ void HttpServer::startListening()
 	epollFd = epoll_create1(0); //create epoll instance
 	
 	addServerToEpoll();
-	
+	// Logger log("bytes.log");
 	while (true)
 	{
 		numEvents = epoll_wait(epollFd, _eventsArr, MAX_EVENTS, 0);
@@ -102,23 +103,30 @@ void HttpServer::startListening()
 				int _fd_out = nodePtr->fd;
 
                 ssize_t bytesReceived = 0;
-                size_t bytes = 1024;
-                bool requestComplete = false;
+                ssize_t bytes = 1024;
+                // size_t bytes = 50000;
+				bool requestComplete = false;
                 while (!requestComplete)
                 {
                     nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
                     bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
-                    if (bytesReceived < 0)
+
+					if (bytesReceived < bytes && bytesReceived > 0)
+						nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - bytesReceived));
+
+					if (bytesReceived < 0)
                     {
-                        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                        // if (errno == EAGAIN || errno == EWOULDBLOCK) {
+						// std::string str(nodePtr->_clientDataBuffer.begin(), nodePtr->_clientDataBuffer.end());
+						// log.log(str, INFO);
 							requestComplete = true; //this is for the tester, tester sends stuff in a weird format, need this to go forward
 							break;
-						} //these are here untill we fix the reading cycle with epoll
-                        else
-                        {
-                            std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
-                            break;
-                        }
+						// } //these are here untill we fix the reading cycle with epoll
+                        // else
+                        // {
+                        //     std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
+                        //     break;
+                        // }
                     }
                     else if (bytesReceived == 0)
                     {
@@ -127,8 +135,8 @@ void HttpServer::startListening()
                     }
                     else
                     {
-                        //std::cout << "Received " << bytesReceived << " bytes from client." << std::endl;
-                        requestComplete = isRequestComplete(nodePtr->_clientDataBuffer);
+                        // std::cout << "Received " << bytesReceived << " bytes from client." << std::endl;
+                        requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, bytesReceived);
                     }
                 }
                 if (requestComplete)
@@ -204,7 +212,7 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 
 
 // Function to check if the request is fully received (for chunked encoding or complete body)
-bool HttpServer::isRequestComplete(const std::vector<char>& data)
+bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived)
 {
     std::string requestStr(data.begin(), data.end());
 	bool isChunked = isChunkedTransferEncoding(requestStr);
@@ -215,10 +223,15 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data)
 		else
 			return false;
 	}
+	(void) bytesReceived;
 	bool hasBody = isRequestWithBody(requestStr);
 	if (hasBody) {
-		size_t complete = getContentLength(requestStr); //with nonchunked body;
-		if (complete > 0)
+		// size_t complete = getContentLength(requestStr); //with nonchunked body;
+		// if (complete > 0 && bytesReceived != 1024)
+		// if (bytesReceived != 1024)
+		int test = 0;
+		test = requestStr.find("\r\n\r\n");
+		if (requestStr.find("\r\n\r\n", test + 4) != std::string::npos)
 			return true;
 		else
 			return false;
