@@ -22,6 +22,7 @@ HttpParser::~HttpParser() {}
 
 HttpRequest::HttpRequest(ServerSettings *serverPtr) : connection(true), errorFlag(-1), settings(serverPtr) {}
 
+//Empty the vector to the requestMap, needs to be parsed in the response.
 void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *serverPtr)
 {
 	try {
@@ -30,21 +31,28 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
     	std::string line;
 		//Parse the requestline and store the relevant stuff (path and method)
 		if (!std::getline(requestStream, line) || !requestLineValidator::isValidRequestLine(line, request)) {
-			request.errorFlag = 400;//error shit in here if first line is bad: ERROR 400 according to RFC
+			//error shit in here if first line is bad: ERROR 400 according to RFC
 			std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl; 
 		}
 		checkRedirect(request, serverPtr);
 		// checkForCgi(request.path);
-		
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request)) {
 		 	request.errorFlag = 400;
 		 	request.connection = false;
 		}
-		if (request.method == GET && this->_contentLength != 0) {
-			request.errorFlag = 404;
-			return;
+		if (request.method == GET)
+		{
+			std::getline(requestStream, line);
+			if (!requestStream.eof()) {
+				request.errorFlag = 400;
+				return;
+			}
+			if (this->_contentLength != 0) {
+				request.errorFlag = 400;
+				return;
+			}
 		}
 		if (_contentLength || request.headers.find("Transfer-Encoding") != request.headers.end())
 			parseBody(request, requestStream);
@@ -90,12 +98,16 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 	std::string line;
 	char c;
 	_contentLength = std::stoi(request.headers.at("Content-Length"));
-	for (int i = 0; i < _contentLength && stream.get(c); i++)
-		request.body += c;
-	if (!stream.eof())
+	for (int i = 0; i < _contentLength && stream.get(c); i++) {
+		if (c)
+			request.body += c;
+	}
+	std::getline(stream, line);
+	if (!stream.eof() && line.compare("\r\n"))
+		request.errorFlag = 400;
+	if (_contentLength != (int)request.body.size())
 		request.errorFlag = 400;
 }
-
 
 void	HttpParser::bigSend(fdNode *requestNode) 
 {
@@ -106,6 +118,8 @@ void	HttpParser::bigSend(fdNode *requestNode)
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr);
 	parser._fullyRead = true;
+	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
+   	// std::cout << "this stuff is in the map\n" << str;
 	//parser.recieveRequest(requestNode->fd);
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
 	// if (parser.cgiflag){
@@ -126,8 +140,6 @@ void	HttpParser::bigSend(fdNode *requestNode)
 
 	// std::cout << request.body << std::endl;
 
-	// std::string str(parser._clientDataBuffer.begin(), parser._clientDataBuffer.end()); // Convert to string
-   	// std::cout << "this stuff is in the map\n" << str << std::endl << std::endl << std::endl << std::endl << "next stuff in the a map\n";
 	ServerHandler response(requestNode->fd, request);
 }
 
