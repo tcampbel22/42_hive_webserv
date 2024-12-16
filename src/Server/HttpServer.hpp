@@ -68,7 +68,7 @@ public:
 	//methods
 	static void signalHandler(int signal);
 	void	fdActivityLoop(const time_t);
-	bool	isRequestComplete(const std::vector<char>& data);
+	bool	isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived);
 	bool	isChunkedTransferEncoding(const std::string& requestStr);
 	bool	isRequestWithBody(std::string requestStr);
 	size_t	getContentLength(const std::string& requestStr);
