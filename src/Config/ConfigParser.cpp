@@ -90,10 +90,7 @@ void	ConfigParser::tokenise(const std::string& c)
 				tokens.push_back(token);
 				token.clear();
 			}
-			if (!tokens.empty() && tokens.back().find_first_of("{;") != std::string::npos && tokens.back().back() == c[i])
-				tokens.back().push_back(c[i]);
-			else
-				tokens.push_back(std::string(1, c[i]));
+			tokens.push_back(std::string(1, c[i]));
 		}
 		else
 			token.push_back(c[i]);

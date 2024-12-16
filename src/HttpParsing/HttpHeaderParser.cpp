@@ -29,12 +29,15 @@ void HttpHeaderParser::parseHeaders(std::istringstream& requestStream, HttpReque
 
 void HttpHeaderParser::procesHeaderFields(HttpRequest& request, int& contentLength)
 {
-	if (request.headers.find("Connection") != request.headers.end()){
+	if (request.headers.find("Connection") != request.headers.end())
+	{
+		if (request.headers.find("Connection") != request.headers.end()){
 		auto it = request.headers.at("Connection");
-		if (it.compare("keep-alive"))
-			request.connection = false;
-		else
-			request.connection = true;
+			if (it.compare("keep-alive"))
+				request.connection = false;
+			else
+				request.connection = true;
+	}
 	}
 	request.host.append(trim(request.headers.at("Host")));
 	try

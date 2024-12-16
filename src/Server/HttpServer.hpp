@@ -33,13 +33,14 @@
 #include <csignal>
 
 # define MAX_EVENTS 20 //Can define this in config file or create a funct based on cpu load or leave it
-# define TIME_OUT_PERIOD 10
+# define TIME_OUT_PERIOD 100
 
 struct fdNode
 {
 	int				fd;
 	ServerSettings *serverPtr = nullptr;
 	std::vector<char> _clientDataBuffer;
+	bool			_connection = true;
 };
 
 class HttpServer
@@ -63,7 +64,6 @@ public:
 	//constructors & destructors
 	HttpServer(std::vector<ServerSettings>& vec);
 	~HttpServer();
-	void	fillHostPortPairs();
 	
 	//methods
 	static void signalHandler(int signal);
@@ -77,4 +77,5 @@ public:
 	void	startListening();
 	void	acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_time);
 	void	addServerToEpoll();
+	void	fillHostPortPairs();
 };

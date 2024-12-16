@@ -122,7 +122,7 @@ void ServerHandler::parsePath()
 		_input.path = _input.path + locSettings->getDefaultFile();
 	}
 	if (checkMethod())
-		_input.errorFlag = 403;
+		_input.errorFlag = 405;
 }
 
 
