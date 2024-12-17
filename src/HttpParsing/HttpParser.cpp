@@ -43,7 +43,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			return;
 		}
 		checkRedirect(request, serverPtr);
-		// checkForCgi(request.path);
+		checkForCgi(serverPtr, request.path);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
@@ -78,19 +78,18 @@ void HttpParser::checkRedirect(HttpRequest& request, ServerSettings *serverPtr) 
 		request.path = block->getRedirectPath();
 }
 
-void HttpParser::checkForCgi(std::string line) {
-	std::regex regex("/cgi-bin/"); //this needs to be changed to be compared to URL
-	if (std::regex_search(line, regex))
+void HttpParser::checkForCgi(ServerSettings* server, std::string line) {
+	if (line.compare(server->getCgiBlock()->getCgiScript()))
 	{
 		cgiflag = true;
 	}
 	else
 		return;
-	size_t colPos = line.find('?');
-	if (colPos != std::string::npos)
-	{
-		query = line.substr(colPos);
-	}
+	// size_t colPos = line.find('?');
+	// if (colPos != std::string::npos)
+	// {
+	// 	query = line.substr(colPos);
+	// }
 }
 
 void HttpParser::parseBody(HttpRequest& request, std::istringstream& stream) {
@@ -135,17 +134,17 @@ void	HttpParser::bigSend(fdNode *requestNode)
    	// std::cout << "this stuff is in the map\n" << str;
 	//parser.recieveRequest(requestNode->fd);
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
-	// if (parser.cgiflag){
-	// 	LocationSettings *cgiBlock = request.settings->getCgiBlock();
-	// 	if (cgiBlock)
-	// 	{
-	// 		CGIparsing myCgi("/bin/cgi/cgi.py");
-	// 		myCgi.setCGIenvironment(request, parser.query);
-	// 		myCgi.execute(request);
-	// 	}
-	// 	else
-	// 		request.errorFlag = 400;
-	// }
+	if (parser.cgiflag){
+		LocationSettings *cgiBlock = request.settings->getCgiBlock();
+		if (cgiBlock)
+		{
+			CGIparsing myCgi(request.settings->getCgiBlock()->getCgiScript());
+			myCgi.setCGIenvironment(request, parser.query);
+			myCgi.execute(request);
+		}
+		else
+			request.errorFlag = 400;
+	}
 	//std::cout << request.body;
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;

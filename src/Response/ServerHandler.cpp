@@ -39,10 +39,10 @@ _response(), _input(_newInput)
 		getLocationSettings();
 
 		//sanitize the path
-		if (_input.errorFlag < 0)
+		if (_input.errorFlag < 1)
 			checkPath();
 		//parse the full path together using information from the server block and check if the method is allowed
-		if (_input.errorFlag < 0)
+		if (_input.errorFlag < 1)
 			parsePath();
 		//handle the request 
 		executeInput();
