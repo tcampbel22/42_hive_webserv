@@ -19,7 +19,7 @@
 #include <dirent.h>
 
 
-#define MAX_BODY_SIZE 5000
+#define MAX_BODY_SIZE 50000
 #define GET 1
 #define POST 2
 #define DELETE 3
