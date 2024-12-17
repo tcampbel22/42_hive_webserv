@@ -39,11 +39,16 @@ void HttpHeaderParser::procesHeaderFields(HttpRequest& request, int& contentLeng
 				request.connection = true;
 	}
 	}
-	request.host.append(trim(request.headers.at("Host")));
+	if (request.headers.find("Host") != request.headers.end())
+		request.host.append((trim(request.headers.at("Host"))));
 	try
 	{
 		request.headers.count("Content-Length");
 		contentLength = std::stoi(request.headers.at("Content-Length"));
+		if (contentLength > MAX_BODY_SIZE)
+			request.errorFlag = 413;
+		if (contentLength < 0)
+			contentLength = 0;
 	}
 	catch(const std::exception& e)
 	{
