@@ -104,7 +104,6 @@ void HttpServer::startListening()
 
                 ssize_t bytesReceived = 0;
                 ssize_t bytes = 1024;
-                // size_t bytes = 50000;
 				bool requestComplete = false;
                 while (!requestComplete)
                 {
@@ -116,17 +115,11 @@ void HttpServer::startListening()
 
 					if (bytesReceived < 0)
                     {
-                        // if (errno == EAGAIN || errno == EWOULDBLOCK) {
+						// if (errno == EAGAIN || errno == EWOULDBLOCK) {
 						// std::string str(nodePtr->_clientDataBuffer.begin(), nodePtr->_clientDataBuffer.end());
 						// log.log(str, INFO);
 							requestComplete = true; //this is for the tester, tester sends stuff in a weird format, need this to go forward
 							break;
-						// } //these are here untill we fix the reading cycle with epoll
-                        // else
-                        // {
-                        //     std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
-                        //     break;
-                        // }
                     }
                     else if (bytesReceived == 0)
                     {

@@ -38,4 +38,5 @@ public:
 	static	void	checkMethodDuplicates(std::vector<int>& location);
 	static	void	checkDefaultBlock(ServerSettings block, bool server);
 	static	bool	checkErrorCode(int code, bool error);
+	static	void	printWhiteSpace(std::string str);
 };

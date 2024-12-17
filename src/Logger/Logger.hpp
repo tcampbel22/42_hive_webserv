@@ -37,5 +37,6 @@ public:
 	Logger(const std::string fileName);
 	~Logger();
 	std::string getCurrentTime();
-	void log(std::string msg, e_log log_code);
+	void 		log(std::string msg, e_log log_code);
+	bool		checkFileSize();
 };

@@ -194,3 +194,18 @@ bool	ConfigUtilities::checkErrorCode(int code, bool error)
 	}
 	return false;
 }
+
+void	ConfigUtilities::printWhiteSpace(std::string str)
+{
+	for (auto it = str.begin(); it != str.end(); it++)
+	{
+		if (*it == 13)
+			std::cout << "\\r";
+		else if (*it == 10)
+			std::cout << "\\n\n";
+		// else if (*it == 0)
+		// 	std::cout << "\\0";
+		else
+			std::cout << *it;
+	}
+}

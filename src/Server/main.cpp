@@ -26,6 +26,7 @@ void	ft_perror(std::string str) //need to make as logger instead
 int	main(int ac, char **av)
 {
 	Logger log("log.log");
+
 	if (ac != 2 || av[1] == nullptr || av[1][0] == '\0')
 	{
 		ft_perror("expecting only configuration file as argument");
