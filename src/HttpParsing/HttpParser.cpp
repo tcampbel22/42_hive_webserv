@@ -20,7 +20,7 @@ HttpParser::HttpParser() : _fullyRead(true), _contentLength(0), cgiflag(false), 
 
 HttpParser::~HttpParser() {}
 
-HttpRequest::HttpRequest(ServerSettings *serverPtr) : connection(true), errorFlag(-1), settings(serverPtr) {}
+HttpRequest::HttpRequest(ServerSettings *serverPtr) : connection(true), errorFlag(0), settings(serverPtr) {}
 
 //Empty the vector to the requestMap, needs to be parsed in the response.
 void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *serverPtr)
@@ -111,12 +111,14 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 		request.body += c;
 	}
 	if (!stream.eof()) {
-		request.errorFlag = 400;
+		if (!request.errorFlag)
+			request.errorFlag = 400;
 		return ;
 	}
 	if (_contentLength != (int)request.body.size())
 	{
-		request.errorFlag = 400;
+		if (!request.errorFlag)
+			request.errorFlag = 400;
 	}
 }
 
@@ -129,7 +131,6 @@ void	HttpParser::bigSend(fdNode *requestNode)
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr);
 	parser._fullyRead = true;
-	std::cout << "vector size: " << requestNode->_clientDataBuffer.size() << std::endl;
 	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
    	// std::cout << "this stuff is in the map\n" << str;
 	//parser.recieveRequest(requestNode->fd);
@@ -149,9 +150,6 @@ void	HttpParser::bigSend(fdNode *requestNode)
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
     // }
-
-	std::cout << "GERE\n" << std::endl;
-
 	ServerHandler response(requestNode->fd, request);
 }
 
