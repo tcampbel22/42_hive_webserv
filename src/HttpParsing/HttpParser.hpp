@@ -22,6 +22,7 @@
 # include <string>
 # include <memory>
 # include <filesystem>
+# include "../Logger/Logger.hpp"
 
 struct fdNode;
 class ServerSettings;

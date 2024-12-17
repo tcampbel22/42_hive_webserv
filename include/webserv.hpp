@@ -17,6 +17,7 @@
 #include <sys/socket.h> //socket
 #include <string>
 #include <dirent.h>
+#include "../src/Logger/Logger.hpp"
 
 
 #define MAX_BODY_SIZE 50000
@@ -25,3 +26,4 @@
 #define DELETE 3
 
 void	ft_perror(std::string str);
+
