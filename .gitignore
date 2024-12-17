@@ -2,5 +2,5 @@
 webserv
 Objects
 log.log
-log/
+/log/
 root/var/html/temp/
