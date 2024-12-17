@@ -203,8 +203,8 @@ void	ConfigUtilities::printWhiteSpace(std::string str)
 			std::cout << "\\r";
 		else if (*it == 10)
 			std::cout << "\\n\n";
-		// else if (*it == 0)
-		// 	std::cout << "\\0";
+		else if (*it == 0)
+			std::cout << "\\0";
 		else
 			std::cout << *it;
 	}

@@ -45,8 +45,10 @@ void HttpHeaderParser::procesHeaderFields(HttpRequest& request, int& contentLeng
 	{
 		request.headers.count("Content-Length");
 		contentLength = std::stoi(request.headers.at("Content-Length"));
-		if (contentLength > MAX_BODY_SIZE)
-			request.errorFlag = 413;
+		if (contentLength > request.settings->getMaxClientBody()) {
+			if (!request.errorFlag)
+				request.errorFlag = 413;
+		}
 		if (contentLength < 0)
 			contentLength = 0;
 	}

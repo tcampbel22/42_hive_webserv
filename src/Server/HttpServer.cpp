@@ -110,8 +110,11 @@ void HttpServer::startListening()
                     nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
                     bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
 
-					if (bytesReceived < bytes && bytesReceived > 0)
+					if (bytesReceived < bytes) {
+						if (bytesReceived < 0)
+							bytesReceived = 0;
 						nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - bytesReceived));
+					}
 
 					if (bytesReceived < 0)
                     {
@@ -134,6 +137,7 @@ void HttpServer::startListening()
                 }
                 if (requestComplete)
                 {
+					//nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - bytesReceived));
                     // Once we have the full data, process the request
                     HttpParser::bigSend(nodePtr);  // Send response
 					epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events);  // Remove client socket from epoll

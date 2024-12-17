@@ -20,7 +20,7 @@ HttpParser::HttpParser() : _fullyRead(true), _contentLength(0), cgiflag(false), 
 
 HttpParser::~HttpParser() {}
 
-HttpRequest::HttpRequest(ServerSettings *serverPtr) : connection(true), errorFlag(-1), settings(serverPtr) {}
+HttpRequest::HttpRequest(ServerSettings *serverPtr) : connection(true), errorFlag(0), settings(serverPtr) {}
 
 //Empty the vector to the requestMap, needs to be parsed in the response.
 void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *serverPtr)
@@ -46,11 +46,11 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		// checkForCgi(request.path);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
-		if (!HttpHeaderParser::HostParse(serverPtr, request)) {
+		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
 		 	request.errorFlag = 400;
 		 	request.connection = false;
 		}
-		if (request.method == GET)
+		if (request.method == GET && !request.errorFlag)
 		{
 			std::getline(requestStream, line);
 			if (!requestStream.eof()) {
@@ -62,8 +62,9 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 				return;
 			}
 		}
-		if (_contentLength || request.headers.find("Transfer-Encoding") != request.headers.end())
+		if ((_contentLength || request.headers.find("Transfer-Encoding") != request.headers.end()) && !request.errorFlag) {
 			parseBody(request, requestStream);
+		}
 		} catch (std::exception& e) {
 			std::cerr << e.what() << '\n';
 		}
@@ -104,21 +105,20 @@ void HttpParser::parseBody(HttpRequest& request, std::istringstream& stream) {
 }
 
 void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& request) {
-	std::string line;
 	char c;
-	// _contentLength = std::stoi(request.headers.at("Content-Length")); //Possibly remove, maybe
-	for (int i = 0; i < _contentLength && stream.get(c); i++) {
-		// if (c)
-			request.body += c;
-			//NEED TO BE MADE ROBUST
+	for (int i = 0; i < _contentLength + 1 && stream.get(c); i++) {
+		std::cout << c << std::endl;
+		request.body += c;
 	}
-	std::getline(stream, line);
-	if (!stream.eof() && line.compare("\r\n")) {
-		request.errorFlag = 400;
+	if (!stream.eof()) {
+		if (!request.errorFlag)
+			request.errorFlag = 400;
+		return ;
 	}
 	if (_contentLength != (int)request.body.size())
 	{
-		request.errorFlag = 400;
+		if (!request.errorFlag)
+			request.errorFlag = 400;
 	}
 }
 
@@ -150,9 +150,6 @@ void	HttpParser::bigSend(fdNode *requestNode)
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
     // }
-
-	// std::cout << request.body << std::endl;
-
 	ServerHandler response(requestNode->fd, request);
 }
 
