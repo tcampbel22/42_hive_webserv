@@ -27,12 +27,13 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 {
 	try {
 		std::string data(clientData.begin(), clientData.end());
+		// ConfigUtilities::printWhiteSpace(data);
     	std::istringstream requestStream(data);
     	std::string line;
 		//Parse the requestline and store the relevant stuff (path and method)
 		if (!std::getline(requestStream, line) || !requestLineValidator::isValidRequestLine(line, request)) {
 			//error shit in here if first line is bad: ERROR 400 according to RFC
-			std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl; 
+			std::cout << "Error: Could not read the request line or the request line is invalid." << std::endl;
 		}
 		checkRedirect(request, serverPtr);
 		// checkForCgi(request.path);
@@ -60,6 +61,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			std::cerr << e.what() << '\n';
 		}
 }
+
 void HttpParser::checkRedirect(HttpRequest& request, ServerSettings *serverPtr) {
 	LocationSettings *block = serverPtr->getLocationBlock(request.path);
 	if (!block)
