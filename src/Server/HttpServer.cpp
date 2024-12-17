@@ -115,6 +115,9 @@ void HttpServer::startListening()
 
 					if (bytesReceived < 0)
                     {
+						// if (errno == EAGAIN || errno == EWOULDBLOCK) {
+						// std::string str(nodePtr->_clientDataBuffer.begin(), nodePtr->_clientDataBuffer.end());
+						// log.log(str, INFO);
 							requestComplete = true; //this is for the tester, tester sends stuff in a weird format, need this to go forward
 							break;
                     }
