@@ -135,6 +135,7 @@ int	HttpParser::bigSend(fdNode *requestNode)
    	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
 	//parser.recieveRequest(requestNode->fd);
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
+	// std::cout << "CLOSE = " << request.connection << std::endl;
 	// if (parser.cgiflag){
 	// 	LocationSettings *cgiBlock = request.settings->getCgiBlock();
 	// 	if (cgiBlock)
@@ -151,7 +152,7 @@ int	HttpParser::bigSend(fdNode *requestNode)
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
     // }
 	ServerHandler response(requestNode->fd, request);
-	if (request.connection == true)
+	if (request.connection == false)
 		return (1);
 	else
 		return (0);

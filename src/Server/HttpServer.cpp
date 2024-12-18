@@ -126,7 +126,7 @@ void HttpServer::startListening()
                     }
                     else if (bytesReceived == 0)
                     {
-                        std::cout << "Client closed the connection." << std::endl;
+                        // std::cout << "Client closed the connection." << std::endl;
                         requestComplete = true;
                     }
                     else
