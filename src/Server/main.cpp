@@ -58,5 +58,6 @@ int	main(int ac, char **av)
 	HttpServer server(config.settings_vec);
 	server.startListening();
 	Logger::closeLogger();
+	std::cout << "LOOPOUT\n";
 	return (0);
 }

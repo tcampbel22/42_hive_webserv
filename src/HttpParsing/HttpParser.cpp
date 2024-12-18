@@ -120,7 +120,7 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 	}
 }
 
-void	HttpParser::bigSend(fdNode *requestNode) 
+int	HttpParser::bigSend(fdNode *requestNode) 
 {
 	// auto it2 = settings.find("127.0.0.1:8081");
 	// LocationSettings* locptr = serverPtr->getLocationBlock("/");
@@ -149,6 +149,10 @@ void	HttpParser::bigSend(fdNode *requestNode)
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
     // }
 	ServerHandler response(requestNode->fd, request);
+	if (request.connection == true)
+		return (1);
+	else
+		return (0);
 }
 
 // util function to trim off the white spaces and delimit the read when making key value pair

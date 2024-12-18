@@ -81,7 +81,7 @@ void	setNonBlocking(int socket)
 void HttpServer::startListening()
 {
 	std::signal(SIGINT, signalHandler);
-
+	std::signal(SIGPIPE, SIG_IGN);
 	epollFd = epoll_create1(0); //create epoll instance
 	
 	addServerToEpoll();
@@ -141,12 +141,15 @@ void HttpServer::startListening()
                 {
 					//nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - bytesReceived));
                     // Once we have the full data, process the request
-                    HttpParser::bigSend(nodePtr);  // Send response
-					epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events);  // Remove client socket from epoll
-					delete nodePtr;
-					client_nodes.erase(_fd_out); //delete node pointer
-					close(_fd_out);  // Close the client socket
-                }
+                    if (HttpParser::bigSend(nodePtr)) // Send response
+					{	
+						//closing of the FD should not always happen
+						epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events);  // Remove client socket from epoll
+						delete nodePtr;
+						client_nodes.erase(_fd_out); //delete node pointer
+						close(_fd_out);  // Close the client socket
+					}
+				}
                 else
                 {
 					_events.events = EPOLLIN;  //update the epoll here after an incomplete read.
