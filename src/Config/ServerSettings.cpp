@@ -101,20 +101,34 @@ void	ServerSettings::parsePort(std::vector<std::string>& directive, std::vector<
 		throw std::runtime_error("invalid port number/invalid syntax");
 }
 
+int	checkBodySizeUnit(std::string& num)
+{
+	if (num.back() == 'm' || num.back() == 'M')
+		return 1000000;
+	else if (num.back() == 'k' || num.back() == 'K')
+		return 1000;
+	else if (num.back() >= '0' && num.back() <= '9')
+		return 1;
+	else
+		throw std::runtime_error("max_body_size: syntax error: " + num);
+	return 1;
+}
+
 void	ServerSettings::parseMaxBodySize(std::vector<std::string>& directive, std::vector<std::string>::iterator& it) 
 {
 	ConfigUtilities::checkDuplicates(max_client_body_size, "max client body:");
-	ConfigUtilities::checkVectorEnd(directive, it, "Max_body_size: empty value");
-	ConfigUtilities::checkSemiColon(directive, it, "Max_body_size: syntax error");
+	ConfigUtilities::checkVectorEnd(directive, it, "max_body_size: empty value");
+	ConfigUtilities::checkSemiColon(directive, it, "max_body_size: syntax error");
 	int size;
+	int	unit = checkBodySizeUnit(*it);
 	try {
 		size = stoi(*it);
 	} catch(std::exception& e) {
-		throw std::invalid_argument("Max_body_size: (nan)");
+		throw std::invalid_argument("max_body_size: (nan)");
 	}
-	if (size > 0 && size < 9437184)
+	if ((size * unit) > 0 && (size * unit) < MAX_BODY_SIZE)
 	{
-		max_client_body_size = size;
+		max_client_body_size = size * unit;
 		it++;
 		checkConfigValues(directive, it);
 	}

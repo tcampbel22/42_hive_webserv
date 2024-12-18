@@ -149,6 +149,7 @@ void HttpServer::startListening()
 						client_nodes.erase(_fd_out); //delete node pointer
 						close(_fd_out);  // Close the client socket
 					}
+					nodePtr->_clientDataBuffer.clear();
 				}
                 else
                 {

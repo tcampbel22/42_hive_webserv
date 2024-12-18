@@ -13,7 +13,9 @@
 #include "CGIparsing.hpp"
 #include "../HttpParsing/HttpParser.hpp"
 
-CGIparsing::CGIparsing(std::string cgiPath) : _pathInfo(cgiPath) {}
+CGIparsing::CGIparsing(std::string cgiPath) : _pathInfo(cgiPath) 
+{
+}
 
 void CGIparsing::setCGIenvironment(HttpRequest& request, const std::string& queryStr) {
 	(void)queryStr;

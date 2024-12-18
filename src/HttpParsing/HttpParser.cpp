@@ -40,7 +40,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			return;
 		}
 		checkRedirect(request, serverPtr);
-		// checkForCgi(request.path);
+		checkForCgi(request.path);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
@@ -133,18 +133,20 @@ int	HttpParser::bigSend(fdNode *requestNode)
    	// std::cout << "this stuff is in the map\n" << str;
 	//parser.recieveRequest(requestNode->fd);
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
-	// if (parser.cgiflag){
-	// 	LocationSettings *cgiBlock = request.settings->getCgiBlock();
-	// 	if (cgiBlock)
-	// 	{
-	// 		CGIparsing myCgi("/bin/cgi/cgi.py");
-	// 		myCgi.setCGIenvironment(request, parser.query);
-	// 		myCgi.execute(request);
-	// 	}
-	// 	else
-	// 		request.errorFlag = 400;
-	// }
-	//std::cout << request.body;
+	
+	if (parser.cgiflag)
+	{
+		std::shared_ptr<LocationSettings> cgiBlock = request.settings->getCgiBlock();
+		if (cgiBlock)
+		{
+			CGIparsing myCgi(cgiBlock->getCgiScript());
+			myCgi.setCGIenvironment(request, parser.query);
+			myCgi.execute(request);
+		}
+		else
+			request.errorFlag = 400;
+	}
+	// std::cout << request.body;
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
     // }

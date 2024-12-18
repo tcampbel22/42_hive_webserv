@@ -9,3 +9,139 @@
 [INFO] 2024-12-17 18:01:53: WEBSERV STARTED
 [INFO] 2024-12-17 18:03:20: WEBSERV STARTED
 [INFO] 2024-12-17 18:03:21: WEBSERV FINISHED
+[INFO] 2024-12-18 14:18:19: WEBSERV STARTED
+[INFO] 2024-12-18 14:18:20: New client connected: 8
+[INFO] 2024-12-18 14:18:20: New client connected: 9
+[INFO] 2024-12-18 14:18:49: New client connected: 10
+[INFO] 2024-12-18 14:18:51: New client connected: 11
+[INFO] 2024-12-18 14:19:00: WEBSERV FINISHED
+[INFO] 2024-12-18 14:19:01: WEBSERV STARTED
+[INFO] 2024-12-18 14:19:03: New client connected: 8
+[INFO] 2024-12-18 14:19:03: New client connected: 9
+[INFO] 2024-12-18 14:19:22: New client connected: 10
+[INFO] 2024-12-18 14:19:22: New client connected: 11
+[INFO] 2024-12-18 14:20:05: WEBSERV FINISHED
+[INFO] 2024-12-18 14:59:45: WEBSERV STARTED
+[ERROR] 2024-12-18 14:59:45: max_body_size: syntax error
+[INFO] 2024-12-18 15:00:18: WEBSERV STARTED
+[ERROR] 2024-12-18 15:00:18: max_body_size: syntax error: 50000
+[INFO] 2024-12-18 15:06:34: WEBSERV STARTED
+[ERROR] 2024-12-18 15:06:34: max_body_size: syntax error: 50000
+[INFO] 2024-12-18 15:07:20: WEBSERV STARTED
+[ERROR] 2024-12-18 15:07:20: max_body_size: syntax error: 50000
+[INFO] 2024-12-18 15:10:52: WEBSERV STARTED
+[INFO] 2024-12-18 15:10:52: WEBSERV FINISHED
+[INFO] 2024-12-18 15:11:13: WEBSERV STARTED
+[ERROR] 2024-12-18 15:11:13: invalid client max body size/invalid syntax
+[INFO] 2024-12-18 15:11:24: WEBSERV STARTED
+[ERROR] 2024-12-18 15:11:24: invalid client max body size/invalid syntax
+[INFO] 2024-12-18 15:11:28: WEBSERV STARTED
+[ERROR] 2024-12-18 15:11:28: invalid client max body size/invalid syntax
+[INFO] 2024-12-18 15:11:33: WEBSERV STARTED
+[INFO] 2024-12-18 15:11:33: WEBSERV FINISHED
+[INFO] 2024-12-18 15:11:52: WEBSERV STARTED
+[ERROR] 2024-12-18 15:11:52: max_body_size: syntax error: 500fgh
+[INFO] 2024-12-18 15:11:59: WEBSERV STARTED
+[ERROR] 2024-12-18 15:11:59: max_body_size: syntax error: 500f
+[INFO] 2024-12-18 15:12:03: WEBSERV STARTED
+[ERROR] 2024-12-18 15:12:03: invalid client max body size/invalid syntax
+[INFO] 2024-12-18 15:12:14: WEBSERV STARTED
+[INFO] 2024-12-18 15:12:14: WEBSERV FINISHED
+[INFO] 2024-12-18 15:12:39: WEBSERV STARTED
+[INFO] 2024-12-18 15:12:39: WEBSERV FINISHED
+[INFO] 2024-12-18 15:23:30: WEBSERV STARTED
+[INFO] 2024-12-18 15:23:30: WEBSERV FINISHED
+[INFO] 2024-12-18 15:23:40: WEBSERV STARTED
+[ERROR] 2024-12-18 15:23:40: invalid client max body size/invalid syntax
+[INFO] 2024-12-18 15:24:29: WEBSERV STARTED
+[INFO] 2024-12-18 15:24:29: WEBSERV FINISHED
+[INFO] 2024-12-18 15:24:37: WEBSERV STARTED
+[INFO] 2024-12-18 15:24:37: WEBSERV FINISHED
+[INFO] 2024-12-18 15:24:45: WEBSERV STARTED
+[INFO] 2024-12-18 15:24:45: WEBSERV FINISHED
+[INFO] 2024-12-18 16:05:58: WEBSERV STARTED
+[INFO] 2024-12-18 16:06:15: New client connected: 8
+[INFO] 2024-12-18 16:06:15: New client connected: 9
+[INFO] 2024-12-18 16:06:26: Timeout: Closing client socket 9
+[INFO] 2024-12-18 16:06:26: Timeout: Closing client socket 8
+[INFO] 2024-12-18 16:08:49: WEBSERV FINISHED
+[INFO] 2024-12-18 16:08:54: WEBSERV STARTED
+[INFO] 2024-12-18 16:09:25: New client connected: 8
+[INFO] 2024-12-18 16:09:25: New client connected: 9
+[INFO] 2024-12-18 16:09:36: Timeout: Closing client socket 9
+[INFO] 2024-12-18 16:09:36: Timeout: Closing client socket 8
+[INFO] 2024-12-18 16:10:40: WEBSERV FINISHED
+[INFO] 2024-12-18 16:10:59: WEBSERV STARTED
+[INFO] 2024-12-18 16:11:01: New client connected: 8
+[INFO] 2024-12-18 16:11:01: New client connected: 9
+[INFO] 2024-12-18 16:11:12: Timeout: Closing client socket 9
+[INFO] 2024-12-18 16:11:12: Timeout: Closing client socket 8
+[INFO] 2024-12-18 16:11:31: WEBSERV FINISHED
+[INFO] 2024-12-18 16:11:52: WEBSERV STARTED
+[INFO] 2024-12-18 16:11:54: New client connected: 8
+[INFO] 2024-12-18 16:11:54: New client connected: 9
+[INFO] 2024-12-18 16:11:58: New client connected: 10
+[INFO] 2024-12-18 16:11:58: New client connected: 11
+[INFO] 2024-12-18 16:12:05: Timeout: Closing client socket 9
+[INFO] 2024-12-18 16:12:05: Timeout: Closing client socket 8
+[INFO] 2024-12-18 16:12:09: Timeout: Closing client socket 11
+[INFO] 2024-12-18 16:12:09: Timeout: Closing client socket 10
+[INFO] 2024-12-18 16:12:10: New client connected: 8
+[INFO] 2024-12-18 16:12:10: New client connected: 9
+[INFO] 2024-12-18 16:12:13: WEBSERV FINISHED
+[INFO] 2024-12-18 16:12:29: WEBSERV STARTED
+[INFO] 2024-12-18 16:12:31: New client connected: 8
+[INFO] 2024-12-18 16:12:31: New client connected: 9
+[INFO] 2024-12-18 16:12:34: WEBSERV FINISHED
+[INFO] 2024-12-18 16:13:56: WEBSERV STARTED
+[INFO] 2024-12-18 16:13:58: New client connected: 8
+[INFO] 2024-12-18 16:13:58: New client connected: 9
+[INFO] 2024-12-18 16:14:07: New client connected: 10
+[INFO] 2024-12-18 16:14:07: New client connected: 11
+[INFO] 2024-12-18 16:14:09: Timeout: Closing client socket 9
+[INFO] 2024-12-18 16:14:09: Timeout: Closing client socket 8
+[INFO] 2024-12-18 16:14:18: Timeout: Closing client socket 11
+[INFO] 2024-12-18 16:14:18: Timeout: Closing client socket 10
+[INFO] 2024-12-18 16:14:19: New client connected: 8
+[INFO] 2024-12-18 16:14:26: New client connected: 9
+[INFO] 2024-12-18 16:14:30: Timeout: Closing client socket 8
+[INFO] 2024-12-18 16:14:30: New client connected: 8
+[INFO] 2024-12-18 16:14:37: Timeout: Closing client socket 9
+[INFO] 2024-12-18 16:14:41: Timeout: Closing client socket 8
+[INFO] 2024-12-18 16:14:44: New client connected: 8
+[INFO] 2024-12-18 16:14:44: New client connected: 9
+[INFO] 2024-12-18 16:14:46: WEBSERV FINISHED
+[INFO] 2024-12-18 16:15:08: WEBSERV STARTED
+[INFO] 2024-12-18 16:15:11: New client connected: 8
+[INFO] 2024-12-18 16:15:11: New client connected: 9
+[INFO] 2024-12-18 16:15:22: Timeout: Closing client socket 9
+[INFO] 2024-12-18 16:15:22: Timeout: Closing client socket 8
+[INFO] 2024-12-18 16:15:32: New client connected: 8
+[INFO] 2024-12-18 16:15:32: New client connected: 9
+[INFO] 2024-12-18 16:15:43: Timeout: Closing client socket 9
+[INFO] 2024-12-18 16:15:43: Timeout: Closing client socket 8
+[INFO] 2024-12-18 16:16:02: WEBSERV FINISHED
+[INFO] 2024-12-18 16:16:07: WEBSERV STARTED
+[ERROR] 2024-12-18 16:16:07: location: extra directives in cgi block
+[INFO] 2024-12-18 16:23:49: WEBSERV STARTED
+[INFO] 2024-12-18 16:23:52: New client connected: 8
+[INFO] 2024-12-18 16:23:52: New client connected: 9
+[INFO] 2024-12-18 16:23:56: WEBSERV FINISHED
+[INFO] 2024-12-18 16:24:27: WEBSERV STARTED
+[INFO] 2024-12-18 16:24:30: New client connected: 8
+[INFO] 2024-12-18 16:24:30: New client connected: 9
+[INFO] 2024-12-18 16:24:41: Timeout: Closing client socket 9
+[INFO] 2024-12-18 16:24:41: Timeout: Closing client socket 8
+[INFO] 2024-12-18 16:25:37: WEBSERV FINISHED
+[INFO] 2024-12-18 16:25:41: WEBSERV STARTED
+[INFO] 2024-12-18 16:25:44: New client connected: 8
+[INFO] 2024-12-18 16:25:44: New client connected: 9
+[INFO] 2024-12-18 16:25:55: Timeout: Closing client socket 9
+[INFO] 2024-12-18 16:25:55: Timeout: Closing client socket 8
+[INFO] 2024-12-18 16:26:04: WEBSERV FINISHED
+[INFO] 2024-12-18 16:26:08: WEBSERV STARTED
+[INFO] 2024-12-18 16:26:10: New client connected: 8
+[INFO] 2024-12-18 16:26:10: New client connected: 9
+[INFO] 2024-12-18 16:26:21: Timeout: Closing client socket 9
+[INFO] 2024-12-18 16:26:21: Timeout: Closing client socket 8
+[INFO] 2024-12-18 17:24:37: WEBSERV FINISHED

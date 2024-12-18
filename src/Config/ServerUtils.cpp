@@ -32,7 +32,7 @@ std::string ServerSettings::getErrorPages(int status)
 		return "";
 }
 
-LocationSettings*			ServerSettings::getLocationBlock(const std::string key)
+LocationSettings*	ServerSettings::getLocationBlock(const std::string key)
 {
 	auto it = locations.find(key);
 	if (it != locations.end())
@@ -41,16 +41,12 @@ LocationSettings*			ServerSettings::getLocationBlock(const std::string key)
 		return nullptr;
 }
 
-LocationSettings*	ServerSettings::getCgiBlock()
+std::shared_ptr<LocationSettings>	ServerSettings::getCgiBlock()
 {
-	LocationSettings *ptr;
 	for (auto pair : locations)
 	{
 		if (pair.second.isCgiBlock())
-		{
-			ptr = &pair.second;
-			return ptr;
-		}
+			return std::make_shared<LocationSettings>(pair.second);
 	}
 	return nullptr;
 }
@@ -81,14 +77,3 @@ void	ServerSettings::checkConfigValues(std::vector<std::string>& directive, std:
 			max_client_body_size = MAX_BODY_SIZE;
 	}
 }
-
-// bool	ServerSettings::checkErrorCode(int code, bool error)
-// {
-// 	int	error_codes[7] = { 400, 401, 403, 404, 500, 502, 503 };
-// 	for (int i = 0; i < 7; i++)
-// 	{
-// 		if (code == error_codes[i])
-// 			return true;
-// 	}
-// 	return false;
-// }
