@@ -132,7 +132,7 @@ int	HttpParser::bigSend(fdNode *requestNode)
 	HttpRequest request(requestNode->serverPtr);
 	parser._fullyRead = true;
 	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
-   	// std::cout << "this stuff is in the map\n" << str;
+   	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
 	//parser.recieveRequest(requestNode->fd);
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
 	// if (parser.cgiflag){
