@@ -14,6 +14,7 @@
 
 # include "../Server/HttpServer.hpp"
 # include "../Response/ServerHandler.hpp"
+# include "../Config/LocationSettings.hpp"
 # include <iostream>
 # include <sstream>
 # include <fstream>
@@ -25,6 +26,8 @@
 
 struct fdNode;
 class ServerSettings;
+class LocationSettings;
+
 
 struct HttpRequest {
 	int	method;
@@ -38,8 +41,6 @@ struct HttpRequest {
 	HttpRequest(ServerSettings *);
 };
 
-class ServerSettings;
-class LocationSettings;
 
 class HttpParser
 {
@@ -53,7 +54,7 @@ private:
 public:
 	HttpParser();
 	~HttpParser();
-	static void	bigSend(fdNode *);
+	static void	bigSend(fdNode*, int, epoll_event&);
 	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *);
 	//void recieveRequest(int out_fd);
 	//bool isValidRequestline(std::string, HttpRequest&);

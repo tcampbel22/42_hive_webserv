@@ -79,7 +79,10 @@ void HttpParser::checkRedirect(HttpRequest& request, ServerSettings *serverPtr) 
 }
 
 void HttpParser::checkForCgi(ServerSettings* server, std::string line) {
-	if (line.compare(server->getCgiBlock()->getCgiScript()))
+	std::shared_ptr <LocationSettings> cgibloc = server->getCgiBlock();
+	if (!cgibloc)
+		return;
+	if (!line.compare(server->getCgiBlock()->getCgiScript()))
 	{
 		cgiflag = true;
 	}
@@ -121,7 +124,7 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 	}
 }
 
-void	HttpParser::bigSend(fdNode *requestNode) 
+void	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events) 
 {
 	// auto it2 = settings.find("127.0.0.1:8081");
 	// LocationSettings* locptr = serverPtr->getLocationBlock("/");
@@ -134,13 +137,14 @@ void	HttpParser::bigSend(fdNode *requestNode)
    	// std::cout << "this stuff is in the map\n" << str;
 	//parser.recieveRequest(requestNode->fd);
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
+	std::cout << std::boolalpha << parser.cgiflag << "\n";
 	if (parser.cgiflag){
-		LocationSettings *cgiBlock = request.settings->getCgiBlock();
+		std::shared_ptr <LocationSettings> cgiBlock = request.settings->getCgiBlock();
 		if (cgiBlock)
 		{
-			CGIparsing myCgi(request.settings->getCgiBlock()->getCgiScript());
+			CGIparsing myCgi(cgiBlock->getCgiScript());
 			myCgi.setCGIenvironment(request, parser.query);
-			myCgi.execute(request);
+			myCgi.execute(request, cgiBlock, epollFd, _events);
 		}
 		else
 			request.errorFlag = 400;

@@ -41,15 +41,13 @@ LocationSettings*			ServerSettings::getLocationBlock(const std::string key)
 		return nullptr;
 }
 
-LocationSettings*	ServerSettings::getCgiBlock()
+std::shared_ptr<LocationSettings>	ServerSettings::getCgiBlock()
 {
-	LocationSettings *ptr;
 	for (auto pair : locations)
 	{
 		if (pair.second.isCgiBlock())
 		{
-			ptr = &pair.second;
-			return ptr;
+			return std::make_shared<LocationSettings>(pair.second);
 		}
 	}
 	return nullptr;

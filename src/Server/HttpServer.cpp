@@ -139,7 +139,7 @@ void HttpServer::startListening()
                 {
 					//nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - bytesReceived));
                     // Once we have the full data, process the request
-                    HttpParser::bigSend(nodePtr);  // Send response
+                    HttpParser::bigSend(nodePtr, epollFd, _events);  // Send response
 					epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events);  // Remove client socket from epoll
 					delete nodePtr;
 					client_nodes.erase(_fd_out); //delete node pointer
