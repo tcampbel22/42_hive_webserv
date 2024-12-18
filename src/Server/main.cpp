@@ -58,5 +58,6 @@ int	main(int ac, char **av)
 	//start server class, calls the socket creation function in constructor, closes the socket in the destructor.
 	HttpServer server(config.settings_vec);
 	server.startListening();
+	std::cout << "LOOPOUT\n";
 	return (0);
 }

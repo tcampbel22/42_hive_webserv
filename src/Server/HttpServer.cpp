@@ -80,7 +80,7 @@ void	setNonBlocking(int socket)
 void HttpServer::startListening()
 {
 	std::signal(SIGINT, signalHandler);
-
+	std::signal(SIGPIPE, SIG_IGN);
 	epollFd = epoll_create1(0); //create epoll instance
 	
 	addServerToEpoll();
