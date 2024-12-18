@@ -53,7 +53,7 @@ private:
 public:
 	HttpParser();
 	~HttpParser();
-	static void	bigSend(fdNode *);
+	static int	bigSend(fdNode *);
 	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *);
 	//void recieveRequest(int out_fd);
 	//bool isValidRequestline(std::string, HttpRequest&);
