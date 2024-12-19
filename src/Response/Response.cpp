@@ -174,7 +174,12 @@ void Response::sendResponse(int fd)
 	
 	//uncomment this in order to see the response in the terminal
 	//std::cout <<  _buffer << std::endl;
-	send(fd, _buffer.c_str(), _buffer.size(), 0);
-	//if (_closeConnection == true)
-		//close(fd);
+	try
+	{
+		send(fd, _buffer.c_str(), _buffer.size(), 0);
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
 }

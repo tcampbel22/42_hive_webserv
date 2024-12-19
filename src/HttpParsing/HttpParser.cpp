@@ -34,12 +34,9 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		if (!std::getline(requestStream, line) || !requestLineValidator::isValidRequestLine(line, request)) {
 			//error shit in here if first line is bad: ERROR 400 according to RFC
 			if (requestStream.bad() || requestStream.fail())
-				ft_perror("parseClientRequest: could not read request line");
+				Logger::log("parseClientRequest: could not read request line", ERROR);
 			else
-			{
-				ft_perror("parseClientRequest: request line is invalid");
-				std::cout << request.errorFlag << '\n';
-			}
+				Logger::log("parseClientRequest: request line is invalid", ERROR);
 			return;
 		}
 		checkRedirect(request, serverPtr);
@@ -66,6 +63,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			parseBody(request, requestStream);
 		}
 		} catch (std::exception& e) {
+			Logger::log(e.what(), ERROR);
 			std::cerr << e.what() << '\n';
 		}
 }
@@ -124,7 +122,7 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 	}
 }
 
-void	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events) 
+int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events) 
 {
 	// auto it2 = settings.find("127.0.0.1:8081");
 	// LocationSettings* locptr = serverPtr->getLocationBlock("/");
@@ -134,10 +132,9 @@ void	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 	HttpRequest request(requestNode->serverPtr);
 	parser._fullyRead = true;
 	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
-   	// std::cout << "this stuff is in the map\n" << str;
+   	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
 	//parser.recieveRequest(requestNode->fd);
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
-	std::cout << std::boolalpha << parser.cgiflag << "\n";
 	if (parser.cgiflag){
 		std::shared_ptr <LocationSettings> cgiBlock = request.settings->getCgiBlock();
 		if (cgiBlock)
@@ -154,6 +151,10 @@ void	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
     // }
 	ServerHandler response(requestNode->fd, request);
+	if (request.connection == false)
+		return (1);
+	else
+		return (0);
 }
 
 // util function to trim off the white spaces and delimit the read when making key value pair

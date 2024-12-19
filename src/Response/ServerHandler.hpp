@@ -44,4 +44,5 @@ public:
 	void	makeMIME();
 	void 	responseCode(int code);
 	void 	checkPath();
+	bool	isReadable(std::string path);
 };

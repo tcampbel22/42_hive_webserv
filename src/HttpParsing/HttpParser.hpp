@@ -23,6 +23,7 @@
 # include <string>
 # include <memory>
 # include <filesystem>
+# include "../Logger/Logger.hpp"
 
 struct fdNode;
 class ServerSettings;
@@ -54,7 +55,7 @@ private:
 public:
 	HttpParser();
 	~HttpParser();
-	static void	bigSend(fdNode*, int, epoll_event&);
+	static int	bigSend(fdNode*, int, epoll_event&);
 	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *);
 	//void recieveRequest(int out_fd);
 	//bool isValidRequestline(std::string, HttpRequest&);

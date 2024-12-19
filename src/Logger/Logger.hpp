@@ -32,11 +32,12 @@ enum e_log
 class Logger
 {
 private:
-	std::ofstream log_file;
+	static std::ofstream log_file;
 public:
-	Logger(const std::string fileName);
+	Logger();
 	~Logger();
-	std::string getCurrentTime();
-	void 		log(std::string msg, e_log log_code);
-	bool		checkFileSize();
+	static std::string 		getCurrentTime();
+	static void 			log(std::string msg, e_log log_code);
+	static bool				checkFileSize();
+	static void 			closeLogger();
 };

@@ -133,7 +133,7 @@ void ServerHandler::parsePath()
 
 void ServerHandler::executeInput()
 {
-	if (_input.errorFlag > 0)
+	if (_input.errorFlag > 1)
 	{
 		doError();
 		return ;
@@ -146,7 +146,7 @@ void ServerHandler::executeInput()
 		doDelete();
 	else
 		throw std::invalid_argument("Invalid argument");
-	if (_input.errorFlag > 0)
+	if (_input.errorFlag > 1)
 		doError();
 }
 void	ServerHandler::makeMIME()
@@ -208,15 +208,32 @@ void	ServerHandler::setContentType(std::string path)
 	_response.setContentType("text/plain");
 }
 
+bool	ServerHandler::isReadable(std::string path)
+{
+	if (!std::filesystem::exists(path))
+	{
+		_input.errorFlag = 404;
+		return false;
+	}
+
+	if (access(path.c_str(), R_OK) < 0)
+	{
+		_input.errorFlag = 403;
+		return false;
+	}
+	return true;
+}
+
 int ServerHandler::getFile(std::string path)
 {
 	std::ostringstream	stream;
 	std::fstream 		infile;
 
-	//check for file and for read permission and set error code accordingly
+	if (!isReadable(path)) //checks if path is valid and that the file has read permissions
+		return 1;
 	infile.open(path);
 	if (!infile.is_open())
-		return (1);
+		return 1;
 	stream << infile.rdbuf();
 	_response.set_body(stream.str());
 	infile.close();
@@ -364,7 +381,7 @@ void ServerHandler::doGet()
 
 	if (getFile(_input.path) == 1)
 	{
-		if (_input.errorFlag < 0)
+		if (_input.errorFlag < 1)
 			_input.errorFlag = 404;
 		return ;
 	}

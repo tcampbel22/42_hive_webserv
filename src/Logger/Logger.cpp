@@ -11,6 +11,7 @@
 /**********************************************************************************/
 
 #include "Logger.hpp"
+std::ofstream Logger::log_file;
 
 bool	Logger::checkFileSize()
 {
@@ -21,13 +22,13 @@ bool	Logger::checkFileSize()
 	return false;
 }
 
-Logger::Logger(const std::string fileName)
+Logger::Logger()
 {
 	std::string path = "log";
 	std::filesystem::create_directories(path);
 
 	try {
-		log_file.open(path + "/" + fileName, std::ios::app);
+		log_file.open(path + "/log.log", std::ios::app);
 		if (!log_file)
 			throw std::runtime_error("log file failed to open");
 		log_file << "[INFO] " << getCurrentTime() << ": WEBSERV STARTED\n";
@@ -69,11 +70,13 @@ void	Logger::log(std::string msg, e_log log_code)
 	}
 }
 
-Logger::~Logger() 
+void Logger::closeLogger() 
 {
-	if (log_file.is_open())
+    if (log_file.is_open())
 	{
 		log_file << "[INFO] " << getCurrentTime() << ": WEBSERV FINISHED\n";
 		log_file.close();
 	}
 }
+
+Logger::~Logger() {}
