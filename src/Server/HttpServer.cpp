@@ -49,6 +49,7 @@ void HttpServer::startServer()
 		//store socket addr info
 		int optionValue = 1;
 		setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &optionValue, sizeof(optionValue));
+		memset(&_socketInfo, 0, sizeof(_socketInfo));
 		_socketInfo.sin_family = AF_INET; //macro for IPV4
 		_socketInfo.sin_port = htons(it.second); //converts port number to network byte order
 		_socketInfo.sin_addr.s_addr = inet_addr(it.first.c_str()); //converts ip address from string to uint
@@ -129,6 +130,7 @@ void HttpServer::startListening()
                         std::cout << "Client closed the connection." << std::endl;
 						Logger::log("Client closed the connection.", INFO);
                         requestComplete = true;
+						_clientClosedConn = true;
                     }
                     else
                     {
@@ -140,13 +142,14 @@ void HttpServer::startListening()
                 {
 					//nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - bytesReceived));
                     // Once we have the full data, process the request
-                    if (HttpParser::bigSend(nodePtr, epollFd, _events))
-					{  // Send response
+                    if (HttpParser::bigSend(nodePtr, epollFd, _events) || _clientClosedConn == true)
+					{
 						epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events);  // Remove client socket from epoll
 						client_nodes.erase(_fd_out); //delete node pointer
 						nodePtr->_clientDataBuffer.clear();
 						delete nodePtr;
 						close(_fd_out);  // Close the client socket
+						_clientClosedConn = false;
 					}
 					else
 						nodePtr->_clientDataBuffer.clear();
@@ -161,6 +164,7 @@ void HttpServer::startListening()
 		}
 		fdActivityLoop(current_time);
 	}
+	close(epollFd);
 }
 
 void	HttpServer::addServerToEpoll()
@@ -174,7 +178,7 @@ void	HttpServer::addServerToEpoll()
 	for (u_long i = 0 ; i < settings_vec.size() ; i++)  //iterate through fd vector and add to epoll
 	 {
 		auto it = settings_vec[i];
-		_events.events = EPOLLIN;
+		_events.events = EPOLLIN | EPOLLET;
 		fdNode* server_node = new fdNode;
 		server_node->fd = settings_vec[i]._fd;
 		server_node->serverPtr = &settings_vec[i];
@@ -194,6 +198,10 @@ void	HttpServer::addServerToEpoll()
 void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_time)
 {
 	socklen_t _sockLen = sizeof(_socketInfo);
+	memset(&_socketInfo, 0, sizeof(_socketInfo));
+	// _socketInfo.sin_family = AF_INET; //macro for IPV4
+	// _socketInfo.sin_port = htons(8081); //converts port number to network byte order
+	// _socketInfo.sin_addr.s_addr = inet_addr("127.0.0.1"); //converts ip address from string to uint
 	_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
 	if (_clientSocket < 0) 
 	{
