@@ -40,7 +40,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			return;
 		}
 		checkRedirect(request, serverPtr);
-		checkForCgi(request.path);
+		checkForCgi(serverPtr, request.path);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
@@ -76,19 +76,21 @@ void HttpParser::checkRedirect(HttpRequest& request, ServerSettings *serverPtr) 
 		request.path = block->getRedirectPath();
 }
 
-void HttpParser::checkForCgi(std::string line) {
-	std::regex regex("/cgi-bin/"); //this needs to be changed to be compared to URL
-	if (std::regex_search(line, regex))
+void HttpParser::checkForCgi(ServerSettings* server, std::string line) {
+	std::shared_ptr <LocationSettings> cgibloc = server->getCgiBlock();
+	if (!cgibloc)
+		return;
+	if (!line.compare(server->getCgiBlock()->getCgiScript()))
 	{
 		cgiflag = true;
 	}
 	else
 		return;
-	size_t colPos = line.find('?');
-	if (colPos != std::string::npos)
-	{
-		query = line.substr(colPos);
-	}
+	// size_t colPos = line.find('?');
+	// if (colPos != std::string::npos)
+	// {
+	// 	query = line.substr(colPos);
+	// }
 }
 
 void HttpParser::parseBody(HttpRequest& request, std::istringstream& stream) {
@@ -120,7 +122,7 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 	}
 }
 
-int	HttpParser::bigSend(fdNode *requestNode) 
+int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events) 
 {
 	// auto it2 = settings.find("127.0.0.1:8081");
 	// LocationSettings* locptr = serverPtr->getLocationBlock("/");
@@ -133,18 +135,17 @@ int	HttpParser::bigSend(fdNode *requestNode)
    	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
 	//parser.recieveRequest(requestNode->fd);
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
-	// std::cout << "CLOSE = " << request.connection << std::endl;
-	// if (parser.cgiflag){
-	// 	LocationSettings *cgiBlock = request.settings->getCgiBlock();
-	// 	if (cgiBlock)
-	// 	{
-	// 		CGIparsing myCgi("/bin/cgi/cgi.py");
-	// 		myCgi.setCGIenvironment(request, parser.query);
-	// 		myCgi.execute(request);
-	// 	}
-	// 	else
-	// 		request.errorFlag = 400;
-	// }
+	if (parser.cgiflag){
+		std::shared_ptr <LocationSettings> cgiBlock = request.settings->getCgiBlock();
+		if (cgiBlock)
+		{
+			CGIparsing myCgi(cgiBlock->getCgiScript());
+			myCgi.setCGIenvironment(request, parser.query);
+			myCgi.execute(request, cgiBlock, epollFd, _events);
+		}
+		else
+			request.errorFlag = 400;
+	}
 	//std::cout << request.body;
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;

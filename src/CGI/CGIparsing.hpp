@@ -10,7 +10,10 @@
 /**                                W E B S E R V                                 **/
 /**********************************************************************************/
 
+#pragma once
+
 #include "../HttpParsing/HttpParser.hpp"
+#include "../Config/LocationSettings.hpp"
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -21,15 +24,17 @@
 #define WRITE_END 1
 
 struct HttpRequest;
+class LocationSettings;
 
 class CGIparsing
 {
 private:
 	std::string _pathInfo; //path where to upload the cgi file
+	std::string _execInfo;
 public:
 	CGIparsing(std::string);
 	void setCGIenvironment(HttpRequest& request, const std::string&);
-	void execute(HttpRequest&);
+	void execute(HttpRequest&, std::shared_ptr<LocationSettings>&, int, epoll_event&);
 	std::string getMethod(int);
 	std::string getIp(std::string&);
 	std::string getPort(std::string&);
