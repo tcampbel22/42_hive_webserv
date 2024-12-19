@@ -120,7 +120,7 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 	}
 }
 
-void	HttpParser::bigSend(fdNode *requestNode) 
+int	HttpParser::bigSend(fdNode *requestNode) 
 {
 	// auto it2 = settings.find("127.0.0.1:8081");
 	// LocationSettings* locptr = serverPtr->getLocationBlock("/");
@@ -130,9 +130,10 @@ void	HttpParser::bigSend(fdNode *requestNode)
 	HttpRequest request(requestNode->serverPtr);
 	parser._fullyRead = true;
 	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
-   	// std::cout << "this stuff is in the map\n" << str;
+   	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
 	//parser.recieveRequest(requestNode->fd);
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
+	// std::cout << "CLOSE = " << request.connection << std::endl;
 	// if (parser.cgiflag){
 	// 	LocationSettings *cgiBlock = request.settings->getCgiBlock();
 	// 	if (cgiBlock)
@@ -149,6 +150,10 @@ void	HttpParser::bigSend(fdNode *requestNode)
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
     // }
 	ServerHandler response(requestNode->fd, request);
+	if (request.connection == false)
+		return (1);
+	else
+		return (0);
 }
 
 // util function to trim off the white spaces and delimit the read when making key value pair
