@@ -164,6 +164,7 @@ void HttpServer::startListening()
 		}
 		fdActivityLoop(current_time);
 	}
+	close(epollFd);
 }
 
 void	HttpServer::addServerToEpoll()
