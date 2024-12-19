@@ -41,7 +41,6 @@ private:
 	int			port;
 	int			max_client_body_size;
 	std::unordered_map<int, std::string> error_pages;
-	std::vector<std::string> server_names;
 	std::unordered_map<std::string, LocationSettings> locations;
 
 public:

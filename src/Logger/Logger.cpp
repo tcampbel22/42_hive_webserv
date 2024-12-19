@@ -17,7 +17,7 @@ bool	Logger::checkFileSize()
 {
 	log_file.seekp(0, std::ios::end);
 	int bytes = log_file.tellp();
-	if (bytes > 100000)
+	if (bytes > 10000000)
 		return true;
 	return false;
 }
@@ -28,7 +28,7 @@ Logger::Logger()
 	std::filesystem::create_directories(path);
 
 	try {
-		log_file.open(path + "/log.log", std::ios::app);
+		log_file.open(path + "/log.log", std::ios::trunc);
 		if (!log_file)
 			throw std::runtime_error("log file failed to open");
 		log_file << "[INFO] " << getCurrentTime() << ": WEBSERV STARTED\n";
@@ -59,13 +59,19 @@ void	Logger::log(std::string msg, e_log log_code)
 		{
 			log_file << "[ERROR] " << getCurrentTime() << ": " << msg << '\n';
 			if (checkFileSize())
-				throw std::runtime_error("Log file limit exceeded");
+			{
+				std::cerr << "Log file limit exceeded\n"; 
+				log_file.close();
+			}
 		}
 		if (log_code == INFO)
 		{
 			log_file << "[INFO] " << getCurrentTime() << ": " << msg << '\n';
 			if (checkFileSize())
-				throw std::runtime_error("Log file limit exceeded");
+			{
+				std::cerr << "Log file limit exceeded\n"; 
+				log_file.close();
+			}
 		}
 	}
 }

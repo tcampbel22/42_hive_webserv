@@ -178,4 +178,8 @@ void	ConfigParser::checkHostPortDuplicates()
 
 bool ConfigParser::getDefaultServer() { return defaultServer; }
 
-ConfigParser::~ConfigParser() {}
+ConfigParser::~ConfigParser() 
+{
+	tokens.clear();
+	tokens.shrink_to_fit();
+}
