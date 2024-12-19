@@ -169,7 +169,12 @@ void HttpServer::startListening()
 
 void	HttpServer::addServerToEpoll()
 {
-	// epollFd = epoll_create1(0); //create epoll instance
+	epollFd = epoll_create1(0); //create epoll instance
+	if (epollFd < 0)
+	{
+		ft_perror("epoll create failed");
+		closeServer();
+	}
 	for (u_long i = 0 ; i < settings_vec.size() ; i++)  //iterate through fd vector and add to epoll
 	 {
 		auto it = settings_vec[i];
