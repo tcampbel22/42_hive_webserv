@@ -130,28 +130,27 @@ int	HttpParser::bigSend(fdNode *requestNode)
 	HttpRequest request(requestNode->serverPtr);
 	parser._fullyRead = true;
 	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
-   	// std::cout << "this stuff is in the map\n" << str;
+   	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
 	//parser.recieveRequest(requestNode->fd);
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
-	
-	if (parser.cgiflag)
-	{
-		std::shared_ptr<LocationSettings> cgiBlock = request.settings->getCgiBlock();
-		if (cgiBlock)
-		{
-			CGIparsing myCgi(cgiBlock->getCgiScript());
-			myCgi.setCGIenvironment(request, parser.query);
-			myCgi.execute(request);
-		}
-		else
-			request.errorFlag = 400;
-	}
-	// std::cout << request.body;
+	// std::cout << "CLOSE = " << request.connection << std::endl;
+	// if (parser.cgiflag){
+	// 	LocationSettings *cgiBlock = request.settings->getCgiBlock();
+	// 	if (cgiBlock)
+	// 	{
+	// 		CGIparsing myCgi("/bin/cgi/cgi.py");
+	// 		myCgi.setCGIenvironment(request, parser.query);
+	// 		myCgi.execute(request);
+	// 	}
+	// 	else
+	// 		request.errorFlag = 400;
+	// }
+	//std::cout << request.body;
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
     // }
 	ServerHandler response(requestNode->fd, request);
-	if (request.connection == true)
+	if (request.connection == false)
 		return (1);
 	else
 		return (0);
