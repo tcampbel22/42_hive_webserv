@@ -75,17 +75,18 @@ void HttpServer::startServer()
 void	setNonBlocking(int socket)
 {
 	int	flag = fcntl(socket, F_GETFL, 0); //retrieves flags/settings from socket
-	fcntl(socket, F_SETFL, flag | O_NONBLOCK); //Sets socket to be nonblocking
+	if (flag < 0)
+		std::cout << "GETFL failed\n";
+	if (fcntl(socket, F_SETFL, flag | O_NONBLOCK) < 0) //Sets socket to be nonblocking
+		std::cout << "SETFL failed\n"; 
 }
 
 void HttpServer::startListening()
 {
 	std::signal(SIGINT, signalHandler);
 	std::signal(SIGPIPE, SIG_IGN);
-	epollFd = epoll_create1(0); //create epoll instance
 	
 	addServerToEpoll();
-	// Logger log("bytes.log");
 	while (true)
 	{
 		numEvents = epoll_wait(epollFd, _eventsArr, MAX_EVENTS, 0);
@@ -120,8 +121,6 @@ void HttpServer::startListening()
 					if (bytesReceived < 0)
                     {
 						// if (errno == EAGAIN || errno == EWOULDBLOCK) {
-						// std::string str(nodePtr->_clientDataBuffer.begin(), nodePtr->_clientDataBuffer.end());
-						// Logger::log(str, INFO);
 							requestComplete = true; //this is for the tester, tester sends stuff in a weird format, need this to go forward
 							break;
                     }
@@ -144,29 +143,34 @@ void HttpServer::startListening()
                     if (HttpParser::bigSend(nodePtr, epollFd, _events))
 					{  // Send response
 						epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events);  // Remove client socket from epoll
-						delete nodePtr;
 						client_nodes.erase(_fd_out); //delete node pointer
+						nodePtr->_clientDataBuffer.clear();
+						delete nodePtr;
 						close(_fd_out);  // Close the client socket
 					}
-					nodePtr->_clientDataBuffer.clear();
+					else
+						nodePtr->_clientDataBuffer.clear();
                 }
                 else
                 {
 					_events.events = EPOLLIN;  //update the epoll here after an incomplete read.
                     std::cout << "Waiting for more data..." << std::endl;
-					// std::string data(nodePtr->_clientDataBuffer.begin(), nodePtr->_clientDataBuffer.end());
-					// std::cout << data << std::endl;
 					break ;
                 }
             }
 		}
-			fdActivityLoop(current_time);
+		fdActivityLoop(current_time);
 	}
 }
 
 void	HttpServer::addServerToEpoll()
 {
 	epollFd = epoll_create1(0); //create epoll instance
+	if (epollFd < 0)
+	{
+		ft_perror("epoll create failed");
+		closeServer();
+	}
 	for (u_long i = 0 ; i < settings_vec.size() ; i++)  //iterate through fd vector and add to epoll
 	 {
 		auto it = settings_vec[i];
@@ -176,6 +180,7 @@ void	HttpServer::addServerToEpoll()
 		server_node->serverPtr = &settings_vec[i];
 		_events.data.ptr = server_node;
 		server_nodes.push_back(server_node);
+		setNonBlocking(server_node->fd);
 		
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, settings_vec[i]._fd, &_events) == -1)		
 		{
@@ -202,9 +207,9 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 	_events.events = EPOLLIN | EPOLLOUT;
 	fdNode *client_node = new fdNode;
 	client_node->fd = _clientSocket;
+	client_nodes[_clientSocket] = client_node;
 	client_node->serverPtr = nodePtr->serverPtr;
 	_events.data.ptr = client_node;
-	client_nodes[_clientSocket] = client_node;
 	
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events) == -1)
 	{
@@ -295,6 +300,8 @@ void HttpServer::closeServer()
 	{
 		delete it.second;
 	}
+	settings_vec.clear();
+	settings_vec.shrink_to_fit();
 }
 
 HttpServer::~HttpServer()
