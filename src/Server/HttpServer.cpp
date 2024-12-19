@@ -164,7 +164,6 @@ void HttpServer::startListening()
 		}
 		fdActivityLoop(current_time);
 	}
-	close(epollFd);
 }
 
 void	HttpServer::addServerToEpoll()
@@ -179,6 +178,7 @@ void	HttpServer::addServerToEpoll()
 		server_node->serverPtr = &settings_vec[i];
 		_events.data.ptr = server_node;
 		server_nodes.push_back(server_node);
+		setNonBlocking(server_node->fd);
 		
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, settings_vec[i]._fd, &_events) == -1)		
 		{
