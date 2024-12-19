@@ -43,7 +43,12 @@ LocationSettings::LocationSettings(const std::string& new_path)
 	upload_path = "";
 }
 
-LocationSettings::~LocationSettings() {}
+LocationSettings::~LocationSettings() 
+{
+	location_error_pages.clear();
+	methods.clear();
+	methods.shrink_to_fit();
+}
 
 //PARSERS
 

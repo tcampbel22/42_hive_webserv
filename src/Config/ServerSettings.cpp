@@ -17,7 +17,11 @@ ServerSettings::ServerSettings() : _isDefaultServer(false), host(""), port(-1), 
 
 ServerSettings::ServerSettings(std::string& key) : _isDefaultServer(false), _key(key), host(""), port(-1), max_client_body_size(-1) {}
 
-ServerSettings::~ServerSettings() {}
+ServerSettings::~ServerSettings() 
+{
+	error_pages.clear();
+	locations.clear();
+}
 
 
 void	ServerSettings::parseServerBlock(std::vector<std::string>& serverBlock, std::vector<std::string>::iterator& it, std::vector<std::string>::iterator end)
