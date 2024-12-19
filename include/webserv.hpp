@@ -20,10 +20,9 @@
 #include "../src/Logger/Logger.hpp"
 
 
-#define MAX_BODY_SIZE 50000
+#define MAX_BODY_SIZE 9000000
 #define GET 1
 #define POST 2
 #define DELETE 3
 
 void	ft_perror(std::string str);
-
