@@ -31,6 +31,7 @@ void HttpServer::signalHandler(int signal)
 	(void)signal;
 	std::cout <<  "\nExit signal received, server shutting down.. " << std::endl;
 	_instance->closeServer();
+	Logger::closeLogger();
 	exit(0);
 }
 
@@ -120,13 +121,14 @@ void HttpServer::startListening()
                     {
 						// if (errno == EAGAIN || errno == EWOULDBLOCK) {
 						// std::string str(nodePtr->_clientDataBuffer.begin(), nodePtr->_clientDataBuffer.end());
-						// log.log(str, INFO);
+						// Logger::log(str, INFO);
 							requestComplete = true; //this is for the tester, tester sends stuff in a weird format, need this to go forward
 							break;
                     }
                     else if (bytesReceived == 0)
                     {
-                        // std::cout << "Client closed the connection." << std::endl;
+                        std::cout << "Client closed the connection." << std::endl;
+						Logger::log("Client closed the connection.", INFO);
                         requestComplete = true;
                     }
                     else
@@ -179,6 +181,7 @@ void	HttpServer::addServerToEpoll()
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, settings_vec[i]._fd, &_events) == -1)		
 		{
 			ft_perror("Failed to add to epoll");
+			Logger::log("Failed to add to epoll", ERROR);
 			continue; 
 		}
 	 }
@@ -191,7 +194,9 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 	if (_clientSocket < 0) 
 	{
 		std::cerr << "accept failed\n" << strerror(errno) << '\n';
+		Logger::log("accept failed\n", ERROR);
 	}
+	Logger::log("New client connected: " + std::to_string(_clientSocket), INFO);
 	std::cout << "New client connected: " << _clientSocket << std::endl;
 	setNonBlocking(_clientSocket);
 	
@@ -205,6 +210,7 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events) == -1)
 	{
 		ft_perror("failed to add fd to epoll");
+		Logger::log("Failed to add to epoll", ERROR);
 		close(_clientSocket);
 		delete client_node;
 	}
@@ -269,6 +275,7 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 	for (auto it = _fd_activity_map.begin(); it != _fd_activity_map.end();) {
             if (current_time - it->second > TIME_OUT_PERIOD) {
                 std::cout << "Timeout: Closing client socket " << it->first << std::endl;
+				Logger::log("Timeout: Closing client socket " + std::to_string(it->first), INFO);
                 close(it->first);
                 epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, &_events);
                 it = _fd_activity_map.erase(it);

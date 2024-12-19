@@ -25,12 +25,11 @@ void	ft_perror(std::string str) //need to make as logger instead
 
 int	main(int ac, char **av)
 {
-	Logger log("log.log");
-
+	Logger log;
 	if (ac != 2 || av[1] == nullptr || av[1][0] == '\0')
 	{
 		ft_perror("expecting only configuration file as argument");
-		log.log("expecting only configuration file as argument",  ERROR);
+		Logger::log("expecting only configuration file as argument",  ERROR);
 		return 1;
 	}
 	std::string infile(av[1]);
@@ -40,7 +39,7 @@ int	main(int ac, char **av)
 	} 
 	catch (std::exception& e)
 	{
-		log.log(e.what(), ERROR);
+		Logger::log(e.what(), ERROR);
 		ft_perror(e.what());
 		return 1; 
 	}
@@ -51,13 +50,13 @@ int	main(int ac, char **av)
 	}
 	catch (std::exception& e)
 	{
-		log.log(e.what(), ERROR);
+		Logger::log(e.what(), ERROR);
 		ft_perror(e.what());
 		return 1;
 	}
 	//start server class, calls the socket creation function in constructor, closes the socket in the destructor.
 	HttpServer server(config.settings_vec);
 	server.startListening();
-	std::cout << "LOOPOUT\n";
+	Logger::closeLogger();
 	return (0);
 }

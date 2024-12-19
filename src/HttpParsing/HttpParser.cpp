@@ -34,12 +34,9 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		if (!std::getline(requestStream, line) || !requestLineValidator::isValidRequestLine(line, request)) {
 			//error shit in here if first line is bad: ERROR 400 according to RFC
 			if (requestStream.bad() || requestStream.fail())
-				ft_perror("parseClientRequest: could not read request line");
+				Logger::log("parseClientRequest: could not read request line", ERROR);
 			else
-			{
-				ft_perror("parseClientRequest: request line is invalid");
-				std::cout << request.errorFlag << '\n';
-			}
+				Logger::log("parseClientRequest: request line is invalid", ERROR);
 			return;
 		}
 		checkRedirect(request, serverPtr);
@@ -66,6 +63,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			parseBody(request, requestStream);
 		}
 		} catch (std::exception& e) {
+			Logger::log(e.what(), ERROR);
 			std::cerr << e.what() << '\n';
 		}
 }
