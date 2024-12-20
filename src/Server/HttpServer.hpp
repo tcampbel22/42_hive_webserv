@@ -59,6 +59,7 @@ private:
 	int				numEvents;
 	std::unordered_map<int, time_t> _fd_activity_map;
 	bool			_clientClosedConn = false;
+	bool			requestComplete = false;
 
 public:
 	std::vector<ServerSettings> settings_vec;
@@ -79,4 +80,5 @@ public:
 	void	acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_time);
 	void	addServerToEpoll();
 	void	fillHostPortPairs();
+	void	readRequest(fdNode *nodePtr);
 };
