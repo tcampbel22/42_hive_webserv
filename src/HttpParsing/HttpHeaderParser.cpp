@@ -19,7 +19,7 @@ void HttpHeaderParser::parseHeaders(std::istringstream& requestStream, HttpReque
 			ssize_t colonPos = line.find(':');
 			if ((size_t)colonPos != std::string::npos) {
 				std::string key = line.substr(0, colonPos);
-				std::string value = line.substr(colonPos + 2);
+				std::string value = line.substr(colonPos + 2); //need to trim whitespace between or no space
 				request.headers[key] = value;
 			}
 			else 
@@ -31,13 +31,11 @@ void HttpHeaderParser::procesHeaderFields(HttpRequest& request, int& contentLeng
 {
 	if (request.headers.find("Connection") != request.headers.end())
 	{
-		if (request.headers.find("Connection") != request.headers.end()){
 		auto it = request.headers.at("Connection");
-			if (it.compare("keep-alive"))
-				request.connection = false;
-			else
-				request.connection = true;
-	}
+		if (it.compare("close") == 0)
+			request.closeConnection = true;
+		else
+			request.closeConnection = false;
 	}
 	if (request.headers.find("Host") != request.headers.end())
 		request.host.append((trim(request.headers.at("Host"))));

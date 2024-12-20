@@ -15,15 +15,13 @@
 
 HttpServer* HttpServer::_instance = nullptr;
 
-void testSend(int fd)
+HttpServer::HttpServer(std::vector<ServerSettings>& vec)
 {
-	Response newResponse;
-	newResponse.setResponseCode(200);
-	newResponse.setContentType("text/html");
-	newResponse.setContentLength(137);
-	newResponse.setCloseConnection(false);
-	newResponse.set_body("<!DOCTYPE html>\n<html>\n<head>\n    <title>Simple C++ Web Server</title>\n</head>\n<body>\n    <h1>Hello from a C++ web server!</h1>\n</body>\n</html>\n");
-	newResponse.sendResponse(fd);
+	this->_instance = this;
+	settings_vec = vec;
+	fillHostPortPairs();
+	_clientSocket = -1;
+	startServer();
 }
 
 void HttpServer::signalHandler(int signal)
@@ -77,9 +75,18 @@ void	setNonBlocking(int socket)
 {
 	int	flag = fcntl(socket, F_GETFL, 0); //retrieves flags/settings from socket
 	if (flag < 0)
-		std::cout << "GETFL failed\n";
+		ft_perror("GETFL failed");
 	if (fcntl(socket, F_SETFL, flag | O_NONBLOCK) < 0) //Sets socket to be nonblocking
-		std::cout << "SETFL failed\n"; 
+		ft_perror("SETFL failed"); 
+}
+
+bool isNonBlockingSocket(int fd) 
+{
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags == -1) {
+        return false;
+    }
+    return (flags & O_NONBLOCK) != 0;
 }
 
 void HttpServer::startListening()
@@ -91,68 +98,48 @@ void HttpServer::startListening()
 	while (true)
 	{
 		numEvents = epoll_wait(epollFd, _eventsArr, MAX_EVENTS, 0);
-		if (numEvents < 0){
-			std::cout << "Epoll wait failed\n";
-			break ;}
+		if (numEvents < 0)
+		{
+			ft_perror("epoll_wait failed");
+			break ;
+		}
 		time_t current_time = std::time(nullptr);
 		for (int i = 0; i < numEvents; i++)
 		{
 			fdNode *nodePtr = static_cast <fdNode*>(_eventsArr[i].data.ptr);  //retrieving current serversettings and client fd
-			int	eventFd = nodePtr->fd;
-			if (std::find(_server_fds.begin(), _server_fds.end(), eventFd) != _server_fds.end()) //eventFd is a server_socket meaning a new request is incoming
-				acceptNewClient(nodePtr, eventFd, current_time);
+			if (std::find(_server_fds.begin(), _server_fds.end(), nodePtr->fd) != _server_fds.end()) //eventFd is a server_socket meaning a new request is incoming
+				acceptNewClient(nodePtr, nodePtr->fd, current_time);
 			else if (_eventsArr[i].events & EPOLLIN) //client socket has data to read from
 			{	
-				int _fd_out = nodePtr->fd;
-
-                ssize_t bytesReceived = 0;
-                ssize_t bytes = 1024;
-				bool requestComplete = false;
-                while (!requestComplete)
-                {
-                    nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
-                    bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
-
-					if (bytesReceived < bytes) {
-						if (bytesReceived < 0)
-							bytesReceived = 0;
-						nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - bytesReceived));
-					}
-
-					if (bytesReceived < 0)
-                    {
-						// if (errno == EAGAIN || errno == EWOULDBLOCK) {
-							requestComplete = true; //this is for the tester, tester sends stuff in a weird format, need this to go forward
-							break;
-                    }
-                    else if (bytesReceived == 0)
-                    {
-                        std::cout << "Client closed the connection." << std::endl;
-						Logger::log("Client closed the connection.", INFO);
-                        requestComplete = true;
-						_clientClosedConn = true;
-                    }
-                    else
-                    {
-                        // std::cout << "Received " << bytesReceived << " bytes from client." << std::endl;
-                        requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, bytesReceived);
-                    }
-                }
+				readRequest(nodePtr);
                 if (requestComplete)
                 {
-					//nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - bytesReceived));
-                    // Once we have the full data, process the request
-                    if (HttpParser::bigSend(nodePtr, epollFd, _events) || _clientClosedConn == true)
+                    if (nodePtr->_clientDataBuffer.empty())
 					{
-						epoll_ctl(epollFd, EPOLL_CTL_DEL, _fd_out, &_events);  // Remove client socket from epoll
-						client_nodes.erase(_fd_out); //delete node pointer
-						nodePtr->_clientDataBuffer.clear();
+						epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events);  // Remove client socket from epoll
+						client_nodes.erase(nodePtr->fd); //delete fd from fd vector
+						_fd_activity_map.erase(nodePtr->fd);
+						nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
+						close(nodePtr->fd);  // Close the client socket
 						delete nodePtr;
-						close(_fd_out);  // Close the client socket
+						_clientClosedConn = false;
+					}
+					// Once we have the full data, process the request
+                    else if (HttpParser::bigSend(nodePtr, epollFd, _events) || _clientClosedConn == true)
+					{
+						epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events);  // Remove client socket from epoll
+						client_nodes.erase(nodePtr->fd); //delete fd from fd vector
+						_fd_activity_map.erase(nodePtr->fd);
+						nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
+						close(nodePtr->fd);  // Close the client socket
+						delete nodePtr;
 						_clientClosedConn = false;
 					}
 					else
+					{
 						nodePtr->_clientDataBuffer.clear();
+						_fd_activity_map[nodePtr->fd] = std::time(nullptr);
+					}
                 }
                 else
                 {
@@ -178,7 +165,7 @@ void	HttpServer::addServerToEpoll()
 	for (u_long i = 0 ; i < settings_vec.size() ; i++)  //iterate through fd vector and add to epoll
 	 {
 		auto it = settings_vec[i];
-		_events.events = EPOLLIN | EPOLLET;
+		_events.events = EPOLLIN;
 		fdNode* server_node = new fdNode;
 		server_node->fd = settings_vec[i]._fd;
 		server_node->serverPtr = &settings_vec[i];
@@ -199,36 +186,76 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 {
 	socklen_t _sockLen = sizeof(_socketInfo);
 	memset(&_socketInfo, 0, sizeof(_socketInfo));
-	// _socketInfo.sin_family = AF_INET; //macro for IPV4
-	// _socketInfo.sin_port = htons(8081); //converts port number to network byte order
-	// _socketInfo.sin_addr.s_addr = inet_addr("127.0.0.1"); //converts ip address from string to uint
+
 	_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
 	if (_clientSocket < 0) 
 	{
 		std::cerr << "accept failed\n" << strerror(errno) << '\n';
 		Logger::log("accept failed\n", ERROR);
 	}
-	Logger::log("New client connected: " + std::to_string(_clientSocket), INFO);
-	std::cout << "New client connected: " << _clientSocket << std::endl;
-	setNonBlocking(_clientSocket);
-	
-	_events.events = EPOLLIN | EPOLLOUT;
-	fdNode *client_node = new fdNode;
-	client_node->fd = _clientSocket;
-	client_nodes[_clientSocket] = client_node;
-	client_node->serverPtr = nodePtr->serverPtr;
-	_events.data.ptr = client_node;
-	
-	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events) == -1)
+	else
 	{
-		ft_perror("failed to add fd to epoll");
-		Logger::log("Failed to add to epoll", ERROR);
-		close(_clientSocket);
-		delete client_node;
+		Logger::log("New client connected: " + std::to_string(_clientSocket), INFO);
+		std::cout << "New client connected: " << _clientSocket << std::endl;
+		setNonBlocking(_clientSocket);
+		
+		_events.events = EPOLLIN;
+		fdNode *client_node = new fdNode;
+		client_node->fd = _clientSocket;
+		client_nodes[_clientSocket] = client_node;
+		client_node->serverPtr = nodePtr->serverPtr;
+		_events.data.ptr = client_node;
+		
+		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events) == -1)
+		{
+			ft_perror("failed to add fd to epoll");
+			Logger::log("Failed to add to epoll", ERROR);
+			close(_clientSocket);
+			delete client_node;
+		}
+		_fd_activity_map[_clientSocket] = current_time;
 	}
-	_fd_activity_map[_clientSocket] = current_time;
 }
 
+//Read data from client stream
+void	HttpServer::readRequest(fdNode *nodePtr)
+{
+	int _fd_out = nodePtr->fd;
+
+	ssize_t bytesReceived = 0;
+	ssize_t bytes = 1024;
+	requestComplete = false;
+	while (!requestComplete)
+	{
+		nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
+		bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
+		if (bytesReceived < bytes) 
+		{
+			if (bytesReceived < 0)
+				bytesReceived = 0;
+			nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - bytesReceived));
+		}
+		if (bytesReceived < 0)
+		{
+			if (!isNonBlockingSocket(nodePtr->fd)) //check if there is an error with recv
+			{
+				ft_perror("recv error: " + (std::string)strerror(errno));
+				requestComplete = true;
+			}
+			else
+				break;
+		}
+		else if (bytesReceived == 0) //read is successful and client closes connection
+		{
+			std::cout << "Client closed the connection." << std::endl;
+			Logger::log("Client closed the connection.", INFO);
+			requestComplete = true;
+			_clientClosedConn = true;
+		}
+		else
+			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, bytesReceived);
+	}
+}
 
 // Function to check if the request is fully received (for chunked encoding or complete body)
 bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived)
@@ -326,12 +353,3 @@ void	HttpServer::fillHostPortPairs()
 	}
 }
 
-
-HttpServer::HttpServer(std::vector<ServerSettings>& vec)
-{
-	this->_instance = this;
-	settings_vec = vec;
-	fillHostPortPairs();
-	_clientSocket = -1;
-	startServer();
-}

@@ -36,7 +36,7 @@ struct HttpRequest {
 	std::map<std::string, std::string> headers;
 	std::string body;
 	std::string host;
-	bool connection;
+	bool closeConnection = false;
 	int errorFlag;
 	ServerSettings* settings;
 	HttpRequest(ServerSettings *);
