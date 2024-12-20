@@ -37,6 +37,7 @@ _response(), _input(_newInput)
 			parsePath();
 		//handle the request 
 		executeInput();
+
 		//send a response
 		_response.sendResponse(fd);
 	}
@@ -179,19 +180,23 @@ void	ServerHandler::makeMIME()
 
 void	ServerHandler::setContentType(std::string path)
 {
-	//generating the key from the extension of the file
-	std::string key = path.substr(path.find_last_of("."), path.length() - path.find_last_of("."));
-	//makes the key lowercase before searching
-	std::transform(key.begin(), key.end(), key.begin(), [](unsigned char c) { return std::tolower(c); });
-
-	for (const auto& pair : MIMEs)
+	if (path.find(".") != std::string::npos)
 	{
-		if (key == pair.first)
+		//generating the key from the extension of the file
+		std::string key = path.substr(path.find_last_of("."), path.length() - path.find_last_of("."));
+		//makes the key lowercase before searching
+		std::transform(key.begin(), key.end(), key.begin(), [](unsigned char c) { return std::tolower(c); });
+
+		for (const auto& pair : MIMEs)
 		{
-			_response.setContentType(pair.second);
-			return ; 
+			if (key == pair.first)
+			{
+				_response.setContentType(pair.second);
+				return ; 
+			}
 		}
 	}
+
 	//default if no file extension
 	_response.setContentType("text/plain");
 }
@@ -227,7 +232,6 @@ int ServerHandler::getFile(std::string path)
 	infile.close();
 	_response.setContentLength(stream.str().length());
 	setContentType(path);
-		
 	return (0);
 }
 
