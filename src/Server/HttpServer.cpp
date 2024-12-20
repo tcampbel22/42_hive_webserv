@@ -114,11 +114,22 @@ void HttpServer::startListening()
 				readRequest(nodePtr);
                 if (requestComplete)
                 {
-                    // Once we have the full data, process the request
-                    if (HttpParser::bigSend(nodePtr, epollFd, _events) || _clientClosedConn == true)
+                    if (nodePtr->_clientDataBuffer.empty())
 					{
 						epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events);  // Remove client socket from epoll
 						client_nodes.erase(nodePtr->fd); //delete fd from fd vector
+						_fd_activity_map.erase(nodePtr->fd);
+						nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
+						close(nodePtr->fd);  // Close the client socket
+						delete nodePtr;
+						_clientClosedConn = false;
+					}
+					// Once we have the full data, process the request
+                    else if (HttpParser::bigSend(nodePtr, epollFd, _events) || _clientClosedConn == true)
+					{
+						epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events);  // Remove client socket from epoll
+						client_nodes.erase(nodePtr->fd); //delete fd from fd vector
+						_fd_activity_map.erase(nodePtr->fd);
 						nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
 						close(nodePtr->fd);  // Close the client socket
 						delete nodePtr;
