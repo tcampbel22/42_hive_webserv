@@ -32,6 +32,11 @@ int	main(int ac, char **av)
 		return 1;
 	}
 	std::string infile(av[1]);
+	if (std::filesystem::exists(infile) && std::filesystem::file_size(infile) == 0) 
+	{
+        Logger::log("config file is empty",  ERROR, true);
+		return 1;
+	}
 	try {
 		if (opendir(av[1]) != NULL)
 			throw std::invalid_argument("argument is a directory");
