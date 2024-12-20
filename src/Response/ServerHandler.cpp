@@ -42,7 +42,7 @@ _response(), _input(_newInput)
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << e.what() << '\n';
+		Logger::log(e.what(), ERROR, false);
 	}
 	
 }
@@ -50,11 +50,11 @@ _response(), _input(_newInput)
 void ServerHandler::checkPath()
 {
 	if (_input.path.empty())
-		return (responseCode(400));
+		return Logger::setErrorAndLog(&_input.errorFlag, 400, "check-path: path is empty");
 	std::regex validPathRegex("^[a-zA-Z0-9/_.-]+$");
 	if (!std::regex_match(_input.path, validPathRegex) || _input.path.find("..") != std::string::npos \
 		|| _input.path.find("//") != std::string::npos)
-		return (responseCode(401));
+		return Logger::setErrorAndLog(&_input.errorFlag, 400, "check-path: path syntax error");
 }
 
 void ServerHandler::responseCode(int code)
@@ -92,7 +92,7 @@ void ServerHandler::getLocationSettings()
 	if (!locSettings)
 		locSettings = _input.settings->getLocationBlock("/");
 	if (!locSettings)
-		return (responseCode(500));
+		return Logger::setErrorAndLog(&_input.errorFlag, 500, "get-location-settings: failed to fetch location block :(");
 
 }
 
@@ -115,7 +115,7 @@ void ServerHandler::parsePath()
 		_input.path = _input.path + locSettings->getDefaultFile();
 	}
 	if (checkMethod())
-		_input.errorFlag = 405;
+		return Logger::setErrorAndLog(&_input.errorFlag, 405, "parse-path: method not allowed");
 }
 
 
@@ -200,13 +200,13 @@ bool	ServerHandler::isReadable(std::string path)
 {
 	if (!std::filesystem::exists(path))
 	{
-		_input.errorFlag = 404;
+		Logger::setErrorAndLog(&_input.errorFlag, 404, "is-readable: file does not exist");
 		return false;
 	}
 
 	if (access(path.c_str(), R_OK) < 0)
 	{
-		_input.errorFlag = 403;
+		Logger::setErrorAndLog(&_input.errorFlag, 403, "is-readable: no read access");
 		return false;
 	}
 	return true;
@@ -301,7 +301,7 @@ int	ServerHandler::checkDirectorySize(std::filesystem::path path)
 	}
 	catch(const std::exception& e)
 	{
-		Logger::log(e.what(), ERROR);
+		Logger::log(e.what(), ERROR, false);
 	}
 	return (1);
 }
@@ -312,14 +312,14 @@ void ServerHandler::doPost()
 	std::filesystem::path dirPath(_input.path.substr(0, _input.path.rfind('/')));
 	//check if the path ends with / meaning its a directory
 	if (_input.path.back() == '/')
-		return (responseCode(403));
+		return Logger::setErrorAndLog(&_input.errorFlag, 403, "do-post: directory creation is forbidden");
 
 	//first check if the directory where the file is / is to be created exists
 	if(std::filesystem::exists(dirPath) && std::filesystem::is_directory(dirPath))
 	{
 		//check that the maximum size for the directory is not yet reached
 		if (!checkDirectorySize(dirPath))
-			return (responseCode(507));
+			return Logger::setErrorAndLog(&_input.errorFlag, 507, "do-post: directory capacity exceeded");
 
 		//then check if the file exists or not
 		if(std::filesystem::exists(path))
@@ -327,7 +327,7 @@ void ServerHandler::doPost()
 			 //to append to a existing file // will also create the file if it dose not exist also ensures there is write permission
 			std::ofstream file(_input.path, std::ios::app);
 			if (!file.is_open())
-				return (responseCode(401));
+				return Logger::setErrorAndLog(&_input.errorFlag, 401, "do-post: no write permissions/file failed to open");
 			file << _input.body;
 			file.close();
 		}
@@ -335,14 +335,14 @@ void ServerHandler::doPost()
 		{
 			std::ofstream new_file(_input.path);
 			if (!new_file.is_open())
-				return (responseCode(500));
+				return Logger::setErrorAndLog(&_input.errorFlag, 500, "do-post: failed to create file");
 			new_file << _input.body;
 			new_file.close();
 		}
 		_response.setResponseCode(200);
 	}
 	else
-		_input.errorFlag = 405; //creation of directory not allowed
+		return Logger::setErrorAndLog(&_input.errorFlag, 405, "do-post: directory does not exist"); //creation of directory not allowed
 }
 
 void ServerHandler::generateIndex()
@@ -369,7 +369,7 @@ void ServerHandler::generateIndex()
 	}
 	catch(const std::exception& e)
 	{
-		return (responseCode(403)); //probably other code
+		return Logger::setErrorAndLog(&_input.errorFlag, 403, "generate-index: directory index creation failed"); //probably other code
 	}
 	body += "</ul>\n</body>\n</html>";
 
@@ -392,7 +392,7 @@ void ServerHandler::doGet()
 	if (getFile(_input.path) == 1)
 	{
 		if (_input.errorFlag < 1)
-			_input.errorFlag = 404;
+			Logger::setErrorAndLog(&_input.errorFlag, 404, "do-get: file does not exist");
 		return ;
 	}
 	_response.setResponseCode(200);
@@ -404,7 +404,7 @@ void ServerHandler::doDelete()
 	std::filesystem::path dirPath(_input.path.substr(0, _input.path.rfind('/')));
 	//check if the path ends with / meaning its a directory
 	if (_input.path.back() == '/')
-		return (responseCode(403));
+		return Logger::setErrorAndLog(&_input.errorFlag, 403, "do-delete: directory deletion is forbidden");
 
 	//first check if the directory where the file is exists	
 	if(std::filesystem::exists(dirPath) && std::filesystem::is_directory(dirPath))
@@ -415,17 +415,17 @@ void ServerHandler::doDelete()
 			try
 			{
 				if (!std::filesystem::remove(path))
-					return (responseCode(403));
+					return Logger::setErrorAndLog(&_input.errorFlag, 403, "do-delete: file failed to delete");
 			}
 			catch(const std::exception& e)
 			{
-				std::cerr << e.what() << '\n';
+				Logger::log(e.what(), ERROR, false);
 			}
 		}
 		else
-			return (responseCode(404));
+			return Logger::setErrorAndLog(&_input.errorFlag, 404, "do-delete: file does not exist");
 		_response.setResponseCode(200);
 	}
 	else
-		_input.errorFlag = 404;
+		Logger::setErrorAndLog(&_input.errorFlag, 404, "do-delete: directory does not exist");
 }

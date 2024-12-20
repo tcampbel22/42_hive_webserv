@@ -12,6 +12,7 @@
 
 #pragma once
 #include <iostream>
+#include "../../include/webserv.hpp"
 
 class Response
 {

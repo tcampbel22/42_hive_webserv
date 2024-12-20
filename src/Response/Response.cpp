@@ -179,10 +179,12 @@ void Response::sendResponse(int fd)
 	
 	try
 	{
+		if (getResponseCode() == 200)
+			Logger::log("[200] Great Success!", INFO, false);
 		send(fd, _buffer.c_str(), _buffer.size(), 0);
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << e.what() << '\n';
+		Logger::log(e.what(), ERROR, false);
 	}
 }

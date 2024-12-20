@@ -14,12 +14,22 @@
 
 LocationSettings::LocationSettings()
 {
-
-	path = "/root";
+	path = "/";
+	if (path.back() == '/')
+		isDirectory = true;
+	else
+		isFile = true;
 	root = "";
 	default_file = "";
-	autoindex = false;
+	is_default_file = false;
 	is_redirect = false;
+	isCgi = false;
+	autoindex = false;
+	redirect.first = -1;
+	redirect.second = "";
+	cgi_path = "";
+	cgi_script = "";
+	upload_path = "";
 }
 
 
