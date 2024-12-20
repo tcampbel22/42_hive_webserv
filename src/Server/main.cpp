@@ -28,7 +28,6 @@ int	main(int ac, char **av)
 	Logger log;
 	if (ac != 2 || av[1] == nullptr || av[1][0] == '\0')
 	{
-		
 		Logger::log("expecting only configuration file as argument",  ERROR, true);
 		return 1;
 	}
