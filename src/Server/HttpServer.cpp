@@ -125,7 +125,10 @@ void HttpServer::startListening()
 						_clientClosedConn = false;
 					}
 					else
+					{
 						nodePtr->_clientDataBuffer.clear();
+						_fd_activity_map[nodePtr->fd] = std::time(nullptr);
+					}
                 }
                 else
                 {
