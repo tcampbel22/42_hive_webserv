@@ -61,6 +61,8 @@ std::string Response::getResponseCodeStr()
 		return(status += "502 Bad Gateway\n");		
 	case 503:
 		return(status += "503 Service Unavailable\n");
+	case 507:
+		return(status += "507 Insufficient Storage\n");
 	default:
 		return(status += std::to_string(_responseCode) + "\n");
 	}
@@ -174,6 +176,7 @@ void Response::sendResponse(int fd)
 	
 	//uncomment this in order to see the response in the terminal
 	//std::cout <<  _buffer << std::endl;
+	
 	try
 	{
 		send(fd, _buffer.c_str(), _buffer.size(), 0);

@@ -20,18 +20,9 @@
 ServerHandler::ServerHandler(int fd, HttpRequest& _newInput):
 _response(), _input(_newInput)
 {
-
-	// std::cout << _input.path << std::endl;
-	// std::cout << "ERROR CODE FROM PARSING = " << _input.errorFlag << std::endl;
-	// std::cout << "error flag = " << _input.errorFlag << std::endl;
-	// std::cout << "BODY SIZE = " << _input.body.size() << std::endl;
-	// std::cout << "BODY = " << _input.body << std::endl;
-	
-	// std::cout << "CONT LENGTH = " << _input.headers.at("Content-Length") << std::endl;
-
-	// std::cout << _input.settings->getErrorPages(404) << std::endl;
 	try
 	{
+		_response.setCloseConnection(_input.closeConnection);
 		//populate the MIME map
 		makeMIME();
 
@@ -91,7 +82,6 @@ void ServerHandler::getLocationSettings()
 	while (42)
 	{
 		locSettings = _input.settings->getLocationBlock(key);
-		// std::cout << "KEY = " << key << std::endl;
 		if (locSettings != nullptr || len < 2)
 			break ;
 		len = key.rfind('/');
@@ -114,11 +104,9 @@ void ServerHandler::parsePath()
 		_response.setLocation("Location: " + locSettings->getRedirectPath() + "\n");
 		_input.errorFlag = locSettings->getRedirectStatus(); //UPDATED currently acccepting 300-308
 		return ;
-		// std::cout << _input.path << std::endl;
 	}
 	else
 		_input.path = locSettings->getRoot() + _input.path;
-	// }
 	if (_input.path.length() > 1 && _input.path.at(0) == '/')
 		_input.path = _input.path.substr(1, _input.path.length() -1);
 	if (_input.path.back() == '/')
@@ -204,7 +192,7 @@ void	ServerHandler::setContentType(std::string path)
 			return ; 
 		}
 	}
-	//default if no file extension // we need to decide the base
+	//default if no file extension
 	_response.setContentType("text/plain");
 }
 
@@ -298,6 +286,26 @@ void ServerHandler::doError()
 	defaultError();
 }
 
+int	ServerHandler::checkDirectorySize(std::filesystem::path path)
+{
+	size_t totalSize = 0;
+	try
+	{
+		for (auto it : std::filesystem::recursive_directory_iterator(path))
+		{
+			if (std::filesystem::is_regular_file(it.status()))
+				totalSize += std::filesystem::file_size(it);
+			if (totalSize > MAX_DIRECTORY_SIZE)
+				return (0);
+		}
+	}
+	catch(const std::exception& e)
+	{
+		Logger::log(e.what(), ERROR);
+	}
+	return (1);
+}
+
 void ServerHandler::doPost()
 {
 	std::filesystem::path path(_input.path);
@@ -308,12 +316,14 @@ void ServerHandler::doPost()
 
 	//first check if the directory where the file is / is to be created exists
 	if(std::filesystem::exists(dirPath) && std::filesystem::is_directory(dirPath))
-	{	
+	{
+		//check that the maximum size for the directory is not yet reached
+		if (!checkDirectorySize(dirPath))
+			return (responseCode(507));
+
 		//then check if the file exists or not
 		if(std::filesystem::exists(path))
 		{
-			//test what happends when trying to write to a file without permission (once post works again in the reading)
-
 			 //to append to a existing file // will also create the file if it dose not exist also ensures there is write permission
 			std::ofstream file(_input.path, std::ios::app);
 			if (!file.is_open())
@@ -332,7 +342,7 @@ void ServerHandler::doPost()
 		_response.setResponseCode(200);
 	}
 	else
-		_input.errorFlag = 404; //probably wrong code
+		_input.errorFlag = 405; //creation of directory not allowed
 }
 
 void ServerHandler::generateIndex()
@@ -419,16 +429,3 @@ void ServerHandler::doDelete()
 	else
 		_input.errorFlag = 404;
 }
-
-
-
-
-
-/*NOTES
-
-At the moment POST without a body creates a file
-Can the body variables (in/out) be strings, or do they need to be streams? due possible null in binary files
-
-
-
- */

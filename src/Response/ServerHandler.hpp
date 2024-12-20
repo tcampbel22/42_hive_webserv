@@ -45,4 +45,5 @@ public:
 	void 	responseCode(int code);
 	void 	checkPath();
 	bool	isReadable(std::string path);
+	int		checkDirectorySize(std::filesystem::path path);
 };
