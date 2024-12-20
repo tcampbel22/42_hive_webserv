@@ -19,7 +19,7 @@ void HttpHeaderParser::parseHeaders(std::istringstream& requestStream, HttpReque
 			ssize_t colonPos = line.find(':');
 			if ((size_t)colonPos != std::string::npos) {
 				std::string key = line.substr(0, colonPos);
-				std::string value = line.substr(colonPos + 2); //need to trim whitespace between or no space
+				std::string value = trim(line.substr(colonPos + 2));
 				request.headers[key] = value;
 			}
 			else 
@@ -45,7 +45,7 @@ void HttpHeaderParser::procesHeaderFields(HttpRequest& request, int& contentLeng
 		contentLength = std::stoi(request.headers.at("Content-Length"));
 		if (contentLength > request.settings->getMaxClientBody()) {
 			if (!request.errorFlag)
-				request.errorFlag = 413;
+				Logger::setErrorAndLog(&request.errorFlag, 413, "content-length exceeds max");
 		}
 		if (contentLength < 0)
 			contentLength = 0;

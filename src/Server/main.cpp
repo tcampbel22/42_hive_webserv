@@ -28,8 +28,7 @@ int	main(int ac, char **av)
 	Logger log;
 	if (ac != 2 || av[1] == nullptr || av[1][0] == '\0')
 	{
-		ft_perror("expecting only configuration file as argument");
-		Logger::log("expecting only configuration file as argument",  ERROR);
+		Logger::log("expecting only configuration file as argument",  ERROR, true);
 		return 1;
 	}
 	std::string infile(av[1]);
@@ -39,8 +38,7 @@ int	main(int ac, char **av)
 	} 
 	catch (std::exception& e)
 	{
-		Logger::log(e.what(), ERROR);
-		ft_perror(e.what());
+		Logger::log(e.what(), ERROR, true);
 		return 1; 
 	}
 	//Program will exit if an error is found with the config file
@@ -50,8 +48,7 @@ int	main(int ac, char **av)
 	}
 	catch (std::exception& e)
 	{
-		Logger::log(e.what(), ERROR);
-		ft_perror(e.what());
+		Logger::log(e.what(), ERROR, true);
 		return 1;
 	}
 	//start server class, calls the socket creation function in constructor, closes the socket in the destructor.

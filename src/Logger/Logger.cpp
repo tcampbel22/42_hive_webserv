@@ -31,14 +31,14 @@ Logger::Logger()
 		log_file.open(path + "/log.log", std::ios::trunc);
 		if (!log_file)
 			throw std::runtime_error("log file failed to open");
-		log_file << "[INFO] " << getCurrentTime() << ": WEBSERV STARTED\n";
+		log_file << "[INFO]  " << getCurrentTime() << ": WEBSERV STARTED\n";
 		if (checkFileSize())
 			throw std::runtime_error("Log file limit exceeded");
 	}
 	catch (std::exception& e)
 	{
 		log_file.close();
-		std::cerr << e.what() << '\n';
+		std::cerr << e.what() << std::endl;
 	} 
 
 }
@@ -51,25 +51,35 @@ std::string Logger::getCurrentTime()
 	return std::string(buf);
 }
 
-void	Logger::log(std::string msg, e_log log_code)
+void	Logger::setErrorAndLog(int *error, int set, std::string msg)
+{
+	*error = set;
+	log("[" + std::to_string(set) + "] " + msg, INFO, false);
+}
+
+void	Logger::log(std::string msg, e_log log_code, bool print)
 {
 	if (log_file.is_open())
 	{
 		if (log_code == ERROR)
 		{
-			log_file << "[ERROR] " << getCurrentTime() << ": " << msg << '\n';
+			if (print)
+				std::cerr << "[ERROR]: webserv: " << msg << std::endl;
+			log_file << "[ERROR] " << getCurrentTime() << ": " << msg << std::endl;
 			if (checkFileSize())
 			{
-				std::cerr << "Log file limit exceeded\n"; 
+				std::cerr << "Log file limit exceeded" << std::endl; 
 				log_file.close();
 			}
 		}
 		if (log_code == INFO)
 		{
-			log_file << "[INFO] " << getCurrentTime() << ": " << msg << '\n';
+			if (print)
+				std::cout << msg << std::endl;
+			log_file << "[INFO]  " << getCurrentTime() << ": " << msg << std::endl;
 			if (checkFileSize())
 			{
-				std::cerr << "Log file limit exceeded\n"; 
+				std::cerr << "Log file limit exceeded" <<  std::endl; 
 				log_file.close();
 			}
 		}
@@ -80,7 +90,7 @@ void Logger::closeLogger()
 {
     if (log_file.is_open())
 	{
-		log_file << "[INFO] " << getCurrentTime() << ": WEBSERV FINISHED\n";
+		log_file << "[INFO]  " << getCurrentTime() << ": WEBSERV FINISHED\n";
 		log_file.close();
 	}
 }

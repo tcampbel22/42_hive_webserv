@@ -25,7 +25,7 @@ int chunkedBodyParser::hexToInt(std::string line) {
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << e.what() << '\n';
+		Logger::log(e.what(), ERROR, false);
 	}
 	return val;
 }
@@ -47,8 +47,7 @@ void chunkedBodyParser::parse(std::istringstream& stream, HttpRequest& request) 
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << "Chunked body parsing error: " << e.what() << '\n';
-        request.errorFlag = 400; // Bad Request
+		Logger::setErrorAndLog(&request.errorFlag, 400, e.what());
 	}
 }
 

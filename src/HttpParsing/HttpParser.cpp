@@ -34,9 +34,9 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		if (!std::getline(requestStream, line) || !requestLineValidator::isValidRequestLine(line, request)) {
 			//error shit in here if first line is bad: ERROR 400 according to RFC
 			if (requestStream.bad() || requestStream.fail())
-				Logger::log("parseClientRequest: could not read request line", ERROR);
+				Logger::log("parseClientRequest: could not read request line", ERROR, false);
 			else
-				Logger::log("parseClientRequest: request line is invalid", ERROR);
+				Logger::log("parseClientRequest: request line is invalid", ERROR, false);
 			return;
 		}
 		checkRedirect(request, serverPtr);
@@ -44,18 +44,18 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
-		 	request.errorFlag = 400;
+		 	Logger::setErrorAndLog(&request.errorFlag, 400, "header: host name error");
 		 	request.closeConnection = true;
 		}
 		if (request.method == GET && !request.errorFlag)
 		{
 			std::getline(requestStream, line);
 			if (!requestStream.eof()) {
-				request.errorFlag = 400;
+				Logger::setErrorAndLog(&request.errorFlag, 400, "header: body in GET request");
 				return;
 			}
 			if (this->_contentLength != 0) {
-				request.errorFlag = 400;
+				Logger::setErrorAndLog(&request.errorFlag, 400, "header: content-length not zero in GET request");
 				return;
 			}
 		}
@@ -63,8 +63,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			parseBody(request, requestStream);
 		}
 		} catch (std::exception& e) {
-			Logger::log(e.what(), ERROR);
-			std::cerr << e.what() << '\n';
+			Logger::log(e.what(), ERROR, false);
 		}
 }
 
@@ -86,11 +85,6 @@ void HttpParser::checkForCgi(ServerSettings* server, std::string line) {
 	}
 	else
 		return;
-	// size_t colPos = line.find('?');
-	// if (colPos != std::string::npos)
-	// {
-	// 	query = line.substr(colPos);
-	// }
 }
 
 void HttpParser::parseBody(HttpRequest& request, std::istringstream& stream) {
@@ -111,13 +105,13 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 	}
 	if (!stream.eof()) {
 		if (!request.errorFlag)
-			request.errorFlag = 400;
+			Logger::setErrorAndLog(&request.errorFlag, 400, "body: no eof in body");
 		return ;
 	}
 	if (_contentLength != (int)request.body.size())
 	{
 		if (!request.errorFlag)
-			request.errorFlag = 400;
+			Logger::setErrorAndLog(&request.errorFlag, 400, "body: content-length mismatched with body size");
 	}
 }
 
@@ -143,7 +137,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 			myCgi.execute(request, cgiBlock, epollFd, _events);
 		}
 		else
-			request.errorFlag = 400;
+			Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
 	}
 	//std::cout << request.body;
 	// for (const auto& pair : request.headers) {
@@ -155,10 +149,3 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 	else
 		return (0);
 }
-
-// util function to trim off the white spaces and delimit the read when making key value pair
-// std::string HttpParser::trim(const std::string& str) {
-//     size_t first = str.find_first_not_of(" \t\n\r\f\v");
-//     size_t last = str.find_last_not_of(" \t\n\r\f\v");
-//     return (first == std::string::npos) ? "" : str.substr(first, (last - first + 1));
-// }

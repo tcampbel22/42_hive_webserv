@@ -18,15 +18,10 @@
 #include <ctime>
 #include <filesystem>
 
-#define RESET   "\033[0m"
-#define RED     "\033[31m"
-#define GREEN   "\033[32m" 
-#define BLUE    "\033[34m" 
-
 enum e_log
 {
 	ERROR,
-	INFO,
+	INFO
 };
 
 class Logger
@@ -37,7 +32,8 @@ public:
 	Logger();
 	~Logger();
 	static std::string 		getCurrentTime();
-	static void 			log(std::string msg, e_log log_code);
+	static void				setErrorAndLog(int *error, int set, std::string msg);
+	static void 			log(std::string msg, e_log log_code, bool print);
 	static bool				checkFileSize();
 	static void 			closeLogger();
 };
