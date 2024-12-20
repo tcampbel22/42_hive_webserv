@@ -51,7 +51,7 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 		if (!checkPath(tmp)) { // checking if any there is additional slashes and that it's ascii ('/')
 			if (!request.errorFlag)
 				request.errorFlag = 400;
-			request.connection = false;
+			request.closeConnection = true;
 		}
 		request.path = tmp;
 		
