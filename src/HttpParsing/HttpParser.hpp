@@ -12,6 +12,7 @@
 
 #pragma once 
 
+#include "../../include/webserv.hpp"
 # include "../Server/HttpServer.hpp"
 # include "../Response/ServerHandler.hpp"
 # include "../Config/LocationSettings.hpp"
@@ -23,7 +24,6 @@
 # include <string>
 # include <memory>
 # include <filesystem>
-# include "../Logger/Logger.hpp"
 
 struct fdNode;
 class ServerSettings;

@@ -172,7 +172,7 @@ void	ConfigParser::checkHostPortDuplicates()
 	for (auto it = dup.begin()+1; it != dup.end(); it++)
 	{
 		if (it == std::prev(it))
-			throw std::runtime_error("Config: duplicate host and port");
+			throw std::runtime_error("config: duplicate host and port");
 	}
 }
 

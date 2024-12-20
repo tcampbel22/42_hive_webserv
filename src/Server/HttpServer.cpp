@@ -11,7 +11,6 @@
 /**********************************************************************************/
 
 #include "HttpServer.hpp"
-#include "../Logger/Logger.hpp"
 
 HttpServer* HttpServer::_instance = nullptr;
 
@@ -24,15 +23,6 @@ HttpServer::HttpServer(std::vector<ServerSettings>& vec)
 	startServer();
 }
 
-void HttpServer::signalHandler(int signal)
-{
-	(void)signal;
-	std::cout <<  "\nExit signal received, server shutting down.. " << std::endl;
-	_instance->closeServer();
-	Logger::closeLogger();
-	exit(0);
-}
-
 void HttpServer::startServer()
 {
 	for (u_long i = 0 ; i < _ip_port_list.size() ; i++)  //Iterate through host and port pairs (host is first and port is second)
@@ -41,7 +31,7 @@ void HttpServer::startServer()
 		int serverFd = socket(AF_INET, SOCK_STREAM, 0);
 		if (serverFd == -1)
 		{
-			ft_perror("failed to create socket: " + it.first);
+			Logger::log("failed to create socket: " + it.first, ERROR, true);
 			continue;
 		}
 		//store socket addr info
@@ -55,38 +45,20 @@ void HttpServer::startServer()
 		//bind socket to port
 		if (bind(serverFd, (sockaddr *)&_socketInfo, sizeof(_socketInfo)) < 0)
 		{
-			ft_perror("failed to bind socket: " + it.first);
+			Logger::log("failed to bind socket: " + it.first, INFO, true);
 			close(serverFd);
 			continue;
 		}
 		if (listen(serverFd, 5) < 0)
 		{
-			ft_perror("failed to listen");
+			Logger::log("failed to listen", INFO, true);
 			close(serverFd);
 			continue;
 		}
 		settings_vec[i]._fd = serverFd;
 		_server_fds.push_back(serverFd); //add fd to vector to use later in listening function
-		std::cout << "Listening on host: " << it.first << " Port: " << it.second << '\n';
+		Logger::log("Listening on host: " + (std::string)it.first + " Port: " + std::to_string(it.second), INFO, true);
 	}
-}
-
-void	setNonBlocking(int socket)
-{
-	int	flag = fcntl(socket, F_GETFL, 0); //retrieves flags/settings from socket
-	if (flag < 0)
-		ft_perror("GETFL failed");
-	if (fcntl(socket, F_SETFL, flag | O_NONBLOCK) < 0) //Sets socket to be nonblocking
-		ft_perror("SETFL failed"); 
-}
-
-bool isNonBlockingSocket(int fd) 
-{
-    int flags = fcntl(fd, F_GETFL, 0);
-    if (flags == -1) {
-        return false;
-    }
-    return (flags & O_NONBLOCK) != 0;
 }
 
 void HttpServer::startListening()
@@ -100,7 +72,7 @@ void HttpServer::startListening()
 		numEvents = epoll_wait(epollFd, _eventsArr, MAX_EVENTS, 0);
 		if (numEvents < 0)
 		{
-			ft_perror("epoll_wait failed");
+			Logger::log("epoll_wait failed", ERROR, false);
 			break ;
 		}
 		time_t current_time = std::time(nullptr);
@@ -115,26 +87,9 @@ void HttpServer::startListening()
                 if (requestComplete)
                 {
                     if (nodePtr->_clientDataBuffer.empty())
-					{
-						epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events);  // Remove client socket from epoll
-						client_nodes.erase(nodePtr->fd); //delete fd from fd vector
-						_fd_activity_map.erase(nodePtr->fd);
-						nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
-						close(nodePtr->fd);  // Close the client socket
-						delete nodePtr;
-						_clientClosedConn = false;
-					}
-					// Once we have the full data, process the request
-                    else if (HttpParser::bigSend(nodePtr, epollFd, _events) || _clientClosedConn == true)
-					{
-						epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events);  // Remove client socket from epoll
-						client_nodes.erase(nodePtr->fd); //delete fd from fd vector
-						_fd_activity_map.erase(nodePtr->fd);
-						nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
-						close(nodePtr->fd);  // Close the client socket
-						delete nodePtr;
-						_clientClosedConn = false;
-					}
+						cleanUpFds(nodePtr);
+                    else if (HttpParser::bigSend(nodePtr, epollFd, _events) || _clientClosedConn == true) // Once we have the full data, process the request
+						cleanUpFds(nodePtr);
 					else
 					{
 						nodePtr->_clientDataBuffer.clear();
@@ -144,7 +99,7 @@ void HttpServer::startListening()
                 else
                 {
 					_events.events = EPOLLIN;  //update the epoll here after an incomplete read.
-                    std::cout << "Waiting for more data..." << std::endl;
+                    Logger::log("Waiting for more data...", INFO, true);
 					break ;
                 }
             }
@@ -159,8 +114,9 @@ void	HttpServer::addServerToEpoll()
 	epollFd = epoll_create1(0); //create epoll instance
 	if (epollFd < 0)
 	{
-		ft_perror("epoll create failed");
+		Logger::log("epoll create failed", ERROR, true);
 		closeServer();
+		return ;
 	}
 	for (u_long i = 0 ; i < settings_vec.size() ; i++)  //iterate through fd vector and add to epoll
 	 {
@@ -175,8 +131,7 @@ void	HttpServer::addServerToEpoll()
 		
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, settings_vec[i]._fd, &_events) == -1)		
 		{
-			ft_perror("Failed to add to epoll");
-			Logger::log("Failed to add to epoll", ERROR);
+			Logger::log("Failed to add to epoll", ERROR, false);
 			continue; 
 		}
 	 }
@@ -189,14 +144,10 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 
 	_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
 	if (_clientSocket < 0) 
-	{
-		std::cerr << "accept failed\n" << strerror(errno) << '\n';
-		Logger::log("accept failed\n", ERROR);
-	}
+		Logger::log("accept failed", ERROR, false);
 	else
 	{
-		Logger::log("New client connected: " + std::to_string(_clientSocket), INFO);
-		std::cout << "New client connected: " << _clientSocket << std::endl;
+		Logger::log("New client connected: " + std::to_string(_clientSocket), INFO, false);
 		setNonBlocking(_clientSocket);
 		
 		_events.events = EPOLLIN;
@@ -208,8 +159,7 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 		
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events) == -1)
 		{
-			ft_perror("failed to add fd to epoll");
-			Logger::log("Failed to add to epoll", ERROR);
+			Logger::log("Failed to add to epoll", ERROR, false);
 			close(_clientSocket);
 			delete client_node;
 		}
@@ -239,7 +189,7 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 		{
 			if (!isNonBlockingSocket(nodePtr->fd)) //check if there is an error with recv
 			{
-				ft_perror("recv error: " + (std::string)strerror(errno));
+				Logger::log("recv error: " + (std::string)strerror(errno), ERROR, false);
 				requestComplete = true;
 			}
 			else
@@ -247,8 +197,7 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 		}
 		else if (bytesReceived == 0) //read is successful and client closes connection
 		{
-			std::cout << "Client closed the connection." << std::endl;
-			Logger::log("Client closed the connection.", INFO);
+			Logger::log("Client closed the connection.", INFO, false);
 			requestComplete = true;
 			_clientClosedConn = true;
 		}
@@ -291,38 +240,6 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
 	}
     return false;
 }
-size_t HttpServer::getContentLength(const std::string& requestStr)
-{
-    size_t pos = requestStr.find("Content-Length: ");
-    if (pos != std::string::npos)
-    {
-        size_t start = pos + 15;
-        size_t end = requestStr.find("\r\n", start);
-        std::string lengthStr = requestStr.substr(start, end - start);
-        return std::stoi(lengthStr);
-    }
-    return 0;
-}
-
-bool HttpServer::isRequestWithBody(std::string requestStr) { return requestStr.find("Content-Length:") != std::string::npos; }
-
-bool HttpServer::isChunkedTransferEncoding(const std::string& requestStr) { return requestStr.find("Transfer-Encoding: chunked") != std::string::npos; }
-
-// If the client has been inactive for too long, close the socket
-void HttpServer::fdActivityLoop(const time_t current_time)
-{
-	for (auto it = _fd_activity_map.begin(); it != _fd_activity_map.end();) {
-            if (current_time - it->second > TIME_OUT_PERIOD) {
-                std::cout << "Timeout: Closing client socket " << it->first << std::endl;
-				Logger::log("Timeout: Closing client socket " + std::to_string(it->first), INFO);
-                close(it->first);
-                epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, &_events);
-                it = _fd_activity_map.erase(it);
-            } else {
-                ++it;
-            }
-        }
-}
 
 void HttpServer::closeServer()
 {
@@ -342,14 +259,4 @@ void HttpServer::closeServer()
 HttpServer::~HttpServer()
 {
 	closeServer();
-
-};
-
-void	HttpServer::fillHostPortPairs()
-{
-	for (auto& it : settings_vec)
-	{
-		_ip_port_list.push_back( {it.getHost(), it.getPort()} );
-	}
 }
-

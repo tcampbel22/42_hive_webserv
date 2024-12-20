@@ -81,4 +81,7 @@ public:
 	void	addServerToEpoll();
 	void	fillHostPortPairs();
 	void	readRequest(fdNode *nodePtr);
+	void	setNonBlocking(int socket);
+	bool	isNonBlockingSocket(int fd);
+	void	cleanUpFds(fdNode *nodePtr);
 };

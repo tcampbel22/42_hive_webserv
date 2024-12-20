@@ -21,14 +21,14 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 	
 		size_t spPos = rLine.find(' ');    //find the first space in the RL and check that it's either GET, POST or DELETE request. Anything else it's false
 		if (spPos == std::string::npos) {
-			request.errorFlag = 400;
+			Logger::setErrorAndLog(&request.errorFlag, 400, "request-line: syntax error");
 			return false;
 		}
 
 		tmp = rLine.substr(0, rLine.find(' '));
 		if (_validMethods.find(tmp) == _validMethods.end()) {
 			if (!request.errorFlag)
-				request.errorFlag = 405; //error response here (error 404 bad request or 500 internal server error)
+				Logger::setErrorAndLog(&request.errorFlag, 405, "request-line: invalid method"); //error response here (error 404 bad request or 500 internal server error)
 			return false;
 		}
 		if (!tmp.compare("GET"))
@@ -45,12 +45,12 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 		tmp = rLine.substr(startPos, spPos - startPos);
 		if (tmp.empty() ||  tmp[0] != '/') { // probably needs more checking for the path, but that is the most important check atleast :D. will come back to this.
 			if (!request.errorFlag)
-				request.errorFlag = 400; //if Path is incorrect: error handling here(HTTP Status 400 or HTTP Status 404).
+				Logger::setErrorAndLog(&request.errorFlag, 400, "request-line: incorrect path"); //if Path is incorrect: error handling here(HTTP Status 400 or HTTP Status 404).
 			return false;
 		}
 		if (!checkPath(tmp)) { // checking if any there is additional slashes and that it's ascii ('/')
 			if (!request.errorFlag)
-				request.errorFlag = 400;
+				Logger::setErrorAndLog(&request.errorFlag, 400, "request-line: path syntax error");
 			request.closeConnection = true;
 		}
 		request.path = tmp;
@@ -59,7 +59,7 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 		tmp = rLine.substr(startPos, spPos - startPos);     //Version detection, has to be *HTTP/1.1\r*
 		if (tmp != "HTTP/1.1\r") {
 			if (!request.errorFlag)
-				request.errorFlag = 505; //error shit here if version wrong(HTTP 505 - HTTP Version Not Supported)
+				Logger::setErrorAndLog(&request.errorFlag, 505, "request-line: invalid HTTP version"); //error shit here if version wrong(HTTP 505 - HTTP Version Not Supported)
 			return false;
 		}
 	return true;
