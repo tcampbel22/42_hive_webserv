@@ -249,7 +249,10 @@ void HttpServer::closeServer()
 	for (auto it : server_nodes)
 		delete it;
 	for (auto it : client_nodes)
+	{
+		close(it.first);
 		delete it.second;
+	}
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
 }
