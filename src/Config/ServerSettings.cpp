@@ -81,7 +81,7 @@ void	ServerSettings::parseHost(std::vector<std::string>& directive, std::vector<
 		checkConfigValues(directive, it);
 	}
 	else
-		throw std::runtime_error("host: invalid ip address");
+		throw std::runtime_error("host: invalid ip address " + *it);
 }
 
 void	ServerSettings::parsePort(std::vector<std::string>& directive, std::vector<std::string>::iterator& it) 
@@ -102,7 +102,7 @@ void	ServerSettings::parsePort(std::vector<std::string>& directive, std::vector<
 		checkConfigValues(directive, it);
 	}
 	else
-		throw std::runtime_error("invalid port number/invalid syntax");
+		throw std::runtime_error("invalid port number/invalid syntax" + *it);
 }
 
 int	checkBodySizeUnit(std::string& num)

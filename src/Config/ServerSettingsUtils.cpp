@@ -63,7 +63,7 @@ void	ServerSettings::setDefaultServer(bool val) { _isDefaultServer = val; }
 void	ServerSettings::addErrorPage(int status, std::string path) 
 { 
 	if (error_pages.find(status) != error_pages.end())
-		throw std::runtime_error("error_pages: duplicate path");
+		throw std::runtime_error("error_pages: duplicate path: " + path);
 	error_pages[status] = path;
 }
 
@@ -78,4 +78,10 @@ void	ServerSettings::checkConfigValues(std::vector<std::string>& directive, std:
 		if (max_client_body_size == -1)
 			max_client_body_size = MAX_BODY_SIZE;
 	}
+}
+
+void	ServerSettings::checkServerBlock()
+{
+	if (locations.find("/") == locations.end())
+			throw std::runtime_error("root directory missing from server block: " + getKey());
 }
