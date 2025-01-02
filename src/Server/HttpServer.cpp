@@ -231,10 +231,10 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
 		else
 			return false;
 	}
-	if (!isChunked && !hasBody) {
-		if (requestStr.find("\r\n\r\n") != std::string::npos) {  // End of nonBody data 
+	if (!isChunked && !hasBody) 
+	{
+		if (requestStr.find("\r\n\r\n") != std::string::npos)  // End of nonBody data 
 			return true;
-   		}
 		else
 			return false;
 	}
@@ -249,9 +249,7 @@ void HttpServer::closeServer()
 	for (auto it : server_nodes)
 		delete it;
 	for (auto it : client_nodes)
-	{
 		delete it.second;
-	}
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
 }
