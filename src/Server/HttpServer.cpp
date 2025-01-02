@@ -58,6 +58,7 @@ void HttpServer::startServer()
 		settings_vec[i]._fd = serverFd;
 		_server_fds.push_back(serverFd); //add fd to vector to use later in listening function
 		Logger::log("Listening on host: " + (std::string)it.first + " Port: " + std::to_string(it.second), INFO, true);
+		_connections++;
 	}
 }
 
@@ -149,7 +150,6 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 	{
 		Logger::log("New client connected: " + std::to_string(_clientSocket), INFO, false);
 		setNonBlocking(_clientSocket);
-		
 		_events.events = EPOLLIN;
 		createClientNode(nodePtr);
 		_fd_activity_map[_clientSocket] = current_time;
