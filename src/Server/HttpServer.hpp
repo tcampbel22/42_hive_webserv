@@ -34,6 +34,8 @@
 
 # define MAX_EVENTS 200 //Can define this in config file or create a funct based on cpu load or leave it
 # define TIME_OUT_PERIOD 10
+# define MAX_CONNECTIONS 1024
+# define TIME_OUT_MOD 0.00075
 
 struct fdNode
 {
@@ -46,7 +48,9 @@ struct fdNode
 class HttpServer
 {
 private:
-	static HttpServer *_instance;
+	float		_timeoutScale = 1.0;
+	int			_connections = 3;
+	static HttpServer	*_instance;
 	std::vector<std::pair<std::string, int>> _ip_port_list;
 	std::vector<int> _server_fds;
 	std::vector<fdNode*> server_nodes;
@@ -84,4 +88,5 @@ public:
 	void	setNonBlocking(int socket);
 	bool	isNonBlockingSocket(int fd);
 	void	cleanUpFds(fdNode *nodePtr);
+	void	createClientNode(fdNode* nodePtr);
 };

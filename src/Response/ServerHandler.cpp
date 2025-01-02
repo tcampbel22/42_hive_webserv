@@ -99,6 +99,7 @@ void ServerHandler::getLocationSettings()
 
 void ServerHandler::parsePath()
 {
+	_baseInput = _input.path;
 	if(locSettings->isRedirect() == true && _input.method == GET)
 	{
 		_response.setRedirect(true);
@@ -107,7 +108,11 @@ void ServerHandler::parsePath()
 		return ;
 	}
 	else
+	{
+		if (locSettings->getPath().length() > 1)
+			_input.path = _input.path.substr(locSettings->getPath().length(), _input.path.length() - locSettings->getPath().length());
 		_input.path = locSettings->getRoot() + _input.path;
+	}
 	if (_input.path.length() > 1 && _input.path.at(0) == '/')
 		_input.path = _input.path.substr(1, _input.path.length() -1);
 	if (_input.path.back() == '/')
@@ -227,6 +232,12 @@ int ServerHandler::getFile(std::string path)
 	infile.open(path);
 	if (!infile.is_open())
 		return 1;
+	if (std::filesystem::file_size(path) > MAX_FILE_SIZE)
+	{
+		Logger::setErrorAndLog(&_input.errorFlag, 413, "Too large file requested");
+		_response.setResponseCode(413);	
+		return 1;
+	}
 	stream << infile.rdbuf();
 	_response.set_body(stream.str());
 	infile.close();
@@ -391,6 +402,15 @@ void ServerHandler::doGet()
 	{
 		generateIndex();
 		return;
+	}
+
+	//check if the request is a directory, and return a 301 permanently moved with a / if so
+	if (std::filesystem::is_directory(_input.path))
+	{
+		_response.setRedirect(true);
+		_response.setLocation("Location: " + _baseInput + "/\n");
+		_input.errorFlag = 301;
+		return ;
 	}
 
 	if (getFile(_input.path) == 1)

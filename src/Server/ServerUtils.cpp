@@ -67,14 +67,19 @@ bool HttpServer::isChunkedTransferEncoding(const std::string& requestStr) { retu
 // If the client has been inactive for too long, close the socket
 void HttpServer::fdActivityLoop(const time_t current_time)
 {
+	if (_connections > 100)
+		_timeoutScale = 1.0 - ((float)_connections * TIME_OUT_MOD);
+	else
+		_timeoutScale = 1.0;
+	_timeoutScale *= TIME_OUT_PERIOD;
 	for (auto it = _fd_activity_map.begin(); it != _fd_activity_map.end();) 
 	{
-		if (current_time - it->second > TIME_OUT_PERIOD) 
+		if (current_time - it->second > _timeoutScale) 
 		{
 			Logger::log("timeout: closing client socket " + std::to_string(it->first), INFO, true);
-			close(it->first);
-			epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, &_events);
+			auto node = client_nodes.find(it->first);
 			it = _fd_activity_map.erase(it);
+			cleanUpFds(node->second);
         } 
 		else 
 			++it;
@@ -83,11 +88,32 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 
 void	HttpServer::cleanUpFds(fdNode *nodePtr)
 {
+	_connections--;
+	if (_connections < 4)
+		_connections = 4;
 	epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events);  // Remove client socket from epoll
-	client_nodes.erase(nodePtr->fd); //delete fd from fd vector
+	client_nodes.erase(nodePtr->fd); //delete fd from fd map
 	_fd_activity_map.erase(nodePtr->fd);
 	nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
 	close(nodePtr->fd);  // Close the client socket
 	delete nodePtr;
 	_clientClosedConn = false;
+}
+
+void	HttpServer::createClientNode(fdNode* nodePtr)
+{
+	_connections++;
+	if (_connections > MAX_CONNECTIONS)
+		_connections = MAX_CONNECTIONS;
+	fdNode *client_node = new fdNode;
+	client_node->fd = _clientSocket;
+	client_nodes[_clientSocket] = client_node;
+	client_node->serverPtr = nodePtr->serverPtr;
+	_events.data.ptr = client_node;
+	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events) == -1)
+	{
+		Logger::log("Failed to add to epoll", ERROR, false);
+		close(_clientSocket);
+		delete client_node;
+	}
 }

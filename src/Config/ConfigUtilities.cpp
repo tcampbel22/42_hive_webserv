@@ -54,7 +54,7 @@ void	ConfigUtilities::checkVectorEnd(std::vector<std::string>& vec, std::vector<
 
 void	ConfigUtilities::checkSemiColon(std::vector<std::string>& vec, std::vector<std::string>::iterator it, std::string msg)
 {
-	if (std::next(it) == vec.end() || (it + 1)->compare(";"))
+	if (std::next(it) == vec.end() || std::next(it)->compare(";"))
 		throw std::runtime_error(msg);
 }
 

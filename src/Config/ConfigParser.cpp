@@ -107,12 +107,12 @@ void	createKey(std::vector<std::string>::iterator start,  std::vector<std::strin
 	std::string	_port;
 	auto host_it = std::find(start, end, "host");
 	if (host_it->compare("host"))
-		throw std::runtime_error("no host in server block");
+		throw std::runtime_error("create_key: no host in server block");
 	if (std::next(host_it) != end)
 		_host = *(host_it + 1);
 	auto port_it = std::find(start, end, "port");
 	if (port_it->compare("port"))
-		throw std::runtime_error("no port in server block");
+		throw std::runtime_error("create_key: no port in server block");
 	if (std::next(port_it) != end)
 		_port = *(port_it + 1);
 	key = _host + ":" + _port;
@@ -147,7 +147,10 @@ void	ConfigParser::splitServerBlocks()
 				}
 			} 
 			if (server_count >= 0)
+			{
 				settings_vec[server_count].parseServerBlock(tokens, it, end);
+				settings_vec[server_count].checkServerBlock();
+			}
 		}
 	}
 	checkHostPortDuplicates();
