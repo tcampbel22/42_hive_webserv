@@ -234,8 +234,8 @@ int ServerHandler::getFile(std::string path)
 		return 1;
 	if (std::filesystem::file_size(path) > MAX_FILE_SIZE)
 	{
-		Logger::setErrorAndLog(&_input.errorFlag, 403, "Too large file requested");
-		_response.setResponseCode(403);	
+		Logger::setErrorAndLog(&_input.errorFlag, 413, "Too large file requested");
+		_response.setResponseCode(413);	
 		return 1;
 	}
 	stream << infile.rdbuf();

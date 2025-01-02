@@ -54,7 +54,9 @@ std::string Response::getResponseCodeStr()
 	case 403:
 		return(status += "403 Forbidden\n");		
 	case 404:
-		return(status += "404 Not Found\n");		
+		return(status += "404 Not Found\n");
+	case 413:
+		return(status += "413 Payload Too Large\n");				
 	case 500:
 		return(status += "500 Internal Server Error\n");
 	case 502:
