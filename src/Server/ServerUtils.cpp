@@ -91,3 +91,18 @@ void	HttpServer::cleanUpFds(fdNode *nodePtr)
 	delete nodePtr;
 	_clientClosedConn = false;
 }
+
+void	HttpServer::createClientNode(fdNode* nodePtr)
+{
+	fdNode *client_node = new fdNode;
+	client_node->fd = _clientSocket;
+	client_nodes[_clientSocket] = client_node;
+	client_node->serverPtr = nodePtr->serverPtr;
+	_events.data.ptr = client_node;
+	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events) == -1)
+	{
+		Logger::log("Failed to add to epoll", ERROR, false);
+		close(_clientSocket);
+		delete client_node;
+	}
+}
