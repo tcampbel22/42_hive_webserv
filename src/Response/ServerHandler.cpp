@@ -98,7 +98,8 @@ void ServerHandler::getLocationSettings()
 }
 
 void ServerHandler::parsePath()
-{
+{	
+	std::cout << "BASE PATH = "<< _input.path << "\n";
 	if(locSettings->isRedirect() == true && _input.method == GET)
 	{
 		_response.setRedirect(true);
@@ -107,7 +108,11 @@ void ServerHandler::parsePath()
 		return ;
 	}
 	else
+	{
+		if (locSettings->getPath().length() > 1)
+			_input.path = _input.path.substr(locSettings->getPath().length(), _input.path.length() - locSettings->getPath().length());
 		_input.path = locSettings->getRoot() + _input.path;
+	}
 	if (_input.path.length() > 1 && _input.path.at(0) == '/')
 		_input.path = _input.path.substr(1, _input.path.length() -1);
 	if (_input.path.back() == '/')
@@ -117,6 +122,7 @@ void ServerHandler::parsePath()
 	}
 	if (checkMethod())
 		return Logger::setErrorAndLog(&_input.errorFlag, 405, "parse-path: method not allowed");
+	std::cout << "PARSED PATH = "<< _input.path << "\n";
 }
 
 
