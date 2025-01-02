@@ -26,6 +26,7 @@ private:
 	HttpRequest& _input;
 	LocationSettings *locSettings;
 	std::unordered_map<std::string, std::string> MIMEs;
+	std::string _baseInput; //for storing the original unmodified input string
 
 public:
 	ServerHandler(int fd, HttpRequest& _newInput);

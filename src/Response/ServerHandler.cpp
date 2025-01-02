@@ -98,8 +98,8 @@ void ServerHandler::getLocationSettings()
 }
 
 void ServerHandler::parsePath()
-{	
-	std::cout << "BASE PATH = "<< _input.path << "\n";
+{
+	_baseInput = _input.path;
 	if(locSettings->isRedirect() == true && _input.method == GET)
 	{
 		_response.setRedirect(true);
@@ -122,7 +122,6 @@ void ServerHandler::parsePath()
 	}
 	if (checkMethod())
 		return Logger::setErrorAndLog(&_input.errorFlag, 405, "parse-path: method not allowed");
-	std::cout << "PARSED PATH = "<< _input.path << "\n";
 }
 
 
@@ -397,6 +396,15 @@ void ServerHandler::doGet()
 	{
 		generateIndex();
 		return;
+	}
+
+	//check if the request is a directory, and return a 301 permanently moved with a / if so
+	if (std::filesystem::is_directory(_input.path))
+	{
+		_response.setRedirect(true);
+		_response.setLocation("Location: " + _baseInput + "/\n");
+		_input.errorFlag = 301;
+		return ;
 	}
 
 	if (getFile(_input.path) == 1)
