@@ -20,6 +20,7 @@
 #include "../src/Logger/Logger.hpp"
 
 #define MAX_DIRECTORY_SIZE 500000000
+#define MAX_FILE_SIZE 500000000
 #define MAX_BODY_SIZE 9000000
 #define GET 1
 #define POST 2
