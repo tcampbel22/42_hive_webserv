@@ -125,8 +125,8 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 	HttpRequest request(requestNode->serverPtr);
 	parser._fullyRead = true;
 	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
-   	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
-	//parser.recieveRequest(requestNode->fd);
+ //   	std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
+	// parser.recieveRequest(requestNode->fd);
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
 	if (parser.cgiflag){
 		std::shared_ptr <LocationSettings> cgiBlock = request.settings->getCgiBlock();
