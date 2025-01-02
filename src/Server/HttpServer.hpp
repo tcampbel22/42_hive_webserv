@@ -84,4 +84,5 @@ public:
 	void	setNonBlocking(int socket);
 	bool	isNonBlockingSocket(int fd);
 	void	cleanUpFds(fdNode *nodePtr);
+	void	createClientNode(fdNode* nodePtr);
 };

@@ -151,18 +151,7 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 		setNonBlocking(_clientSocket);
 		
 		_events.events = EPOLLIN;
-		fdNode *client_node = new fdNode;
-		client_node->fd = _clientSocket;
-		client_nodes[_clientSocket] = client_node;
-		client_node->serverPtr = nodePtr->serverPtr;
-		_events.data.ptr = client_node;
-		
-		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events) == -1)
-		{
-			Logger::log("Failed to add to epoll", ERROR, false);
-			close(_clientSocket);
-			delete client_node;
-		}
+		createClientNode(nodePtr);
 		_fd_activity_map[_clientSocket] = current_time;
 	}
 }
@@ -249,7 +238,10 @@ void HttpServer::closeServer()
 	for (auto it : server_nodes)
 		delete it;
 	for (auto it : client_nodes)
+	{
+		close(it.first);
 		delete it.second;
+	}
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
 }
