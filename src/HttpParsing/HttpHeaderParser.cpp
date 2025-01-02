@@ -12,10 +12,13 @@
 
 #include "HttpHeaderParser.hpp"
 
+
 void HttpHeaderParser::parseHeaders(std::istringstream& requestStream, HttpRequest& request)
 {
 	std::string line;
 	while (std::getline(requestStream, line)) {
+		//if (syntaxCheck(line)) {
+
 			ssize_t colonPos = line.find(':');
 			if ((size_t)colonPos != std::string::npos) {
 				std::string key = line.substr(0, colonPos);
@@ -24,7 +27,13 @@ void HttpHeaderParser::parseHeaders(std::istringstream& requestStream, HttpReque
 			}
 			else 
 				break;
-		}
+		//}
+		// else {
+		// 	Logger::setErrorAndLog(&request.errorFlag, 400, "parseHeaders: syntax mistake in headers");
+		// 	break;
+		// }
+	}
+	
 }
 
 void HttpHeaderParser::procesHeaderFields(HttpRequest& request, int& contentLength)

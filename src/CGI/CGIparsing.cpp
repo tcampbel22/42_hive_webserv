@@ -22,10 +22,12 @@ CGIparsing::CGIparsing(std::string cgiPath) : _pathInfo(cgiPath) {
 void CGIparsing::setCGIenvironment(HttpRequest& request, const std::string& queryStr) {
 	(void)queryStr;
 	setenv("REQUEST_METHOD", getMethod(request.method).c_str(), 1);
-	//setenv("QUERY_STRING", queryStr.c_str(), 1); this can be commented out for now????
-	setenv("CONTENT_TYPE", "text.html", 1); //default text, needs parsing for images etc.
-	//setenv("CONTENT_LENGTH", request.headers.at("Content-Length").c_str(), 1);
-	//setenv("SERVER_NAME", "localhost", 1); not doing names;
+	if (request.method == 1)
+		setenv("QUERY_STRING", queryStr.c_str(), 1);
+	setenv("CONTENT_TYPE", "application/x-www-form-urlencoded", 1); //default text, needs parsing for images etc.
+	if (request.headers.find("Content-Length") != request.headers.end())
+		setenv("CONTENT_LENGTH", request.headers.at("Content-Length").c_str(), 1);
+	setenv("SERVER_NAME", request.headers.at("Host").c_str(), 1);
 	setenv("SERVER_PORT", getPort(request.host).c_str(), 1);
 	setenv("REMOTE_ADDR", getIp(request.host).c_str(), 1);
 }
@@ -71,12 +73,12 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 	(void)cgiblock;
     // Create a pipe
     if (pipe(pipe_fds) == -1) {
-		Logger::log("pipe error", ERROR, false);
+        perror("pipe");
         exit(1);
     }
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, pipe_fds[WRITE_END], &_events) == -1)
 	{
-		Logger::log("failed to add fd to epoll", ERROR, false);
+		ft_perror("failed to add fd to epoll");
 		close(pipe_fds[READ_END]);
 		close(pipe_fds[WRITE_END]);
 		// delete client_node;
@@ -84,9 +86,8 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 	setToNonBlocking(pipe_fds[WRITE_END]);
     // Fork the child process
     pid = fork();
-    if (pid == -1) 
-	{
-		Logger::log("fork error", ERROR, false);
+    if (pid == -1) {
+        perror("fork");
         exit(1);
     }
 	
@@ -94,29 +95,37 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
         // Child process
 
         // Close the write end of the pipe since the child will only write to stdout
-        close(pipe_fds[READ_END]);
 
         // Redirect stdout to the write end of the pipe
         if (dup2(pipe_fds[WRITE_END], STDOUT_FILENO) == -1) {
-            Logger::log("dup2 error", ERROR, false);
+            perror("dup2");
             exit(1);
         }
+		if (dup2(pipe_fds[READ_END], STDIN_FILENO) == -1) {
+            perror("dup2 (stdin)");
+            exit(1);
+        }
+
+        close(pipe_fds[READ_END]);
 
         // Close the write end of the pipe now that it's duplicated
         close(pipe_fds[WRITE_END]);
 		const char *const argv[] = {_pathInfo.c_str(), nullptr};
         if (execve(_execInfo.c_str(), (char *const *)argv, environ) == -1) {
-            Logger::log("execve error", ERROR, false);
+            perror("execve");
             exit(1);
         }
 
     } else {
         // Parent process
-
+		if (request.method == 2) {  // POST method
+			std::string body = request.body;
+            write(pipe_fds[WRITE_END], body.c_str(), body.size());
+        }
         // Close the write end of the pipe since the parent will only read from the pipe
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, pipe_fds[WRITE_END], &_events) == -1)
 		{
-			Logger::log("failed to add fd to epoll", ERROR, false);
+			ft_perror("failed to add fd to epoll");
 			close(pipe_fds[READ_END]);
 			close(pipe_fds[WRITE_END]);
 			// delete client_node;
@@ -124,7 +133,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
         close(pipe_fds[WRITE_END]);
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, pipe_fds[READ_END], &_events) == -1)
 		{
-			Logger::log("failed to add fd to epoll", ERROR, false);
+			ft_perror("failed to add fd to epoll");
 			close(pipe_fds[READ_END]);
 			close(pipe_fds[WRITE_END]);
 			// delete client_node;
@@ -140,7 +149,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
         // Close the read end of the pipe after reading
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, pipe_fds[READ_END], &_events) == -1)
 		{
-			Logger::log("failed to add fd to epoll", ERROR, false);
+			ft_perror("failed to add fd to epoll");
 			close(pipe_fds[READ_END]);
 			close(pipe_fds[WRITE_END]);
 			// delete client_node;
