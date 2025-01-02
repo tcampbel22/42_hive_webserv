@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include "../../include/webserv.hpp"
 #include "../HttpParsing/HttpParser.hpp"
 #include "../Config/LocationSettings.hpp"
 #include <sys/wait.h>
