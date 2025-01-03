@@ -2,6 +2,7 @@
 
 # Import necessary library for CGI handling
 import cgi
+
 import os
 from urllib.parse import parse_qs, unquote
 
@@ -37,25 +38,28 @@ def handle_get():
         print("<html><body><h1>No query string received</h1></body></html>")
 
 def handle_post():
+# Create FieldStorage manually using the read data
  form = cgi.FieldStorage()
 
-
- print(os.getenv("CONTENT_TYPE"))
- print(os.getenv("SERVER_NAME"))
- print(os.getenv("SERVER_PORT"))
- print(os.getenv("REMOTE_ADDR"))
- print()
+#  print(os.getenv("CONTENT_TYPE"))
+#  print(os.getenv("SERVER_NAME"))
+#  print(os.getenv("SERVER_PORT"))
+#  print()
 
  if form:
-        print("<html><body><h1>Received POST Request</h1>")
-        print("<p>Parsed Parameters:</p>")
-        print("<ul>")
-        for field in form.keys():
-            field_value = form.getvalue(field)
-            print(f"<li>{field}: {field_value}</li>")
-        print("</ul></body></html>")
+		print("HTTP/1.1 200 OK")
+		print("Content-Type: text/html")
+		print("Content-Length: " + os.getenv("CONTENT_LENGTH"))	
+		print()
+		print("<html><body>")
+		#print("<p>Parsed Parameters:</p>")
+		print("<ul>")
+		for field in form.keys():
+			field_value = form.getvalue(field)
+			print(f"<li>{field}: {field_value}</li>")
+		print("</ul></body></html>")
  else:
-        print("<html><body><h1>No POST data received</h1></body></html>")
+		print("<html><body><h1>No POST data received</h1></body></html>")
 
 def main():
     # Get the request method (GET or POST)

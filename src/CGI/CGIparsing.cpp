@@ -20,11 +20,13 @@ CGIparsing::CGIparsing(std::string cgiPath) : _pathInfo(cgiPath) {
 }
 
 void CGIparsing::setCGIenvironment(HttpRequest& request, const std::string& queryStr) {
-	(void)queryStr;
 	setenv("REQUEST_METHOD", getMethod(request.method).c_str(), 1);
 	if (request.method == 1)
 		setenv("QUERY_STRING", queryStr.c_str(), 1);
-	setenv("CONTENT_TYPE", "application/x-www-form-urlencoded", 1); //default text, needs parsing for images etc.
+	if (request.headers.find("Content-Type") != request.headers.end())
+		setenv("CONTENT_TYPE", request.headers.at("Content-Type").c_str(), 1); //default text, needs parsing for images etc.
+	else
+		setenv("CONTENT_TYPE", "application/x-www-form-urlencoded", 1);
 	if (request.headers.find("Content-Length") != request.headers.end())
 		setenv("CONTENT_LENGTH", request.headers.at("Content-Length").c_str(), 1);
 	setenv("SERVER_NAME", request.headers.at("Host").c_str(), 1);
@@ -120,6 +122,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
         // Parent process
 		if (request.method == 2) {  // POST method
 			std::string body = request.body;
+			request.body.clear();
             write(pipe_fds[WRITE_END], body.c_str(), body.size());
         }
         // Close the write end of the pipe since the parent will only read from the pipe

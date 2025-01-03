@@ -142,13 +142,15 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 		}
 		else
 			Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
+		std::cout << request.body << std::endl;
+		send(requestNode->fd, request.body.c_str(), request.body.size(), 0);
+		return (0);
 	}
 	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
    	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
     // }
-	std::cout << request.body << std::endl;
 	ServerHandler response(requestNode->fd, request);
 	if (request.closeConnection == true)
 		return (1);
