@@ -49,7 +49,7 @@ void HttpServer::startServer()
 			close(serverFd);
 			continue;
 		}
-		if (listen(serverFd, 5) < 0)
+		if (listen(serverFd, SOMAXCONN) < 0)
 		{
 			Logger::log("failed to listen", INFO, true);
 			close(serverFd);
@@ -104,8 +104,8 @@ void HttpServer::startListening()
 					break ;
                 }
             }
-		}
 		fdActivityLoop(current_time);
+		}
 	}
 	close(epollFd);
 }
@@ -143,17 +143,22 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 	socklen_t _sockLen = sizeof(_socketInfo);
 	memset(&_socketInfo, 0, sizeof(_socketInfo));
 
-	_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
-	if (_clientSocket < 0) 
-		Logger::log("accept failed", ERROR, false);
-	else
+	if (_connections < 900)
 	{
-		Logger::log("New client connected: " + std::to_string(_clientSocket), INFO, false);
-		setNonBlocking(_clientSocket);
-		_events.events = EPOLLIN;
-		createClientNode(nodePtr);
-		_fd_activity_map[_clientSocket] = current_time;
+		_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
+		if (_clientSocket < 0) 
+			Logger::log("accept failed", ERROR, false);
+		else
+		{
+			Logger::log("New client connected: " + std::to_string(_clientSocket), INFO, false);
+			setNonBlocking(_clientSocket);
+			_events.events = EPOLLIN;
+			createClientNode(nodePtr);
+			_fd_activity_map[_clientSocket] = current_time;
+		}
 	}
+	else
+		Logger::log("max connections reached", ERROR, false);
 }
 
 //Read data from client stream

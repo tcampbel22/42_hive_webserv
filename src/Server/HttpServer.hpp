@@ -35,7 +35,7 @@
 # define MAX_EVENTS 200 //Can define this in config file or create a funct based on cpu load or leave it
 # define TIME_OUT_PERIOD 10
 # define MAX_CONNECTIONS 1024
-# define TIME_OUT_MOD 0.00075
+# define TIME_OUT_MOD 0.0011
 
 struct fdNode
 {
