@@ -15,12 +15,13 @@
 #include "requestLineValidator.hpp"
 #include "chunkedBodyParser.hpp"
 #include "../CGI/CGIparsing.hpp"
+#include "../Response/Response.hpp"
 
 HttpParser::HttpParser() : _fullyRead(true), _contentLength(0), cgiflag(false), query("") {}
 
 HttpParser::~HttpParser() {}
 
-HttpRequest::HttpRequest(ServerSettings *serverPtr) : closeConnection(false), errorFlag(0), settings(serverPtr), isCGI(false) {}
+HttpRequest::HttpRequest(ServerSettings *serverPtr, int fd, epoll_event& _event) : closeConnection(false), errorFlag(0), settings(serverPtr), isCGI(false), epollFd(fd), events(_event) {}
 
 //Empty the vector to the requestMap, needs to be parsed in the response.
 void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *serverPtr, HttpParser& parser)
@@ -127,7 +128,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 	// ConfigUtilities::printLocationBlock(*locptr);
 
 	HttpParser parser;
-	HttpRequest request(requestNode->serverPtr);
+	HttpRequest request(requestNode->serverPtr, epollFd, _events);
 	parser._fullyRead = true;
 	//parser.recieveRequest(requestNode->fd);
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
@@ -142,8 +143,9 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 		}
 		else
 			Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
-		std::cout << request.body << std::endl;
-		send(requestNode->fd, request.body.c_str(), request.body.size(), 0);
+		Response response(200, request.body.size(), request.body, request.closeConnection, false);
+		response.sendResponse(requestNode->fd);
+
 		return (0);
 	}
 	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
@@ -157,3 +159,5 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 	else
 		return (0);
 }
+
+uint HttpParser::getContentLength() { return _contentLength; }

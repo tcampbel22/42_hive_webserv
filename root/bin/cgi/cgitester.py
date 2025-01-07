@@ -7,20 +7,14 @@ import os
 from urllib.parse import parse_qs, unquote
 
 def parse_query_strings(query_string):
- decoded_string = unquote(query_string)
- parsed_key_value_pairs = parse_qs(decoded_string)
- params = {key: value[0] for key, value in parsed_key_value_pairs.items()}
+ decoded_string = unquote(query_string) # Decodes the URL-encoded query string (e.g., converts '%20' to a space)
+ parsed_key_value_pairs = parse_qs(decoded_string) # Parses the query string into key-value pairs (as a dictionary)
+ params = {key: value[0] for key, value in parsed_key_value_pairs.items()} #makes dictionary which is returned, moves the list wrapper from parsed_key_value_pairs 
 
  return params
 
 def handle_get():
  query_string = os.getenv("QUERY_STRING")
- print("Content-Type: text/html")
-#  print("Content-Type:" os.getenv("CONTENT_TYPE"))
-#  print(os.getenv("SERVER_NAME"))
-#  print(os.getenv("SERVER_PORT"))
-#  print(os.getenv("REMOTE_ADDR"))
- print()
 
  if query_string:
   query_pairs = parse_query_strings(query_string)
@@ -34,6 +28,8 @@ def handle_get():
   print("</ul>")
   print("</body>")
   print("</html>")
+  print()
+  print("<a href=/index.html><button>Front-Page</button></a>")
  else:
         print("<html><body><h1>No query string received</h1></body></html>")
 
@@ -41,23 +37,18 @@ def handle_post():
 # Create FieldStorage manually using the read data
  form = cgi.FieldStorage()
 
-#  print(os.getenv("CONTENT_TYPE"))
-#  print(os.getenv("SERVER_NAME"))
-#  print(os.getenv("SERVER_PORT"))
-#  print()
-
  if form:
-		print("HTTP/1.1 200 OK")
-		print("Content-Type: text/html")
-		print("Content-Length: " + os.getenv("CONTENT_LENGTH"))	
-		print()
 		print("<html><body>")
-		#print("<p>Parsed Parameters:</p>")
+		print("<h1>Parsed Post</h1>")
 		print("<ul>")
 		for field in form.keys():
 			field_value = form.getvalue(field)
 			print(f"<li>{field}: {field_value}</li>")
 		print("</ul></body></html>")
+		print()
+		print("<a href=/checkbox.html><button>Back</button></a>")
+		print()
+		print("<a href=/index.html><button>Front-Page</button></a>")
  else:
 		print("<html><body><h1>No POST data received</h1></body></html>")
 

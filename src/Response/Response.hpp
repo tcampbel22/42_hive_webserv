@@ -27,6 +27,7 @@ private:
 
 public:	
 	Response();
+	Response(int responseCode, uint contentLenght, std::string body, bool closeConnection, bool _redirect);
 	~Response(){};
 
 	//Setters
