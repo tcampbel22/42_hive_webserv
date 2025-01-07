@@ -15,15 +15,16 @@
 #include "requestLineValidator.hpp"
 #include "chunkedBodyParser.hpp"
 #include "../CGI/CGIparsing.hpp"
+#include "../Response/Response.hpp"
 
 HttpParser::HttpParser() : _fullyRead(true), _contentLength(0), cgiflag(false), query("") {}
 
 HttpParser::~HttpParser() {}
 
-HttpRequest::HttpRequest(ServerSettings *serverPtr) : closeConnection(false), errorFlag(0), settings(serverPtr) {}
+HttpRequest::HttpRequest(ServerSettings *serverPtr, int fd, epoll_event& _event) : closeConnection(false), errorFlag(0), settings(serverPtr), isCGI(false), epollFd(fd), events(_event) {}
 
 //Empty the vector to the requestMap, needs to be parsed in the response.
-void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *serverPtr)
+void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *serverPtr, HttpParser& parser)
 {
 	try {
 		std::string data(clientData.begin(), clientData.end());
@@ -40,7 +41,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			return;
 		}
 		checkRedirect(request, serverPtr);
-		checkForCgi(serverPtr, request.path);
+		checkForCgi(serverPtr, request.path, parser);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
@@ -75,10 +76,15 @@ void HttpParser::checkRedirect(HttpRequest& request, ServerSettings *serverPtr) 
 		request.path = block->getRedirectPath();
 }
 
-void HttpParser::checkForCgi(ServerSettings* server, std::string line) {
+void HttpParser::checkForCgi(ServerSettings* server, std::string line, HttpParser& parser) {
 	std::shared_ptr <LocationSettings> cgibloc = server->getCgiBlock();
 	if (!cgibloc)
 		return;
+	if (line.find('?') != std::string::npos)
+	{
+		parser.query = line.substr(line.find('?') + 1);
+		line.erase(line.find('?'));
+	}
 	if (!line.compare(server->getCgiBlock()->getCgiScript()))
 	{
 		cgiflag = true;
@@ -122,24 +128,28 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 	// ConfigUtilities::printLocationBlock(*locptr);
 
 	HttpParser parser;
-	HttpRequest request(requestNode->serverPtr);
+	HttpRequest request(requestNode->serverPtr, epollFd, _events);
 	parser._fullyRead = true;
-	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
- //   	std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
-	// parser.recieveRequest(requestNode->fd);
-	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
+	//parser.recieveRequest(requestNode->fd);
+	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
 	if (parser.cgiflag){
 		std::shared_ptr <LocationSettings> cgiBlock = request.settings->getCgiBlock();
-		if (cgiBlock)
+		if (cgiBlock && request.method != 3)
 		{
 			CGIparsing myCgi(cgiBlock->getCgiScript());
 			myCgi.setCGIenvironment(request, parser.query);
 			myCgi.execute(request, cgiBlock, epollFd, _events);
+			request.isCGI = true;
 		}
 		else
 			Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
+		Response response(200, request.body.size(), request.body, request.closeConnection, false);
+		response.sendResponse(requestNode->fd);
+
+		return (0);
 	}
-	//std::cout << request.body;
+	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
+   	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
     // }
@@ -149,3 +159,5 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 	else
 		return (0);
 }
+
+uint HttpParser::getContentLength() { return _contentLength; }

@@ -39,7 +39,10 @@ struct HttpRequest {
 	bool closeConnection = false;
 	int errorFlag;
 	ServerSettings* settings;
-	HttpRequest(ServerSettings *);
+	HttpRequest(ServerSettings *, int, epoll_event&);
+	bool isCGI;
+	int epollFd;
+	epoll_event& events;
 };
 
 
@@ -56,7 +59,7 @@ public:
 	HttpParser();
 	~HttpParser();
 	static int	bigSend(fdNode*, int, epoll_event&);
-	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *);
+	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *, HttpParser&);
 	//void recieveRequest(int out_fd);
 	//bool isValidRequestline(std::string, HttpRequest&);
 	//void findKeys(HttpRequest& request);
@@ -64,8 +67,9 @@ public:
 	//int hexToInt(std::string);
 	void parseBody(HttpRequest&, std::istringstream&);
 	void parseRegularBody(std::istringstream&, HttpRequest&);
-	void checkForCgi(ServerSettings* ,std::string);
+	void checkForCgi(ServerSettings* ,std::string, HttpParser&);
 	void checkRedirect(HttpRequest& request, ServerSettings *);
+	uint getContentLength();
 	//void validateLocation(LocationSettings*, int*);
 	//std::string trim(const std::string& str);
 };

@@ -20,6 +20,11 @@ _responseCode(999), _contentLength(0)
 {
 }
 
+Response::Response(int responseCode, uint contentLenght, std::string body, bool closeConnection, bool _redirect)
+: _responseCode(responseCode), _contentType("text/html"), _contentLength(contentLenght), _body(body), _closeConnection(closeConnection), _redirect(_redirect) {
+
+}
+
 void Response::setResponseCode(uint _code){_responseCode = _code;}
 
 void Response::setContentType(std::string _content){_contentType = _content;}
@@ -177,7 +182,7 @@ void Response::sendResponse(int fd)
 		_buffer += _body;
 	
 	//uncomment this in order to see the response in the terminal
-	// std::cout <<  _buffer << std::endl;
+	//std::cout <<  _buffer << std::endl;
 	
 	try
 	{
