@@ -80,6 +80,7 @@ void HttpServer::startListening()
 		for (int i = 0; i < numEvents; i++)
 		{
 			fdNode *nodePtr = static_cast <fdNode*>(_eventsArr[i].data.ptr);  //retrieving current serversettings and client fd
+			_events.data.ptr = nodePtr; //store event data in a temp variable for use in epoll functions
 			if (std::find(_server_fds.begin(), _server_fds.end(), nodePtr->fd) != _server_fds.end()) //eventFd is a server_socket meaning a new request is incoming
 				acceptNewClient(nodePtr, nodePtr->fd, current_time);
 			else if (_eventsArr[i].events & EPOLLIN) //client socket has data to read from
@@ -92,7 +93,6 @@ void HttpServer::startListening()
 					else
 					{
 						nodePtr->_readyToSend = true;
-						_events.data.ptr = nodePtr;
 						_events.events = EPOLLOUT;
 						if (epoll_ctl(epollFd, EPOLL_CTL_MOD, nodePtr->fd, &_events) == -1)		
 						{
