@@ -43,6 +43,7 @@ struct fdNode
 	ServerSettings *serverPtr = nullptr;
 	std::vector<char> _clientDataBuffer;
 	bool			_connection = true;
+	bool			_readyToSend = false;
 };
 
 class HttpServer
@@ -58,7 +59,7 @@ private:
 	int 			_clientSocket;
 	sockaddr_in 	_socketInfo; //reusable
 	int				epollFd;
-	epoll_event		_events;
+	epoll_event		_events; //temporary placeholder of info for EPOLL CTL
 	epoll_event		_eventsArr[MAX_EVENTS];
 	int				numEvents;
 	std::unordered_map<int, time_t> _fd_activity_map;
