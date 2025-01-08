@@ -28,7 +28,6 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 {
 	try {
 		std::string data(clientData.begin(), clientData.end());
-		// ConfigUtilities::printWhiteSpace(data);
     	std::istringstream requestStream(data);
     	std::string line;
 		//Parse the requestline and store the relevant stuff (path and method)
