@@ -40,7 +40,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			return;
 		}
 		checkRedirect(request, serverPtr);
-		checkForCgi(serverPtr, request.path, parser);
+		checkForQuery(request.path, parser);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
@@ -75,21 +75,14 @@ void HttpParser::checkRedirect(HttpRequest& request, ServerSettings *serverPtr) 
 		request.path = block->getRedirectPath();
 }
 
-void HttpParser::checkForCgi(ServerSettings* server, std::string line, HttpParser& parser) {
-	std::shared_ptr <LocationSettings> cgibloc = server->getCgiBlock();
-	if (!cgibloc)
-		return;
+void HttpParser::checkForQuery(std::string line, HttpParser& parser) {
 	if (line.find('?') != std::string::npos)
 	{
 		parser.query = line.substr(line.find('?') + 1);
 		line.erase(line.find('?'));
 	}
-	if (!line.compare(server->getCgiBlock()->getCgiScript()))
-	{
-		cgiflag = true;
-	}
-	else
-		return;
+	parser.cgiflag = true;
+
 }
 
 void HttpParser::parseBody(HttpRequest& request, std::istringstream& stream) {
@@ -126,6 +119,8 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 	// LocationSettings* locptr = serverPtr->getLocationBlock("/");
 	// ConfigUtilities::printLocationBlock(*locptr);
 
+	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
+   //	std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr, epollFd, _events);
 	parser._fullyRead = true;
@@ -141,18 +136,21 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 			myCgi.execute(request, cgiBlock, epollFd, _events);
 			request.isCGI = true;
 		}
-		else
+		else {
 			Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
-		Response response(200, request.body.size(), request.body, request.closeConnection, false);
-		response.sendResponse(requestNode->fd);
-
-		return (0);
+			return (1);
+		}
+		if (request.errorFlag != 0) {
+			Response response(200, request.body.size(), request.body, request.closeConnection, false);
+			response.sendResponse(requestNode->fd);
+			return (0);
+		}
+		return (1);
 	}
-	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
-   	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
 	// for (const auto& pair : request.headers) {
     //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
     // }
+	// std::cout << "error code from parser: " << request.errorFlag << std::endl;
 	ServerHandler response(requestNode->fd, request);
 	if (request.closeConnection == true)
 		return (1);

@@ -68,7 +68,7 @@ void	setToNonBlocking(int socket)
 }
 
 //checks if the child process (CGI) has finished each iteration, if it take stoo long, then it send a kill command to the child process
-void	CGITimeout(pid_t &pid)
+void	CGITimeout(pid_t &pid, int& errorCode)
 {
 	int elapsed = 0;
 	int	interval = 10; //milliseconds
@@ -81,7 +81,7 @@ void	CGITimeout(pid_t &pid)
 			break;
 		if (elapsed > CGI_TIMEOUT)
 		{
-			Logger::log("Child process teminated due timeout", INFO, false);
+			Logger::setErrorAndLog(&errorCode, 504, "Child process teminated due timeout");
 			kill(pid, SIGKILL);
 			break;
 		}
@@ -166,17 +166,20 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 		}
 
 		//Allow child process to finish or timeout
-		CGITimeout(pid);
+		CGITimeout(pid, request.errorFlag);
 
         // Wait for the child process to finish
         waitpid(pid, NULL, 0);
         // Read the output from the child process
-        while ((bytesRead = read(pipe_fds[READ_END], buffer, sizeof(buffer) - 1)) > 0) {
-            buffer[bytesRead] = '\0'; // Null-terminate the output
-            //printf("CGI Output: %s", buffer); // Or store it in a variable if needed
-			request.body += buffer;
-        }
-        // Close the read end of the pipe after reading
+		if (request.errorFlag == 0)
+		{
+			while ((bytesRead = read(pipe_fds[READ_END], buffer, sizeof(buffer) - 1)) > 0) {
+				buffer[bytesRead] = '\0'; // Null-terminate the output
+				//printf("CGI Output: %s", buffer); // Or store it in a variable if needed
+				request.body += buffer;
+			}
+		}
+		// Close the read end of the pipe after reading
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, pipe_fds[READ_END], &_events) == -1)
 		{
 			Logger::log("epoll_ctl: failed to add fd to epoll", ERROR, false);

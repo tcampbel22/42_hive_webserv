@@ -29,9 +29,11 @@ def handle_get():
   print("</body>")
   print("</html>")
   print()
-  print("<a href=/index.html><button>Front-Page</button></a>")
  else:
         print("<html><body><h1>No query string received</h1></body></html>")
+		print()
+
+  print("<a href=/index.html><button>Front-Page</button></a>")
 
 def handle_post():
 # Create FieldStorage manually using the read data

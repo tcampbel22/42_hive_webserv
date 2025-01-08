@@ -67,7 +67,7 @@ public:
 	//int hexToInt(std::string);
 	void parseBody(HttpRequest&, std::istringstream&);
 	void parseRegularBody(std::istringstream&, HttpRequest&);
-	void checkForCgi(ServerSettings* ,std::string, HttpParser&);
+	void checkForQuery(std::string, HttpParser&);
 	void checkRedirect(HttpRequest& request, ServerSettings *);
 	uint getContentLength();
 	//void validateLocation(LocationSettings*, int*);
