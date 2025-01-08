@@ -17,11 +17,6 @@
 #include <iostream>
 #include <vector>
 
-#define ROOT 1;
-#define TEMP 2;
-#define REDIRECT 3;
-#define CGI 4;
-
 class LocationSettings
 {
 private:

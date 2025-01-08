@@ -136,7 +136,7 @@ void	HttpServer::addServerToEpoll()
 	epollFd = epoll_create1(0); //create epoll instance
 	if (epollFd < 0)
 	{
-		Logger::log("epoll create failed", ERROR, true);
+		Logger::log("epoll_create: create failed", ERROR, true);
 		closeServer();
 		return ;
 	}
@@ -153,7 +153,7 @@ void	HttpServer::addServerToEpoll()
 		
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, settings_vec[i]._fd, &_events) == -1)		
 		{
-			Logger::log("Failed to add to epoll", ERROR, false);
+			Logger::log("epoll_ctl: failed to add to epoll", ERROR, false);
 			continue; 
 		}
 	 }
@@ -168,7 +168,7 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 	{
 		_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
 		if (_clientSocket < 0) 
-			Logger::log("accept failed", ERROR, false);
+			Logger::log("accept: accept failed", ERROR, false);
 		else
 		{
 			Logger::log("New client connected: " + std::to_string(_clientSocket), INFO, false);
