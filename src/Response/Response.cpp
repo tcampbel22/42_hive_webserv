@@ -68,6 +68,8 @@ std::string Response::getResponseCodeStr()
 		return(status += "502 Bad Gateway\n");		
 	case 503:
 		return(status += "503 Service Unavailable\n");
+	case 504:
+		return (status += "504 Gateway Timeout\n");	
 	case 507:
 		return(status += "507 Insufficient Storage\n");
 	default:

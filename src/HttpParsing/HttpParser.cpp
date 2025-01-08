@@ -41,7 +41,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		}
 		checkRedirect(request, serverPtr);
 		if (isBlockCGI(request))
-			checkForCgi(serverPtr, request.path, parser);
+			checkForCgi(request.path, parser, serverPtr);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
@@ -102,29 +102,29 @@ int HttpParser::isBlockCGI(HttpRequest& request)
 }
 
 //tries to get the location settings by using location block matching rules, defaults to / if unsuccessful
-int HttpParser::isBlockCGI(HttpRequest& request)
-{
-	std::string key = request.path;
-	int len = 2;
-	LocationSettings *locSettings;
-	while (42)
-	{
-		locSettings = request.settings->getLocationBlock(key);
-		if (locSettings != nullptr || len < 2)
-			break ;
-		len = key.rfind('/');
-		if (len < 1)
-			len = 1;
-		key = key.substr(0, len);
-	}
-	if (!locSettings)
-		locSettings = request.settings->getLocationBlock("/");
-	if (!locSettings)
-		return 0;
-	if (locSettings->isCgiBlock() == true)
-		return 1;
-	return 0;
-}
+// int HttpParser::isBlockCGI(HttpRequest& request)
+// {
+// 	std::string key = request.path;
+// 	int len = 2;
+// 	LocationSettings *locSettings;
+// 	while (42)
+// 	{
+// 		locSettings = request.settings->getLocationBlock(key);
+// 		if (locSettings != nullptr || len < 2)
+// 			break ;
+// 		len = key.rfind('/');
+// 		if (len < 1)
+// 			len = 1;
+// 		key = key.substr(0, len);
+// 	}
+// 	if (!locSettings)
+// 		locSettings = request.settings->getLocationBlock("/");
+// 	if (!locSettings)
+// 		return 0;
+// 	if (locSettings->isCgiBlock() == true)
+// 		return 1;
+// 	return 0;
+// }
 
 void HttpParser::checkForCgi(std::string line, HttpParser& parser, ServerSettings* server) {
 	std::shared_ptr <LocationSettings> cgibloc = server->getCgiBlock();
@@ -136,7 +136,8 @@ void HttpParser::checkForCgi(std::string line, HttpParser& parser, ServerSetting
 	size_t pos = parser.cgiPath.find(server->getCgiBlock()->getPath());
 	if (pos != std::string::npos)
 	{
-		parser.cgiPath.erase(0, pos);
+		parser.cgiPath.erase(1, pos);
+		std::cout << "cgi-bin removal: " << server->getCgiBlock()->getPath() << std::endl;
 		parser.cgiPath.insert(0, server->getCgiBlock()->getCgiPath());
 	}
 	std::cout << parser.cgiPath << std::endl;
@@ -144,15 +145,23 @@ void HttpParser::checkForCgi(std::string line, HttpParser& parser, ServerSetting
 	if (parser.cgiPath.find('?') != std::string::npos)
 	{
 		parser.query = line.substr(line.find('?') + 1);
-		parser.cgiPath.erase(line.find('?'));
+		parser.cgiPath.erase(line.find('?') + 1);
 	}
-	//bin/cgi/cgitester.py/eromon
-	if (!line.compare(server->getCgiBlock()->getCgiScript()))
-	{
-		cgiflag = true;
+	std::cout << "path after query removal: " << parser.cgiPath << std::endl;
+	pos = parser.cgiPath.find_last_of('/');
+	if (pos != std::string::npos) {
+		parser.pathInfo = parser.cgiPath.substr(pos + 1);
+		parser.cgiPath.erase(pos);
 	}
-	else
-		return;
+	//std::cout << "path cgi path: " << parser.cgiPath << std::endl;
+	//std::cout << "path query: " << parser.query << std::endl;
+	//std::cout << "path info: " << parser.pathInfo << std::endl;
+	// if (!line.compare(server->getCgiBlock()->getCgiScript()))
+	// {
+	// 	cgiflag = true;
+	// }
+	// else
+	// 	return;
 }
 
 void HttpParser::parseBody(HttpRequest& request, std::istringstream& stream) {

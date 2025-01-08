@@ -56,6 +56,7 @@ private:
 	bool cgiflag;
 	std::string query;
 	std::string cgiPath;
+	std::string pathInfo;
 public:
 	HttpParser();
 	~HttpParser();
@@ -71,6 +72,7 @@ public:
 	void checkForCgi(std::string, HttpParser&, ServerSettings*);
 	void checkRedirect(HttpRequest& request, ServerSettings *);
 	uint getContentLength();
+	int isBlockCGI(HttpRequest&);
 	//void validateLocation(LocationSettings*, int*);
 	//std::string trim(const std::string& str);
 };
