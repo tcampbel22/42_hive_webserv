@@ -15,7 +15,6 @@
 void HttpServer::signalHandler(int signal)
 {
 	(void)signal;
-	Logger::log("\nExit signal received, server shutting down.. ", INFO, true);
 	_instance->closeServer();
 	Logger::closeLogger();
 	exit(0);

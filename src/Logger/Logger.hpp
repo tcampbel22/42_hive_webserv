@@ -27,7 +27,9 @@ enum e_log
 class Logger
 {
 private:
-	static std::ofstream log_file;
+	static	std::ofstream 	log_file;
+	static	int				count;
+	static	std::string		last_line;
 public:
 	Logger();
 	~Logger();
@@ -36,4 +38,5 @@ public:
 	static void 			log(std::string msg, e_log log_code, bool print);
 	static bool				checkFileSize();
 	static void 			closeLogger();
+	static void				checkLoop(std::string msg, std::string log_code);
 };
