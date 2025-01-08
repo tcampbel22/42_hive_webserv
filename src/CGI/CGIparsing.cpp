@@ -11,8 +11,6 @@
 /**********************************************************************************/
 
 #include "CGIparsing.hpp"
-#include "../HttpParsing/HttpParser.hpp"
-#include "../Config/LocationSettings.hpp"
 
 CGIparsing::CGIparsing(std::string root, std::string script) {
 	_pathInfo = script.substr(script.find_last_of('/'));
@@ -69,6 +67,29 @@ void	setToNonBlocking(int socket)
 	fcntl(socket, F_SETFL, flag | O_NONBLOCK); //Sets socket to be nonblocking
 }
 
+//checks if the child process (CGI) has finished each iteration, if it take stoo long, then it send a kill command to the child process
+void	CGITimeout(pid_t &pid)
+{
+	int elapsed = 0;
+	int	interval = 10; //milliseconds
+	pid_t result;
+
+	while (1)
+	{
+		result = waitpid(pid, NULL, WNOHANG);
+		if (result == pid)
+			break;
+		if (elapsed > CGI_TIMEOUT)
+		{
+			Logger::log("Child process teminated due timeout", INFO, false);
+			kill(pid, SIGKILL);
+			break;
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+		elapsed += interval;
+	}
+}
+
 void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>& cgiblock, int epollFd, epoll_event& _events) {
    int pipe_fds[2]; // File descriptors for the pipe
     pid_t pid;
@@ -77,12 +98,12 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 	(void)cgiblock;
     // Create a pipe
     if (pipe(pipe_fds) == -1) {
-        perror("pipe");
+        Logger::log("pipe: "  + (std::string)strerror(errno), ERROR, false);
         exit(1);
     }
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, pipe_fds[WRITE_END], &_events) == -1)
 	{
-		ft_perror("failed to add fd to epoll");
+		Logger::log("epoll_ctl: failed to add fd to epoll", ERROR, false);
 		close(pipe_fds[READ_END]);
 		close(pipe_fds[WRITE_END]);
 		// delete client_node;
@@ -91,7 +112,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
     // Fork the child process
     pid = fork();
     if (pid == -1) {
-        perror("fork");
+        Logger::log("fork: " + (std::string)strerror(errno), ERROR, false);
         exit(1);
     }
 	
@@ -102,11 +123,11 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 
         // Redirect stdout to the write end of the pipe
         if (dup2(pipe_fds[WRITE_END], STDOUT_FILENO) == -1) {
-            perror("dup2");
+            Logger::log("dup2: " + (std::string)strerror(errno), ERROR, false);
             exit(1);
         }
 		if (dup2(pipe_fds[READ_END], STDIN_FILENO) == -1) {
-            perror("dup2 (stdin)");
+            Logger::log("dup2: "  + (std::string)strerror(errno), ERROR, false);
             exit(1);
         }
 
@@ -116,7 +137,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
         close(pipe_fds[WRITE_END]);
 		const char *const argv[] = {_pathInfo.c_str(), nullptr};
         if (execve(_execInfo.c_str(), (char *const *)argv, environ) == -1) {
-            perror("execve");
+            Logger::log("execve: " + (std::string)strerror(errno), ERROR, false);
             exit(1);
         }
 
@@ -130,7 +151,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
         // Close the write end of the pipe since the parent will only read from the pipe
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, pipe_fds[WRITE_END], &_events) == -1)
 		{
-			ft_perror("failed to add fd to epoll");
+			Logger::log("epll_ctl: failed to delete fd", ERROR, false);
 			close(pipe_fds[READ_END]);
 			close(pipe_fds[WRITE_END]);
 			// delete client_node;
@@ -138,11 +159,15 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
         close(pipe_fds[WRITE_END]);
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, pipe_fds[READ_END], &_events) == -1)
 		{
-			ft_perror("failed to add fd to epoll");
+			Logger::log("epoll_ctl: failed to add fd to epoll", ERROR, false);
 			close(pipe_fds[READ_END]);
 			close(pipe_fds[WRITE_END]);
 			// delete client_node;
 		}
+
+		//Allow child process to finish or timeout
+		CGITimeout(pid);
+
         // Wait for the child process to finish
         waitpid(pid, NULL, 0);
         // Read the output from the child process
@@ -154,7 +179,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
         // Close the read end of the pipe after reading
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, pipe_fds[READ_END], &_events) == -1)
 		{
-			ft_perror("failed to add fd to epoll");
+			Logger::log("epoll_ctl: failed to add fd to epoll", ERROR, false);
 			close(pipe_fds[READ_END]);
 			close(pipe_fds[WRITE_END]);
 			// delete client_node;

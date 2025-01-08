@@ -49,7 +49,7 @@ void HttpServer::startServer()
 			close(serverFd);
 			continue;
 		}
-		if (listen(serverFd, 5) < 0)
+		if (listen(serverFd, SOMAXCONN) < 0)
 		{
 			Logger::log("failed to listen", INFO, true);
 			close(serverFd);
@@ -80,32 +80,53 @@ void HttpServer::startListening()
 		for (int i = 0; i < numEvents; i++)
 		{
 			fdNode *nodePtr = static_cast <fdNode*>(_eventsArr[i].data.ptr);  //retrieving current serversettings and client fd
+			_events.data.ptr = nodePtr; //store event data in a temp variable for use in epoll functions
 			if (std::find(_server_fds.begin(), _server_fds.end(), nodePtr->fd) != _server_fds.end()) //eventFd is a server_socket meaning a new request is incoming
 				acceptNewClient(nodePtr, nodePtr->fd, current_time);
 			else if (_eventsArr[i].events & EPOLLIN) //client socket has data to read from
-			{	
+			{
 				readRequest(nodePtr);
                 if (requestComplete)
                 {
                     if (nodePtr->_clientDataBuffer.empty())
 						cleanUpFds(nodePtr);
-                    else if (HttpParser::bigSend(nodePtr, epollFd, _events) || _clientClosedConn == true) // Once we have the full data, process the request
-						cleanUpFds(nodePtr);
 					else
 					{
-						nodePtr->_clientDataBuffer.clear();
-						_fd_activity_map[nodePtr->fd] = std::time(nullptr);
+						nodePtr->_readyToSend = true;
+						_events.events = EPOLLOUT;
+						if (epoll_ctl(epollFd, EPOLL_CTL_MOD, nodePtr->fd, &_events) == -1)		
+						{
+							Logger::log("Failed to mod epoll", ERROR, false);
+							cleanUpFds(nodePtr);
+							continue; 
+						}
 					}
                 }
                 else
-                {
-					_events.events = EPOLLIN;  //update the epoll here after an incomplete read.
                     Logger::log("Waiting for more data...", INFO, true);
-					break ;
-                }
             }
-		}
+			else if (_eventsArr[i].events & EPOLLOUT && nodePtr->_readyToSend)
+			{
+				if (HttpParser::bigSend(nodePtr, epollFd, _events) || _clientClosedConn == true) // Once we have the full data, process the request
+				{
+					cleanUpFds(nodePtr);
+				}
+				else
+				{
+					_events.events = EPOLLIN;
+					if (epoll_ctl(epollFd, EPOLL_CTL_MOD, nodePtr->fd, &_events) == -1)		
+					{
+						Logger::log("Failed to mod epoll", ERROR, false);
+						cleanUpFds(nodePtr);
+						continue; 
+					}
+					nodePtr->_readyToSend = false;
+					nodePtr->_clientDataBuffer.clear();
+					_fd_activity_map[nodePtr->fd] = std::time(nullptr);
+				}
+			}
 		fdActivityLoop(current_time);
+		}
 	}
 	close(epollFd);
 }
@@ -115,7 +136,7 @@ void	HttpServer::addServerToEpoll()
 	epollFd = epoll_create1(0); //create epoll instance
 	if (epollFd < 0)
 	{
-		Logger::log("epoll create failed", ERROR, true);
+		Logger::log("epoll_create: create failed", ERROR, true);
 		closeServer();
 		return ;
 	}
@@ -132,7 +153,7 @@ void	HttpServer::addServerToEpoll()
 		
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, settings_vec[i]._fd, &_events) == -1)		
 		{
-			Logger::log("Failed to add to epoll", ERROR, false);
+			Logger::log("epoll_ctl: failed to add to epoll", ERROR, false);
 			continue; 
 		}
 	 }
@@ -143,17 +164,22 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 	socklen_t _sockLen = sizeof(_socketInfo);
 	memset(&_socketInfo, 0, sizeof(_socketInfo));
 
-	_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
-	if (_clientSocket < 0) 
-		Logger::log("accept failed", ERROR, false);
-	else
+	if (_connections < 900)
 	{
-		Logger::log("New client connected: " + std::to_string(_clientSocket), INFO, false);
-		setNonBlocking(_clientSocket);
-		_events.events = EPOLLIN;
-		createClientNode(nodePtr);
-		_fd_activity_map[_clientSocket] = current_time;
+		_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
+		if (_clientSocket < 0) 
+			Logger::log("accept: accept failed", ERROR, false);
+		else
+		{
+			Logger::log("New client connected: " + std::to_string(_clientSocket), INFO, false);
+			setNonBlocking(_clientSocket);
+			_events.events = EPOLLIN;
+			createClientNode(nodePtr);
+			_fd_activity_map[_clientSocket] = current_time;
+		}
 	}
+	else
+		Logger::log("max connections reached", ERROR, false);
 }
 
 //Read data from client stream

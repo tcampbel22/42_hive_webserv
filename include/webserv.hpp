@@ -22,6 +22,7 @@
 #define MAX_DIRECTORY_SIZE 500000000
 #define MAX_FILE_SIZE 500000000
 #define MAX_BODY_SIZE 9000000
+#define CGI_TIMEOUT 500 //CGI timeout in milliseconds
 #define GET 1
 #define POST 2
 #define DELETE 3
@@ -29,5 +30,3 @@
 #define RED    "\033[31m"
 #define GREEN  "\033[32m" 
 #define BLUE   "\033[34m" 
-
-void	ft_perror(std::string str);

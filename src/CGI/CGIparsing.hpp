@@ -18,7 +18,8 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <unistd.h>
-
+#include <chrono>
+#include <thread>
 
 
 #define READ_END 0
@@ -40,7 +41,6 @@ public:
 	std::string getIp(std::string&);
 	std::string getPort(std::string&);
 	std::string getPath();
-	//std::string
 	~CGIparsing();
 };
 
