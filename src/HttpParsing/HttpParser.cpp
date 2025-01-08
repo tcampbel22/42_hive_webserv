@@ -75,14 +75,33 @@ void HttpParser::checkRedirect(HttpRequest& request, ServerSettings *serverPtr) 
 		request.path = block->getRedirectPath();
 }
 
-void HttpParser::checkForQuery(std::string line, HttpParser& parser) {
-	if (line.find('?') != std::string::npos)
+void HttpParser::checkForCgi(std::string line, HttpParser& parser, ServerSettings* server) {
+	std::shared_ptr <LocationSettings> cgibloc = server->getCgiBlock();
+	if (!cgibloc)
+		return;
+	//change location
+	std::string location = server->getCgiBlock()->getPath();
+	parser.cgiPath.append(line);
+	size_t pos = parser.cgiPath.find(server->getCgiBlock()->getPath());
+	if (pos != std::string::npos)
+	{
+		parser.cgiPath.erase(0, pos);
+		parser.cgiPath.insert(0, server->getCgiBlock()->getCgiPath());
+	}
+	std::cout << parser.cgiPath << std::endl;
+	//remove extract query: //cgi-bin/cgitester.py/eromon?lol=hello
+	if (parser.cgiPath.find('?') != std::string::npos)
 	{
 		parser.query = line.substr(line.find('?') + 1);
-		line.erase(line.find('?'));
+		parser.cgiPath.erase(line.find('?'));
 	}
-	parser.cgiflag = true;
-
+	//bin/cgi/cgitester.py/eromon
+	if (!line.compare(server->getCgiBlock()->getCgiScript()))
+	{
+		cgiflag = true;
+	}
+	else
+		return;
 }
 
 void HttpParser::parseBody(HttpRequest& request, std::istringstream& stream) {

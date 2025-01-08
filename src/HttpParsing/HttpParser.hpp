@@ -55,6 +55,7 @@ private:
 	int _contentLength;
 	bool cgiflag;
 	std::string query;
+	std::string cgiPath;
 public:
 	HttpParser();
 	~HttpParser();
@@ -67,7 +68,7 @@ public:
 	//int hexToInt(std::string);
 	void parseBody(HttpRequest&, std::istringstream&);
 	void parseRegularBody(std::istringstream&, HttpRequest&);
-	void checkForQuery(std::string, HttpParser&);
+	void checkForCgi(std::string, HttpParser&, ServerSettings*);
 	void checkRedirect(HttpRequest& request, ServerSettings *);
 	uint getContentLength();
 	//void validateLocation(LocationSettings*, int*);
