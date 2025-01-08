@@ -36,7 +36,7 @@ def handle_get():
 def handle_post():
 # Create FieldStorage manually using the read data
  form = cgi.FieldStorage()
-
+ contentType = os.getenv("CONTENT_TYPE")
  if form:
 		print("<html><body>")
 		print("<h1>Parsed Post</h1>")
@@ -51,8 +51,9 @@ def handle_post():
 		print("<a href=/index.html><button>Front-Page</button></a>")
  else:
 		print("<html><body><h1>No POST data received</h1></body></html>")
-
+import time
 def main():
+    time.sleep(1000)
     # Get the request method (GET or POST)
     request_method = os.getenv("REQUEST_METHOD")
 

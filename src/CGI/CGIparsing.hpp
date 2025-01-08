@@ -33,7 +33,7 @@ private:
 	std::string _pathInfo; //path where to upload the cgi file
 	std::string _execInfo;
 public:
-	CGIparsing(std::string);
+	CGIparsing(std::string, std::string);
 	void setCGIenvironment(HttpRequest& request, const std::string&);
 	void execute(HttpRequest&, std::shared_ptr<LocationSettings>&, int, epoll_event&);
 	std::string getMethod(int);

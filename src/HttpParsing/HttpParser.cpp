@@ -136,7 +136,8 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 		std::shared_ptr <LocationSettings> cgiBlock = request.settings->getCgiBlock();
 		if (cgiBlock && request.method != 3)
 		{
-			CGIparsing myCgi(cgiBlock->getCgiScript());
+			std::cout << cgiBlock->getCgiPath() << std::endl;
+			CGIparsing myCgi(cgiBlock->getCgiPath(), cgiBlock->getCgiScript());
 			myCgi.setCGIenvironment(request, parser.query);
 			myCgi.execute(request, cgiBlock, epollFd, _events);
 			request.isCGI = true;

@@ -14,9 +14,11 @@
 #include "../HttpParsing/HttpParser.hpp"
 #include "../Config/LocationSettings.hpp"
 
-CGIparsing::CGIparsing(std::string cgiPath) : _pathInfo(cgiPath) {
-	_execInfo = "./root";
-	_execInfo.append(cgiPath);
+CGIparsing::CGIparsing(std::string root, std::string script) {
+	_pathInfo = script.substr(script.find_last_of('/'));
+	_execInfo = "." + root + _pathInfo;
+	std::cout << _execInfo << std::endl;
+	std::cout << _pathInfo << std::endl;
 }
 
 void CGIparsing::setCGIenvironment(HttpRequest& request, const std::string& queryStr) {
@@ -25,8 +27,8 @@ void CGIparsing::setCGIenvironment(HttpRequest& request, const std::string& quer
 		setenv("QUERY_STRING", queryStr.c_str(), 1);
 	if (request.headers.find("Content-Type") != request.headers.end())
 		setenv("CONTENT_TYPE", request.headers.at("Content-Type").c_str(), 1); //default text, needs parsing for images etc.
-	else
-		setenv("CONTENT_TYPE", "application/x-www-form-urlencoded", 1);
+	// else
+	// 	setenv("CONTENT_TYPE", "application/x-www-form-urlencoded", 1);
 	if (request.headers.find("Content-Length") != request.headers.end())
 		setenv("CONTENT_LENGTH", request.headers.at("Content-Length").c_str(), 1);
 	setenv("SERVER_NAME", request.headers.at("Host").c_str(), 1);
