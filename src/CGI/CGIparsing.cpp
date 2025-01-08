@@ -11,8 +11,6 @@
 /**********************************************************************************/
 
 #include "CGIparsing.hpp"
-#include "../HttpParsing/HttpParser.hpp"
-#include "../Config/LocationSettings.hpp"
 
 CGIparsing::CGIparsing(std::string cgiPath) : _pathInfo(cgiPath) {
 	_execInfo = "./root";
@@ -65,6 +63,29 @@ void	setToNonBlocking(int socket)
 {
 	int	flag = fcntl(socket, F_GETFL, 0); //retrieves flags/settings from socket
 	fcntl(socket, F_SETFL, flag | O_NONBLOCK); //Sets socket to be nonblocking
+}
+
+//checks if the child process (CGI) has finished each iteration, if it take stoo long, then it send a kill command to the child process
+void	CGITimeout(pid_t &pid)
+{
+	int elapsed = 0;
+	int	interval = 10; //milliseconds
+	pid_t result;
+
+	while (1)
+	{
+		result = waitpid(pid, NULL, WNOHANG);
+		if (result == pid)
+			break;
+		if (elapsed > CGI_TIMEOUT)
+		{
+			Logger::log("Child process teminated due timeout", INFO, false);
+			kill(pid, SIGKILL);
+			break;
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+		elapsed += interval;
+	}
 }
 
 void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>& cgiblock, int epollFd, epoll_event& _events) {
@@ -141,6 +162,10 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 			close(pipe_fds[WRITE_END]);
 			// delete client_node;
 		}
+
+		//Allow child process to finish or timeout
+		CGITimeout(pid);
+
         // Wait for the child process to finish
         waitpid(pid, NULL, 0);
         // Read the output from the child process
