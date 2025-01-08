@@ -66,6 +66,7 @@ void HttpServer::startListening()
 {
 	std::signal(SIGINT, signalHandler);
 	std::signal(SIGPIPE, SIG_IGN);
+	
 	addServerToEpoll();
 	while (true)
 	{
@@ -166,7 +167,6 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 	if (_connections < 900)
 	{
 		_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
-		_clientSocket = -1;
 		if (_clientSocket < 0) 
 			Logger::log("accept: accept failed", ERROR, false);
 		else
