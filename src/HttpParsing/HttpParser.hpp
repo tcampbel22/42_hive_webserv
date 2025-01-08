@@ -70,6 +70,7 @@ public:
 	void checkForCgi(ServerSettings* ,std::string, HttpParser&);
 	void checkRedirect(HttpRequest& request, ServerSettings *);
 	uint getContentLength();
+	int isBlockCGI(HttpRequest&);
 	//void validateLocation(LocationSettings*, int*);
 	//std::string trim(const std::string& str);
 };

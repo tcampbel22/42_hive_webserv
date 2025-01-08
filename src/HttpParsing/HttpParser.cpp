@@ -40,7 +40,8 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			return;
 		}
 		checkRedirect(request, serverPtr);
-		checkForCgi(serverPtr, request.path, parser);
+		if (isBlockCGI(request))
+			checkForCgi(serverPtr, request.path, parser);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
@@ -73,6 +74,31 @@ void HttpParser::checkRedirect(HttpRequest& request, ServerSettings *serverPtr) 
 		return;
 	if (block->isRedirect())
 		request.path = block->getRedirectPath();
+}
+
+//tries to get the location settings by using location block matching rules, defaults to / if unsuccessful
+int HttpParser::isBlockCGI(HttpRequest& request)
+{
+	std::string key = request.path;
+	int len = 2;
+	LocationSettings *locSettings;
+	while (42)
+	{
+		locSettings = request.settings->getLocationBlock(key);
+		if (locSettings != nullptr || len < 2)
+			break ;
+		len = key.rfind('/');
+		if (len < 1)
+			len = 1;
+		key = key.substr(0, len);
+	}
+	if (!locSettings)
+		locSettings = request.settings->getLocationBlock("/");
+	if (!locSettings)
+		return 0;
+	if (locSettings->isCgiBlock() == true)
+		return 1;
+	return 0;
 }
 
 void HttpParser::checkForCgi(ServerSettings* server, std::string line, HttpParser& parser) {
