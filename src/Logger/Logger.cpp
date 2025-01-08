@@ -66,7 +66,7 @@ void	Logger::checkLoop(std::string msg, std::string log_code)
 	else
 	{
 		if (count > 1)
-			log_file << "[ERROR] " << getCurrentTime() << ": " << last_line << 
+			log_file << "[INFO] " << getCurrentTime() << ": " << last_line << 
 			": Loop ran for " + std::to_string(count) + " iterations" << std::endl;
 		log_file << "[" + log_code + "] " << getCurrentTime() << ": " << msg << std::endl;
 		count = 1;
