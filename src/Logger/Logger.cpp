@@ -11,7 +11,9 @@
 /**********************************************************************************/
 
 #include "Logger.hpp"
-std::ofstream Logger::log_file;
+std::ofstream	Logger::log_file;
+int				Logger::count = 1;
+std::string		Logger::last_line = "";
 
 bool	Logger::checkFileSize()
 {
@@ -57,6 +59,21 @@ void	Logger::setErrorAndLog(int *error, int set, std::string msg)
 	log("[" + std::to_string(set) + "] " + msg, INFO, false);
 }
 
+void	Logger::checkLoop(std::string msg, std::string log_code)
+{
+	if (!last_line.empty() && !msg.compare(last_line))
+		count++;
+	else
+	{
+		if (count > 1)
+			log_file << "[INFO] " << getCurrentTime() << ": " << last_line << 
+			": Loop ran for " + std::to_string(count) + " iterations" << std::endl;
+		log_file << "[" + log_code + "] " << getCurrentTime() << ": " << msg << std::endl;
+		count = 1;
+		last_line = msg;
+	}
+}
+
 void	Logger::log(std::string msg, e_log log_code, bool print)
 {
 	if (log_file.is_open())
@@ -65,7 +82,7 @@ void	Logger::log(std::string msg, e_log log_code, bool print)
 		{
 			if (print)
 				std::cerr << "[ERROR]: webserv: " << msg << std::endl;
-			log_file << "[ERROR] " << getCurrentTime() << ": " << msg << std::endl;
+			checkLoop(msg, "ERROR");
 			if (checkFileSize())
 			{
 				std::cerr << "Log file limit exceeded" << std::endl; 
@@ -76,7 +93,7 @@ void	Logger::log(std::string msg, e_log log_code, bool print)
 		{
 			if (print)
 				std::cout << msg << std::endl;
-			log_file << "[INFO]  " << getCurrentTime() << ": " << msg << std::endl;
+			checkLoop(msg, "INFO");
 			if (checkFileSize())
 			{
 				std::cerr << "Log file limit exceeded" <<  std::endl; 

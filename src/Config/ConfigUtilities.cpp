@@ -179,17 +179,12 @@ bool	ConfigUtilities::checkErrorCode(int code, bool error)
 {
 	if (error)
 	{
-		int	error_codes[7] = { 400, 401, 403, 404, 500, 502, 503 };
-		for (int i = 0; i < 7; i++)
-		{
-			if (code == error_codes[i])
+			if ((code >= 400 && code <= 417) || (code >= 500 && code <= 505)) //error codes
 				return true;
-		}
-
 	}
 	else
 	{
-		if (code >= 300 and code <= 308)
+		if (code >= 300 and code <= 308) //redirect codes
 			return true;
 	}
 	return false;

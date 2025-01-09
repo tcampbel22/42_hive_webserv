@@ -270,6 +270,7 @@ void HttpServer::closeServer()
 	}
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
+	Logger::log("\nExit signal received, server shutting down.. ", INFO, true);
 }
 
 HttpServer::~HttpServer()
