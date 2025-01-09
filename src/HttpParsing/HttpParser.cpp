@@ -17,7 +17,7 @@
 #include "../CGI/CGIparsing.hpp"
 #include "../Response/Response.hpp"
 
-HttpParser::HttpParser() : _fullyRead(true), _contentLength(0), cgiflag(false), query("") {}
+HttpParser::HttpParser() : _fullyRead(true), _contentLength(0), cgiflag(false), query(""), pathInfo("") {}
 
 HttpParser::~HttpParser() {}
 
@@ -40,8 +40,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			return;
 		}
 		checkRedirect(request, serverPtr);
-		if (isBlockCGI(request))
-			checkForCgi(serverPtr, request.path, parser);
+		isBlockCGI(request, parser);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
@@ -77,7 +76,7 @@ void HttpParser::checkRedirect(HttpRequest& request, ServerSettings *serverPtr) 
 }
 
 //tries to get the location settings by using location block matching rules, defaults to / if unsuccessful
-int HttpParser::isBlockCGI(HttpRequest& request)
+int HttpParser::isBlockCGI(HttpRequest& request, HttpParser& parser)
 {
 	std::string key = request.path;
 	int len = 2;
@@ -97,25 +96,66 @@ int HttpParser::isBlockCGI(HttpRequest& request)
 	if (!locSettings)
 		return 0;
 	if (locSettings->isCgiBlock() == true)
-		return 1;
+		checkForCgi(request, parser, *locSettings);
 	return 0;
 }
 
-void HttpParser::checkForCgi(ServerSettings* server, std::string line, HttpParser& parser) {
-	std::shared_ptr <LocationSettings> cgibloc = server->getCgiBlock();
-	if (!cgibloc)
-		return;
-	if (line.find('?') != std::string::npos)
+//tries to get the location settings by using location block matching rules, defaults to / if unsuccessful
+// int HttpParser::isBlockCGI(HttpRequest& request)
+// {
+// 	std::string key = request.path;
+// 	int len = 2;
+// 	LocationSettings *locSettings;
+// 	while (42)
+// 	{
+// 		locSettings = request.settings->getLocationBlock(key);
+// 		if (locSettings != nullptr || len < 2)
+// 			break ;
+// 		len = key.rfind('/');
+// 		if (len < 1)
+// 			len = 1;
+// 		key = key.substr(0, len);
+// 	}
+// 	if (!locSettings)
+// 		locSettings = request.settings->getLocationBlock("/");
+// 	if (!locSettings)
+// 		return 0;
+// 	if (locSettings->isCgiBlock() == true)
+// 		return 1;
+// 	return 0;
+// }
+
+void HttpParser::checkForCgi(HttpRequest& request, HttpParser& parser, LocationSettings& cgibloc) {
+	// std::shared_ptr <LocationSettings> cgibloc = server->getCgiBlock();
+	// if (!cgibloc)
+	// 	return;
+	std::string location = cgibloc.getPath();
+	parser.cgiPath.append(request.path);
+	parser.cgiPath.erase(0, cgibloc.getPath().length());
+	parser.cgiPath.insert(0, cgibloc.getCgiPath());
+	size_t pos = parser.cgiPath.find('?');
+	if (pos != std::string::npos)
 	{
-		parser.query = line.substr(line.find('?') + 1);
-		line.erase(line.find('?'));
+		if (std::count(parser.cgiPath.begin(), parser.cgiPath.end(), '?') != 1)
+			Logger::setErrorAndLog(&request.errorFlag, 400, "cgi: Bad query string");
+		parser.query = parser.cgiPath.substr(parser.cgiPath.find('?') + 1);
+		parser.cgiPath.erase(pos);
 	}
-	if (!line.compare(server->getCgiBlock()->getCgiScript()))
+	if (cgibloc.getCgiScript().length() != parser.cgiPath.length())
 	{
+		parser.pathInfo = parser.cgiPath.substr();
+		if (parser.cgiPath[parser.cgiPath.find(".py") + 3] == '/')
+			parser.cgiPath.erase(parser.cgiPath.find(".py") + 3);
+	}
+	std::filesystem::path scriptPath = "." + parser.cgiPath;
+	if (std::filesystem::exists(scriptPath)) {
 		cgiflag = true;
+		std::cout << "path exists" << std::endl;
 	}
-	else
-		return;
+	else {
+		cgiflag = false;
+		std::cout << "path doesn't exists" << std::endl;
+	}
 }
 
 void HttpParser::parseBody(HttpRequest& request, std::istringstream& stream) {
@@ -148,36 +188,32 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 
 int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events) 
 {
-	// auto it2 = settings.find("127.0.0.1:8081");
-	// LocationSettings* locptr = serverPtr->getLocationBlock("/");
-	// ConfigUtilities::printLocationBlock(*locptr);
-
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr, epollFd, _events);
 	parser._fullyRead = true;
-	//parser.recieveRequest(requestNode->fd);
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
 	if (parser.cgiflag){
 		std::shared_ptr <LocationSettings> cgiBlock = request.settings->getCgiBlock();
 		if (cgiBlock && request.method != 3)
 		{
-			CGIparsing myCgi(cgiBlock->getCgiScript());
-			myCgi.setCGIenvironment(request, parser.query);
+			std::cout << cgiBlock->getCgiPath() << std::endl;
+			CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
+			myCgi.setCGIenvironment(request, parser);
 			myCgi.execute(request, cgiBlock, epollFd, _events);
 			request.isCGI = true;
 		}
-		else
+		else {
 			Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
-		Response response(200, request.body.size(), request.body, request.closeConnection, false);
-		response.sendResponse(requestNode->fd);
-
-		return (0);
+			return (1);
+		}
+		if (request.errorFlag == 0) {
+			Response response(200, request.body.size(), request.body, request.closeConnection, false);
+			response.sendResponse(requestNode->fd);
+			return (0);
+		}
+		else
+			request.closeConnection = true;
 	}
-	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
-   	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
-	// for (const auto& pair : request.headers) {
-    //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
-    // }
 	ServerHandler response(requestNode->fd, request);
 	if (request.closeConnection == true)
 		return (1);
@@ -185,4 +221,6 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 		return (0);
 }
 
+std::string HttpParser::getQuery() {return query; }
+std::string HttpParser::getPathInfo() { return pathInfo; }
 uint HttpParser::getContentLength() { return _contentLength; }

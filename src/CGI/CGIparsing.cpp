@@ -11,22 +11,24 @@
 /**********************************************************************************/
 
 #include "CGIparsing.hpp"
+#include "../HttpParsing/HttpParser.hpp"
 
-CGIparsing::CGIparsing(std::string cgiPath) : _pathInfo(cgiPath) {
-	_execInfo = "./root";
-	_execInfo.append(cgiPath);
+
+CGIparsing::CGIparsing(std::string root, std::string script) {
+	_scriptName = script.substr(script.find_last_of('/'));
+	_execInfo = "." + root;
 }
 
-void CGIparsing::setCGIenvironment(HttpRequest& request, const std::string& queryStr) {
+void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser) {
 	setenv("REQUEST_METHOD", getMethod(request.method).c_str(), 1);
-	if (request.method == 1)
-		setenv("QUERY_STRING", queryStr.c_str(), 1);
+	setenv("QUERY_STRING", parser.getQuery().c_str(), 1);
 	if (request.headers.find("Content-Type") != request.headers.end())
 		setenv("CONTENT_TYPE", request.headers.at("Content-Type").c_str(), 1); //default text, needs parsing for images etc.
-	else
-		setenv("CONTENT_TYPE", "application/x-www-form-urlencoded", 1);
+	// else
+	// 	setenv("CONTENT_TYPE", "application/x-www-form-urlencoded", 1);
 	if (request.headers.find("Content-Length") != request.headers.end())
 		setenv("CONTENT_LENGTH", request.headers.at("Content-Length").c_str(), 1);
+	//setenv("PATH_INFO", parser.getPathInfo().c_str(), 1);
 	setenv("SERVER_NAME", request.headers.at("Host").c_str(), 1);
 	setenv("SERVER_PORT", getPort(request.host).c_str(), 1);
 	setenv("REMOTE_ADDR", getIp(request.host).c_str(), 1);
@@ -66,7 +68,7 @@ void	setToNonBlocking(int socket)
 }
 
 //checks if the child process (CGI) has finished each iteration, if it take stoo long, then it send a kill command to the child process
-void	CGITimeout(pid_t &pid)
+void	CGITimeout(pid_t &pid, int& errorCode)
 {
 	int elapsed = 0;
 	int	interval = 10; //milliseconds
@@ -79,7 +81,7 @@ void	CGITimeout(pid_t &pid)
 			break;
 		if (elapsed > CGI_TIMEOUT)
 		{
-			Logger::log("Child process teminated due timeout", INFO, false);
+			Logger::setErrorAndLog(&errorCode, 504, "Child process teminated due timeout");
 			kill(pid, SIGKILL);
 			break;
 		}
@@ -133,7 +135,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 
         // Close the write end of the pipe now that it's duplicated
         close(pipe_fds[WRITE_END]);
-		const char *const argv[] = {_pathInfo.c_str(), nullptr};
+		const char *const argv[] = {_scriptName.c_str(), nullptr};
         if (execve(_execInfo.c_str(), (char *const *)argv, environ) == -1) {
             Logger::log("execve: " + (std::string)strerror(errno), ERROR, false);
             exit(1);
@@ -164,17 +166,20 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 		}
 
 		//Allow child process to finish or timeout
-		CGITimeout(pid);
+		CGITimeout(pid, request.errorFlag);
 
         // Wait for the child process to finish
         waitpid(pid, NULL, 0);
         // Read the output from the child process
-        while ((bytesRead = read(pipe_fds[READ_END], buffer, sizeof(buffer) - 1)) > 0) {
-            buffer[bytesRead] = '\0'; // Null-terminate the output
-            //printf("CGI Output: %s", buffer); // Or store it in a variable if needed
-			request.body += buffer;
-        }
-        // Close the read end of the pipe after reading
+		if (request.errorFlag == 0)
+		{
+			while ((bytesRead = read(pipe_fds[READ_END], buffer, sizeof(buffer) - 1)) > 0) {
+				buffer[bytesRead] = '\0'; // Null-terminate the output
+				//printf("CGI Output: %s", buffer); // Or store it in a variable if needed
+				request.body += buffer;
+			}
+		}
+		// Close the read end of the pipe after reading
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, pipe_fds[READ_END], &_events) == -1)
 		{
 			Logger::log("epoll_ctl: failed to add fd to epoll", ERROR, false);
@@ -187,7 +192,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 }
 
 std::string CGIparsing::getPath() {
-	return _pathInfo;
+	return _scriptName;
 }
 
 CGIparsing::~CGIparsing() {}

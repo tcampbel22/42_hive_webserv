@@ -31,11 +31,11 @@ class LocationSettings;
 class CGIparsing
 {
 private:
-	std::string _pathInfo; //path where to upload the cgi file
+	std::string _scriptName; //path where to upload the cgi file
 	std::string _execInfo;
 public:
-	CGIparsing(std::string);
-	void setCGIenvironment(HttpRequest& request, const std::string&);
+	CGIparsing(std::string, std::string);
+	void setCGIenvironment(HttpRequest&, HttpParser&);
 	void execute(HttpRequest&, std::shared_ptr<LocationSettings>&, int, epoll_event&);
 	std::string getMethod(int);
 	std::string getIp(std::string&);
