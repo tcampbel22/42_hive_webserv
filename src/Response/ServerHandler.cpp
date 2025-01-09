@@ -103,7 +103,7 @@ void ServerHandler::parsePath()
 	if(locSettings->isRedirect() == true && _input.method == GET)
 	{
 		_response.setRedirect(true);
-		_response.setLocation("Location: " + locSettings->getRedirectPath() + "\n");
+		_response.setLocation("Location: " + locSettings->getRedirectPath() + "\r\n");
 		_input.errorFlag = locSettings->getRedirectStatus(); //UPDATED currently acccepting 300-308
 		return ;
 	}
@@ -246,6 +246,7 @@ int ServerHandler::getFile(std::string path)
 	return (0);
 }
 
+//Generates a generic error response 
 void ServerHandler::defaultError()
 {
 	std::string code = std::to_string(_input.errorFlag);

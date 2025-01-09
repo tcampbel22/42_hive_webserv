@@ -47,47 +47,47 @@ std::string Response::getResponseCodeStr()
 	switch (_responseCode)
 	{
 	case 200:
-		return(status += "200 OK\n");
+		return(status += "200 OK\r\n");
 	case 301:
-		return(status += "301 Moved Permanently\n");
+		return(status += "301 Moved Permanently\r\n");
 	case 302:
-		return(status += "302 Found\n");
+		return(status += "302 Found\r\n");
 	case 400:
-		return(status += "400 Bad Request\n");
+		return(status += "400 Bad Request\r\n");
 	case 401:
-		return(status += "401 Unauthorized\n");
+		return(status += "401 Unauthorized\r\n");
 	case 403:
-		return(status += "403 Forbidden\n");		
+		return(status += "403 Forbidden\r\n");		
 	case 404:
-		return(status += "404 Not Found\n");
+		return(status += "404 Not Found\r\n");
 	case 413:
-		return(status += "413 Payload Too Large\n");				
+		return(status += "413 Payload Too Large\r\n");				
 	case 500:
-		return(status += "500 Internal Server Error\n");
+		return(status += "500 Internal Server Error\r\n");
 	case 502:
-		return(status += "502 Bad Gateway\n");		
+		return(status += "502 Bad Gateway\r\n");		
 	case 503:
-		return(status += "503 Service Unavailable\n");
+		return(status += "503 Service Unavailable\r\n");
 	case 504:
-		return (status += "504 Gateway Timeout\n");	
+		return (status += "504 Gateway Timeout\r\n");	
 	case 507:
-		return(status += "507 Insufficient Storage\n");
+		return(status += "507 Insufficient Storage\r\n");
 	default:
-		return(status += std::to_string(_responseCode) + "\n");
+		return(status += std::to_string(_responseCode) + "\r\n");
 	}
 }
 
 std::string Response::getContentType()
 {
 	std::string _content = "Content-Type: ";
-	_content += _contentType + '\n';
+	_content += _contentType + "\r\n";
 	return (_content);
 }
 
 std::string Response::getContentLength()
 {
 	std::string _length = "Content-Length: ";
-	_length += std::to_string(_contentLength) + '\n';
+	_length += std::to_string(_contentLength) + "\r\n";
 	return (_length);
 }
 
@@ -161,7 +161,7 @@ std::string Response::makeDate()
 	//Date: <day>, <day-of-month> <month> <year> <hour>:<minute>:<second> GMT
 	std::string _date = "Date: " + makeDay(_gmtTime->tm_wday) + ", " + std::to_string(_gmtTime->tm_mday) \
 		+ " " + makeMonth(_gmtTime->tm_mon) + " " +  std::to_string(_gmtTime->tm_year + 1900) + " " + std::to_string(_gmtTime->tm_hour) \
-		+ ":" +std::to_string(_gmtTime->tm_min) + ":" + std::to_string(_gmtTime->tm_sec) + " GMT\n";
+		+ ":" +std::to_string(_gmtTime->tm_min) + ":" + std::to_string(_gmtTime->tm_sec) + " GMT\r\n";
 	
 	return (_date);
 }
@@ -174,7 +174,7 @@ void Response::sendResponse(int fd)
 		_buffer += getContentType();
 	_buffer += getContentLength();
 	if (_closeConnection == true)
-		_buffer += "Connection: close\n";
+		_buffer += "Connection: close\r\n";
 	if (_redirect == true)
 		_buffer += _location;
 	_buffer += makeDate();
