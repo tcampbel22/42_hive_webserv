@@ -75,7 +75,7 @@ void	ServerSettings::checkConfigValues(std::vector<std::string>& directive, std:
 			throw std::runtime_error("host or port missing from configuration file");
 		if (locations.find("/") == locations.end())
 			throw std::runtime_error("root directory missing from configuration file");
-		if (max_client_body_size == -1)
+		if (max_client_body_size == -1 || max_client_body_size == 0)
 			max_client_body_size = MAX_BODY_SIZE;
 	}
 }

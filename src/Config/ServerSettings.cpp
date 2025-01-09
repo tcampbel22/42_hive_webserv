@@ -132,7 +132,7 @@ void	ServerSettings::parseMaxBodySize(std::vector<std::string>& directive, std::
 	} catch(std::exception& e) {
 		throw std::invalid_argument("max_body_size: (nan)");
 	}
-	if ((size * unit) > 0 && (size * unit) < MAX_BODY_SIZE)
+	if ((size * unit) >= 0 && (size * unit) < MAX_BODY_SIZE)
 	{
 		max_client_body_size = size * unit;
 		it++;
