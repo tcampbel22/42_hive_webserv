@@ -120,8 +120,8 @@ void	createKey(std::vector<std::string>::iterator start,  std::vector<std::strin
 
 void	ConfigParser::splitServerBlocks() 
 {
-	if (tokens.begin()->compare("server") && tokens[1] != "{")
-		throw std::runtime_error("Configuration file should start with server block");
+	if (tokens.begin()->compare("server") || tokens[1] != "{")
+		throw std::runtime_error("splitServerBlock: syntax error");
 	ConfigUtilities::checkBrackets(tokens);
 	auto it = tokens.begin();
 	int	server_count = -1;

@@ -127,13 +127,14 @@ int HttpParser::isBlockCGI(HttpRequest& request)
 // }
 
 void HttpParser::checkForCgi(std::string line, HttpParser& parser, ServerSettings* server) {
+	std::cout << "Line: " + line << '\n';
 	std::shared_ptr <LocationSettings> cgibloc = server->getCgiBlock();
 	if (!cgibloc)
 		return;
 	//change location
 	std::string location = server->getCgiBlock()->getPath();
 	parser.cgiPath.append(line);
-	size_t pos = parser.cgiPath.find(server->getCgiBlock()->getPath());
+	size_t pos = parser.cgiPath.find(location);
 	if (pos != std::string::npos)
 	{
 		parser.cgiPath.erase(1, pos);
