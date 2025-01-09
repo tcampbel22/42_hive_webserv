@@ -11,24 +11,24 @@
 /**********************************************************************************/
 
 #include "CGIparsing.hpp"
+#include "../HttpParsing/HttpParser.hpp"
+
 
 CGIparsing::CGIparsing(std::string root, std::string script) {
-	_pathInfo = script.substr(script.find_last_of('/'));
-	_execInfo = "." + root + _pathInfo;
-	std::cout << _execInfo << std::endl;
-	std::cout << _pathInfo << std::endl;
+	_scriptName = script.substr(script.find_last_of('/'));
+	_execInfo = "." + root;
 }
 
-void CGIparsing::setCGIenvironment(HttpRequest& request, const std::string& queryStr) {
+void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser) {
 	setenv("REQUEST_METHOD", getMethod(request.method).c_str(), 1);
-	setenv("QUERY_STRING", queryStr.c_str(), 1);
+	setenv("QUERY_STRING", parser.getQuery().c_str(), 1);
 	if (request.headers.find("Content-Type") != request.headers.end())
 		setenv("CONTENT_TYPE", request.headers.at("Content-Type").c_str(), 1); //default text, needs parsing for images etc.
 	// else
 	// 	setenv("CONTENT_TYPE", "application/x-www-form-urlencoded", 1);
 	if (request.headers.find("Content-Length") != request.headers.end())
 		setenv("CONTENT_LENGTH", request.headers.at("Content-Length").c_str(), 1);
-	setenv("PATH_INFO", request.path.c_str(), 1);
+	//setenv("PATH_INFO", parser.getPathInfo().c_str(), 1);
 	setenv("SERVER_NAME", request.headers.at("Host").c_str(), 1);
 	setenv("SERVER_PORT", getPort(request.host).c_str(), 1);
 	setenv("REMOTE_ADDR", getIp(request.host).c_str(), 1);
@@ -135,7 +135,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 
         // Close the write end of the pipe now that it's duplicated
         close(pipe_fds[WRITE_END]);
-		const char *const argv[] = {_pathInfo.c_str(), nullptr};
+		const char *const argv[] = {_scriptName.c_str(), nullptr};
         if (execve(_execInfo.c_str(), (char *const *)argv, environ) == -1) {
             Logger::log("execve: " + (std::string)strerror(errno), ERROR, false);
             exit(1);
@@ -192,7 +192,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 }
 
 std::string CGIparsing::getPath() {
-	return _pathInfo;
+	return _scriptName;
 }
 
 CGIparsing::~CGIparsing() {}
