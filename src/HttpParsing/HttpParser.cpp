@@ -17,7 +17,7 @@
 #include "../CGI/CGIparsing.hpp"
 #include "../Response/Response.hpp"
 
-HttpParser::HttpParser() : _fullyRead(true), _contentLength(0), cgiflag(false), query("") {}
+HttpParser::HttpParser() : _fullyRead(true), _contentLength(0), cgiflag(false), query(""), pathInfo("") {}
 
 HttpParser::~HttpParser() {}
 
@@ -40,8 +40,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 			return;
 		}
 		checkRedirect(request, serverPtr);
-		if (isBlockCGI(request))
-			checkForCgi(request.path, parser, serverPtr);
+		isBlockCGI(request, parser);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
@@ -77,7 +76,7 @@ void HttpParser::checkRedirect(HttpRequest& request, ServerSettings *serverPtr) 
 }
 
 //tries to get the location settings by using location block matching rules, defaults to / if unsuccessful
-int HttpParser::isBlockCGI(HttpRequest& request)
+int HttpParser::isBlockCGI(HttpRequest& request, HttpParser& parser)
 {
 	std::string key = request.path;
 	int len = 2;
@@ -97,7 +96,7 @@ int HttpParser::isBlockCGI(HttpRequest& request)
 	if (!locSettings)
 		return 0;
 	if (locSettings->isCgiBlock() == true)
-		return 1;
+		checkForCgi(request, parser, *locSettings);
 	return 0;
 }
 
@@ -126,42 +125,37 @@ int HttpParser::isBlockCGI(HttpRequest& request)
 // 	return 0;
 // }
 
-void HttpParser::checkForCgi(std::string line, HttpParser& parser, ServerSettings* server) {
-	std::shared_ptr <LocationSettings> cgibloc = server->getCgiBlock();
-	if (!cgibloc)
-		return;
-	//change location
-	std::string location = server->getCgiBlock()->getPath();
-	parser.cgiPath.append(line);
-	size_t pos = parser.cgiPath.find(server->getCgiBlock()->getPath());
+void HttpParser::checkForCgi(HttpRequest& request, HttpParser& parser, LocationSettings& cgibloc) {
+	// std::shared_ptr <LocationSettings> cgibloc = server->getCgiBlock();
+	// if (!cgibloc)
+	// 	return;
+	std::string location = cgibloc.getPath();
+	parser.cgiPath.append(request.path);
+	parser.cgiPath.erase(0, cgibloc.getPath().length());
+	parser.cgiPath.insert(0, cgibloc.getCgiPath());
+	size_t pos = parser.cgiPath.find('?');
 	if (pos != std::string::npos)
 	{
-		parser.cgiPath.erase(1, pos);
-		std::cout << "cgi-bin removal: " << server->getCgiBlock()->getPath() << std::endl;
-		parser.cgiPath.insert(0, server->getCgiBlock()->getCgiPath());
-	}
-	std::cout << parser.cgiPath << std::endl;
-	//remove extract query: //cgi-bin/cgitester.py/eromon?lol=hello
-	if (parser.cgiPath.find('?') != std::string::npos)
-	{
-		parser.query = line.substr(line.find('?') + 1);
-		parser.cgiPath.erase(line.find('?') + 1);
-	}
-	std::cout << "path after query removal: " << parser.cgiPath << std::endl;
-	pos = parser.cgiPath.find_last_of('/');
-	if (pos != std::string::npos) {
-		parser.pathInfo = parser.cgiPath.substr(pos + 1);
+		if (std::count(parser.cgiPath.begin(), parser.cgiPath.end(), '?') != 1)
+			Logger::setErrorAndLog(&request.errorFlag, 400, "cgi: Bad query string");
+		parser.query = parser.cgiPath.substr(parser.cgiPath.find('?') + 1);
 		parser.cgiPath.erase(pos);
 	}
-	//std::cout << "path cgi path: " << parser.cgiPath << std::endl;
-	//std::cout << "path query: " << parser.query << std::endl;
-	//std::cout << "path info: " << parser.pathInfo << std::endl;
-	// if (!line.compare(server->getCgiBlock()->getCgiScript()))
-	// {
-	// 	cgiflag = true;
-	// }
-	// else
-	// 	return;
+	if (cgibloc.getCgiScript().length() != parser.cgiPath.length())
+	{
+		parser.pathInfo = parser.cgiPath.substr();
+		if (parser.cgiPath[parser.cgiPath.find(".py") + 3] == '/')
+			parser.cgiPath.erase(parser.cgiPath.find(".py") + 3);
+	}
+	std::filesystem::path scriptPath = "." + parser.cgiPath;
+	if (std::filesystem::exists(scriptPath)) {
+		cgiflag = true;
+		std::cout << "path exists" << std::endl;
+	}
+	else {
+		cgiflag = false;
+		std::cout << "path doesn't exists" << std::endl;
+	}
 }
 
 void HttpParser::parseBody(HttpRequest& request, std::istringstream& stream) {
@@ -194,24 +188,17 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 
 int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events) 
 {
-	// auto it2 = settings.find("127.0.0.1:8081");
-	// LocationSettings* locptr = serverPtr->getLocationBlock("/");
-	// ConfigUtilities::printLocationBlock(*locptr);
-
-	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
-   //	std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr, epollFd, _events);
 	parser._fullyRead = true;
-	//parser.recieveRequest(requestNode->fd);
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
 	if (parser.cgiflag){
 		std::shared_ptr <LocationSettings> cgiBlock = request.settings->getCgiBlock();
 		if (cgiBlock && request.method != 3)
 		{
 			std::cout << cgiBlock->getCgiPath() << std::endl;
-			CGIparsing myCgi(cgiBlock->getCgiPath(), cgiBlock->getCgiScript());
-			myCgi.setCGIenvironment(request, parser.query);
+			CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
+			myCgi.setCGIenvironment(request, parser);
 			myCgi.execute(request, cgiBlock, epollFd, _events);
 			request.isCGI = true;
 		}
@@ -219,17 +206,14 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 			Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
 			return (1);
 		}
-		if (request.errorFlag != 0) {
+		if (request.errorFlag == 0) {
 			Response response(200, request.body.size(), request.body, request.closeConnection, false);
 			response.sendResponse(requestNode->fd);
 			return (0);
 		}
-		return (1);
+		else
+			request.closeConnection = true;
 	}
-	// for (const auto& pair : request.headers) {
-    //     std::cout << "Key: " << pair.first << " Value: " << pair.second << std::endl;
-    // }
-	// std::cout << "error code from parser: " << request.errorFlag << std::endl;
 	ServerHandler response(requestNode->fd, request);
 	if (request.closeConnection == true)
 		return (1);
@@ -237,4 +221,6 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 		return (0);
 }
 
+std::string HttpParser::getQuery() {return query; }
+std::string HttpParser::getPathInfo() { return pathInfo; }
 uint HttpParser::getContentLength() { return _contentLength; }

@@ -30,10 +30,9 @@ def handle_get():
   print("</html>")
   print()
  else:
-        print("<html><body><h1>No query string received</h1></body></html>")
-		print()
-
-  print("<a href=/index.html><button>Front-Page</button></a>")
+    print("<html><body><h1>Whats up this is the cgi</h1></body></html>")
+    print()
+ print("<a href=/index.html><button>Front-Page</button></a>")
 
 def handle_post():
 # Create FieldStorage manually using the read data
@@ -55,7 +54,6 @@ def handle_post():
 		print("<html><body><h1>No POST data received</h1></body></html>")
 import time
 def main():
-    time.sleep(1000)
     # Get the request method (GET or POST)
     request_method = os.getenv("REQUEST_METHOD")
 
