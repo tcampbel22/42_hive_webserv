@@ -126,9 +126,6 @@ int HttpParser::isBlockCGI(HttpRequest& request, HttpParser& parser)
 // }
 
 void HttpParser::checkForCgi(HttpRequest& request, HttpParser& parser, LocationSettings& cgibloc) {
-	// std::shared_ptr <LocationSettings> cgibloc = server->getCgiBlock();
-	// if (!cgibloc)
-	// 	return;
 	std::string location = cgibloc.getPath();
 	parser.cgiPath.append(request.path);
 	parser.cgiPath.erase(0, cgibloc.getPath().length());
@@ -150,11 +147,11 @@ void HttpParser::checkForCgi(HttpRequest& request, HttpParser& parser, LocationS
 	std::filesystem::path scriptPath = "." + parser.cgiPath;
 	if (std::filesystem::exists(scriptPath)) {
 		cgiflag = true;
-		std::cout << "path exists" << std::endl;
+		std::cout << "path exists" << std::endl; // remove before pushing
 	}
 	else {
 		cgiflag = false;
-		std::cout << "path doesn't exists" << std::endl;
+		std::cout << "path doesn't exists" << std::endl; //remove berfore bushing
 	}
 }
 
@@ -188,17 +185,19 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 
 int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events) 
 {
+	// std::cout << "size of clientdatabuffer: " << requestNode->_clientDataBuffer.size() << std::endl;
+	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
+   	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr, epollFd, _events);
 	parser._fullyRead = true;
 	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
-	if (parser.cgiflag){
+	if (parser.cgiflag && !request.errorFlag){
 		std::shared_ptr <LocationSettings> cgiBlock = request.settings->getCgiBlock();
 		if (cgiBlock && request.method != 3)
 		{
-			std::cout << cgiBlock->getCgiPath() << std::endl;
 			CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
-			myCgi.setCGIenvironment(request, parser);
+			myCgi.setCGIenvironment(request, parser, *cgiBlock);
 			myCgi.execute(request, cgiBlock, epollFd, _events);
 			request.isCGI = true;
 		}

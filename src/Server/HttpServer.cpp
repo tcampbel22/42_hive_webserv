@@ -233,9 +233,19 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
 		else
 			return false;
 	}
-	(void) bytesReceived;
+	(void) bytesReceived; //remove this if not needed
+	bool isMulti = isMultiPart(requestStr);
+	if (isMulti)
+	{
+		std::cout << "HERE\n";
+		if (requestStr.find("--\r\n") != std::string::npos) {  // End of multipart data
+        	return true;
+   		}
+		else
+			return false;
+	}
 	bool hasBody = isRequestWithBody(requestStr);
-	if (hasBody) {
+	if (hasBody && !isMulti) {
 		// size_t complete = getContentLength(requestStr); //with nonchunked body;
 		// if (complete > 0 && bytesReceived != 1024)
 		// if (bytesReceived != 1024)
@@ -246,7 +256,7 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
 		else
 			return false;
 	}
-	if (!isChunked && !hasBody) 
+	if (!isChunked && !hasBody && !isMulti) 
 	{
 		if (requestStr.find("\r\n\r\n") != std::string::npos)  // End of nonBody data 
 			return true;
