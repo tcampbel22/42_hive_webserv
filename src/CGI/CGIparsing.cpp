@@ -16,7 +16,7 @@
 
 CGIparsing::CGIparsing(std::string root, std::string script) {
 	_scriptName = script.substr(script.find_last_of('/'));
-	_execInfo = "." + root + _scriptName;
+	_execInfo = "." + root;
 }
 
 void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser, LocationSettings& cgiBlock) {
@@ -80,7 +80,10 @@ void	CGITimeout(pid_t &pid, int& errorCode)
 		if (result == pid)
 		{
 			if (WIFEXITED(status))
-				Logger::setErrorAndLog(&errorCode, 502, "child process failed");
+			{
+				if(WEXITSTATUS(status))
+					Logger::setErrorAndLog(&errorCode, 502, "child process failed");
+			}
 			break;
 		}
 		if (elapsed > CGI_TIMEOUT)
