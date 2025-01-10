@@ -113,6 +113,8 @@ void ServerHandler::parsePath()
 	{
 		if (locSettings->getPath().length() > 1)
 			_input.path = _input.path.substr(locSettings->getPath().length(), _input.path.length() - locSettings->getPath().length()); //remove the alias from the front of the URI
+		if (locSettings->getPath().back() == '/' && _input.path.front() != '/')
+			_input.path = '/' + _input.path;
 		if (locSettings->getRoot().back() != '/' && !_input.path.empty() && _input.path.front() != '/')
 			_input.path = locSettings->getRoot() + '/' + _input.path;
 		else
