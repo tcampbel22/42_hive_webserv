@@ -119,8 +119,6 @@ void ServerHandler::parsePath()
 			_input.path = locSettings->getRoot() + '/' + _input.path;
 		else
 			_input.path = locSettings->getRoot() + _input.path;
-		// if (locSettings->getPath().back() == '/' && _input.path.back() != '/')
-		// 	_input.path += '/';
 	}
 	if (_input.path.length() > 1 && _input.path.at(0) == '/')
 		_input.path = _input.path.substr(1, _input.path.length() -1);
