@@ -53,6 +53,8 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 		// 		Logger::setErrorAndLog(&request.errorFlag, 400, "request-line: path syntax error");
 		// 	request.closeConnection = true;
 		// }
+
+		//checks if there are conscutive / in the path and normalizes them to 1 / if so
 		normalizePath(tmp);
 		request.path = tmp;
 		

@@ -99,6 +99,7 @@ void ServerHandler::getLocationSettings()
 void ServerHandler::parsePath()
 {
 	_baseInput = _input.path;
+
 	if(locSettings->isRedirect() == true && _input.method == GET)
 	{
 		_response.setRedirect(true);
@@ -109,8 +110,11 @@ void ServerHandler::parsePath()
 	else
 	{
 		if (locSettings->getPath().length() > 1)
-			_input.path = _input.path.substr(locSettings->getPath().length(), _input.path.length() - locSettings->getPath().length());
-		_input.path = locSettings->getRoot() + _input.path;
+			_input.path = _input.path.substr(locSettings->getPath().length(), _input.path.length() - locSettings->getPath().length()); //remove the alias from the front of the URI
+		if (locSettings->getRoot().back() != '/' && _input.path.front() != '/')
+			_input.path = locSettings->getRoot() + '/' + _input.path;
+		else
+			_input.path = locSettings->getRoot() + _input.path;
 	}
 	if (_input.path.length() > 1 && _input.path.at(0) == '/')
 		_input.path = _input.path.substr(1, _input.path.length() -1);
@@ -121,6 +125,7 @@ void ServerHandler::parsePath()
 	}
 	if (checkMethod())
 		return Logger::setErrorAndLog(&_input.errorFlag, 405, "parse-path: method not allowed");
+	std::cout << _input.path << std::endl;
 }
 
 
