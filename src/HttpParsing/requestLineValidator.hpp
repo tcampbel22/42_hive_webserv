@@ -20,4 +20,5 @@ public:
 	static bool isValidRequestLine(std::string, HttpRequest&);
 	static bool	checkPath(const std::string);
 	static void	trimPath(std::string&);
+	static void	normalizePath(std::string &path);
 };

@@ -53,8 +53,7 @@ void ServerHandler::checkPath()
 	if (_input.path.empty())
 		return Logger::setErrorAndLog(&_input.errorFlag, 400, "check-path: path is empty");
 	std::regex validPathRegex("^[a-zA-Z0-9/_.-]+$");
-	if (!std::regex_match(_input.path, validPathRegex) || _input.path.find("..") != std::string::npos \
-		|| _input.path.find("//") != std::string::npos)
+	if (!std::regex_match(_input.path, validPathRegex) || _input.path.find("..") != std::string::npos)
 		return Logger::setErrorAndLog(&_input.errorFlag, 400, "check-path: path syntax error");
 }
 
@@ -80,14 +79,14 @@ int ServerHandler::checkMethod()
 void ServerHandler::getLocationSettings()
 {
 	std::string key = _input.path;
-	int len = 2;
+	int len = key.length();
 
 	while (42)
 	{
 		locSettings = _input.settings->getLocationBlock(key);
 		if (locSettings != nullptr || len < 2)
 			break ;
-		len = key.rfind('/');
+		len--;
 		if (len < 1)
 			len = 1;
 		key = key.substr(0, len);
@@ -102,6 +101,7 @@ void ServerHandler::getLocationSettings()
 void ServerHandler::parsePath()
 {
 	_baseInput = _input.path;
+
 	if(locSettings->isRedirect() == true && _input.method == GET)
 	{
 		_response.setRedirect(true);
@@ -112,8 +112,11 @@ void ServerHandler::parsePath()
 	else
 	{
 		if (locSettings->getPath().length() > 1)
-			_input.path = _input.path.substr(locSettings->getPath().length(), _input.path.length() - locSettings->getPath().length());
-		_input.path = locSettings->getRoot() + _input.path;
+			_input.path = _input.path.substr(locSettings->getPath().length(), _input.path.length() - locSettings->getPath().length()); //remove the alias from the front of the URI
+		if (locSettings->getRoot().back() != '/' && !_input.path.empty() && _input.path.front() != '/')
+			_input.path = locSettings->getRoot() + '/' + _input.path;
+		else
+			_input.path = locSettings->getRoot() + _input.path;
 	}
 	if (_input.path.length() > 1 && _input.path.at(0) == '/')
 		_input.path = _input.path.substr(1, _input.path.length() -1);
@@ -368,8 +371,8 @@ void ServerHandler::generateIndex()
 	std::filesystem::path dirPath(_input.path);
 	std::string body;
 
-	body = "	<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n    <title>" + _input.path + " Directory listing</title>\n</head>\n<body>\n    <h1>";
-	body += _input.path + " directory listing:</h1>\n<ul>";
+	body = "	<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n    <title>" + _baseInput + " directory listing</title>\n</head>\n<body>\n    <h1>";
+	body += _baseInput + " directory listing:</h1>\n<ul>";
 
 	try
 	{
@@ -403,16 +406,20 @@ void ServerHandler::doGet()
 	//if so, generate the directory index
 	if (_input.path.back() == '/' && locSettings->isAutoIndex() == true)
 	{
-		generateIndex();
+		if (std::filesystem::is_directory(_input.path))
+			generateIndex();
+		else
+			Logger::setErrorAndLog(&_input.errorFlag, 404, "do-get: Directory dose not exist");	
 		return;
 	}
 
 	//check if the request is a directory, and return a 301 permanently moved with a / if so
 	if (std::filesystem::is_directory(_input.path))
 	{
-		_response.setRedirect(true);
-		_response.setLocation("Location: " + _baseInput + "/\n");
-		_input.errorFlag = 301;
+		// _response.setRedirect(true);
+		// _response.setLocation("Location: " + _baseInput + "/\n");
+		// _input.errorFlag = 301;
+		_input.errorFlag = 403;
 		return ;
 	}
 
