@@ -104,7 +104,7 @@ import cgi
 import os
 from urllib.parse import parse_qs, unquote
 
-UPLOAD_DIR = './root/var/html/temp/'  # Define your upload directory
+UPLOAD_DIR = './root/var/www/temp/'  # Define your upload directory
 
 def parse_query_strings(query_string):
     decoded_string = unquote(query_string)  # Decodes the URL-encoded query string
@@ -114,7 +114,6 @@ def parse_query_strings(query_string):
 
 def handle_get():
     query_string = os.getenv("QUERY_STRING")
-    print("Content-Type: text/html\n")  # Make sure to output headers first
     if query_string:
         query_pairs = parse_query_strings(query_string)
         print("<html>")
@@ -149,6 +148,7 @@ def upload_file():
         with open(filepath, 'wb') as f:
             f.write(file_item.file.read())
 
+
         # Send a success message
         print("Content-Type: text/html\n")
         print("<html><body>")
@@ -162,7 +162,7 @@ def handle_post():
     contentType = os.getenv("CONTENT_TYPE")
     print("Content-Type: text/html\n")
     
-    if contentType and "multipart/form-data" in contentType:
+    if contentType and "multipart/form-data" or "image\jpeg" or "application/octet-stream" in contentType:
         upload_file()  # Handle file upload
         return  # Stop further processing after file upload
 
