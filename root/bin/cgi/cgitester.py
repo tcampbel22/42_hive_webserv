@@ -104,7 +104,7 @@ import cgi
 import os
 from urllib.parse import parse_qs, unquote
 
-UPLOAD_DIR = './root/var/www/temp'  # Define your upload directory
+UPLOAD_DIR = './root/var/html/temp/'  # Define your upload directory
 
 def parse_query_strings(query_string):
     decoded_string = unquote(query_string)  # Decodes the URL-encoded query string

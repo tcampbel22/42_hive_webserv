@@ -28,7 +28,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 {
 	try {
 		std::string data(clientData.begin(), clientData.end());
-    	std::istringstream requestStream(data);
+		std::istringstream requestStream(data);
     	std::string line;
 		//Parse the requestline and store the relevant stuff (path and method)
 		if (!std::getline(requestStream, line) || !requestLineValidator::isValidRequestLine(line, request)) {
@@ -145,14 +145,16 @@ void HttpParser::checkForCgi(HttpRequest& request, HttpParser& parser, LocationS
 			parser.cgiPath.erase(parser.cgiPath.find(".py") + 3);
 	}
 	std::filesystem::path scriptPath = "." + parser.cgiPath;
-	if (std::filesystem::exists(scriptPath)) {
-		cgiflag = true;
-		std::cout << "path exists" << std::endl; // remove before pushing
-	}
-	else {
-		cgiflag = false;
-		std::cout << "path doesn't exists" << std::endl; //remove berfore bushing
-	}
+	cgiflag = true;
+	std::cout << scriptPath << '\n';
+	// if (std::filesystem::exists(scriptPath)) {
+	// 	cgiflag = true;
+	// 	std::cout << "path exists" << std::endl; // remove before pushing
+	// }
+	// else {
+	// 	cgiflag = ;
+	// 	std::cout << "path doesn't exist" << std::endl; //remove berfore bushing
+	// }
 }
 
 void HttpParser::parseBody(HttpRequest& request, std::istringstream& stream) {
@@ -185,9 +187,9 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 
 int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events) 
 {
-	// std::cout << "size of clientdatabuffer: " << requestNode->_clientDataBuffer.size() << std::endl;
-	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
-   	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
+	std::cout << "size of clientdatabuffer: " << requestNode->_clientDataBuffer.size() << std::endl;
+	std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.begin()+1000); // Convert to string
+   	std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr, epollFd, _events);
 	parser._fullyRead = true;
@@ -199,7 +201,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 			CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
 			myCgi.setCGIenvironment(request, parser, *cgiBlock);
 			myCgi.execute(request, cgiBlock, epollFd, _events);
-			request.isCGI = true;
+			// request.isCGI = true;
 		}
 		else {
 			Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
