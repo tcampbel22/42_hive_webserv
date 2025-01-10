@@ -187,9 +187,9 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 
 int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events) 
 {
-	std::cout << "size of clientdatabuffer: " << requestNode->_clientDataBuffer.size() << std::endl;
-	std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.begin() + 500); // Convert to string
-   	std::cout << "-------------------------------------------------------------------------------------\n\n" << str << "\n\n";
+	// std::cout << "size of clientdatabuffer: " << requestNode->_clientDataBuffer.size() << std::endl;
+	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.begin() + 1000); // Convert to string
+   	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str << "\n\n";
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr, epollFd, _events);
 	parser._fullyRead = true;

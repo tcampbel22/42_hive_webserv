@@ -194,6 +194,7 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 	{
 		nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
 		bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
+		usleep(100);
 		if (bytesReceived < bytes) 
 		{
 			if (bytesReceived < 0)
@@ -225,7 +226,6 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived)
 {
     std::string requestStr(data.begin(), data.end());
-	std::cout << "here\n" << std::flush;
 	bool isChunked = isChunkedTransferEncoding(requestStr);
 	if (isChunked) {
 		if (requestStr.find("0\r\n\r\n") != std::string::npos) {  // End of chunked data

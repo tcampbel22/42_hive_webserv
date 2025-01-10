@@ -16,7 +16,7 @@
 
 CGIparsing::CGIparsing(std::string root, std::string script) {
 	_scriptName = script.substr(script.find_last_of('/'));
-	_execInfo = "." + root;
+	_execInfo = "." + root + _scriptName;
 }
 
 void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser, LocationSettings& cgiBlock) {
@@ -179,7 +179,6 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 		waitpid(pid, NULL, 0); // Wait for the child process to finish
 		
         // Read the output from the child process
-		request.body.erase();
 		if (request.errorFlag == 0)
 		{
 			while ((bytesRead = read(pipe_fds[READ_END], buffer, sizeof(buffer) - 1)) > 0) {

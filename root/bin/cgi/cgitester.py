@@ -150,7 +150,6 @@ def upload_file():
 
 
         # Send a success message
-        print("Content-Type: text/html\n")
         print("<html><body>")
         print(f"<h2>File uploaded successfully!</h2>")
         print(f"<p>Your file has been saved as {filename}.</p>")
@@ -160,11 +159,6 @@ def upload_file():
 def handle_post():
     # Create FieldStorage manually using the read data
     contentType = os.getenv("CONTENT_TYPE")
-    print("Content-Type: text/html\n")
-    
-    if contentType and "multipart/form-data" or "image\jpeg" or "application/octet-stream" in contentType:
-        upload_file()  # Handle file upload
-        return  # Stop further processing after file upload
 
     form = cgi.FieldStorage()
     if form:
