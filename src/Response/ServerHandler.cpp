@@ -111,7 +111,7 @@ void ServerHandler::parsePath()
 	{
 		if (locSettings->getPath().length() > 1)
 			_input.path = _input.path.substr(locSettings->getPath().length(), _input.path.length() - locSettings->getPath().length()); //remove the alias from the front of the URI
-		if (locSettings->getRoot().back() != '/' && _input.path.front() != '/')
+		if (locSettings->getRoot().back() != '/' && !_input.path.empty() && _input.path.front() != '/')
 			_input.path = locSettings->getRoot() + '/' + _input.path;
 		else
 			_input.path = locSettings->getRoot() + _input.path;
@@ -125,7 +125,6 @@ void ServerHandler::parsePath()
 	}
 	if (checkMethod())
 		return Logger::setErrorAndLog(&_input.errorFlag, 405, "parse-path: method not allowed");
-	std::cout << _input.path << std::endl;
 }
 
 
@@ -405,16 +404,20 @@ void ServerHandler::doGet()
 	//if so, generate the directory index
 	if (_input.path.back() == '/' && locSettings->isAutoIndex() == true)
 	{
-		generateIndex();
+		if (std::filesystem::is_directory(_input.path))
+			generateIndex();
+		else
+			Logger::setErrorAndLog(&_input.errorFlag, 404, "do-get: Directory dose not exist");	
 		return;
 	}
 
 	//check if the request is a directory, and return a 301 permanently moved with a / if so
 	if (std::filesystem::is_directory(_input.path))
 	{
-		_response.setRedirect(true);
-		_response.setLocation("Location: " + _baseInput + "/\n");
-		_input.errorFlag = 301;
+		// _response.setRedirect(true);
+		// _response.setLocation("Location: " + _baseInput + "/\n");
+		// _input.errorFlag = 301;
+		_input.errorFlag = 403;
 		return ;
 	}
 
