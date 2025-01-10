@@ -366,8 +366,8 @@ void ServerHandler::generateIndex()
 	std::filesystem::path dirPath(_input.path);
 	std::string body;
 
-	body = "	<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n    <title>" + _input.path + " Directory listing</title>\n</head>\n<body>\n    <h1>";
-	body += _input.path + " directory listing:</h1>\n<ul>";
+	body = "	<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n    <title>" + _baseInput + " directory listing</title>\n</head>\n<body>\n    <h1>";
+	body += _baseInput + " directory listing:</h1>\n<ul>";
 
 	try
 	{
