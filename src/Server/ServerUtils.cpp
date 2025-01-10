@@ -58,6 +58,7 @@ size_t HttpServer::getContentLength(const std::string& requestStr)
     }
     return 0;
 }
+bool HttpServer::isMultiPart(std::string requestStr) { return requestStr.find("multipart/form-data") != std::string::npos; }
 
 bool HttpServer::isRequestWithBody(std::string requestStr) { return requestStr.find("Content-Length:") != std::string::npos; }
 

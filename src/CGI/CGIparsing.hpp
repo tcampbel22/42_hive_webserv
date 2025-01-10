@@ -35,7 +35,7 @@ private:
 	std::string _execInfo;
 public:
 	CGIparsing(std::string, std::string);
-	void setCGIenvironment(HttpRequest&, HttpParser&);
+	void setCGIenvironment(HttpRequest&, HttpParser&, LocationSettings&);
 	void execute(HttpRequest&, std::shared_ptr<LocationSettings>&, int, epoll_event&);
 	std::string getMethod(int);
 	std::string getIp(std::string&);

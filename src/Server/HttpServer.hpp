@@ -78,6 +78,7 @@ public:
 	bool	isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived);
 	bool	isChunkedTransferEncoding(const std::string& requestStr);
 	bool	isRequestWithBody(std::string requestStr);
+	bool	isMultiPart(std::string requestStr);
 	size_t	getContentLength(const std::string& requestStr);
 	void	startServer();
 	void	closeServer();

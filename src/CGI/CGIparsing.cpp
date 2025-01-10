@@ -19,16 +19,15 @@ CGIparsing::CGIparsing(std::string root, std::string script) {
 	_execInfo = "." + root;
 }
 
-void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser) {
+void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser, LocationSettings& cgiBlock) {
 	setenv("REQUEST_METHOD", getMethod(request.method).c_str(), 1);
 	setenv("QUERY_STRING", parser.getQuery().c_str(), 1);
 	if (request.headers.find("Content-Type") != request.headers.end())
 		setenv("CONTENT_TYPE", request.headers.at("Content-Type").c_str(), 1); //default text, needs parsing for images etc.
-	// else
-	// 	setenv("CONTENT_TYPE", "application/x-www-form-urlencoded", 1);
+	setenv("UPLOAD_DIR", cgiBlock.getCgiUploadPath().c_str(), 1);
 	if (request.headers.find("Content-Length") != request.headers.end())
 		setenv("CONTENT_LENGTH", request.headers.at("Content-Length").c_str(), 1);
-	//setenv("PATH_INFO", parser.getPathInfo().c_str(), 1);
+	setenv("PATH_INFO", parser.getPathInfo().c_str(), 1);
 	setenv("SERVER_NAME", request.headers.at("Host").c_str(), 1);
 	setenv("SERVER_PORT", getPort(request.host).c_str(), 1);
 	setenv("REMOTE_ADDR", getIp(request.host).c_str(), 1);
@@ -73,12 +72,20 @@ void	CGITimeout(pid_t &pid, int& errorCode)
 	int elapsed = 0;
 	int	interval = 10; //milliseconds
 	pid_t result;
+    int status;
 
 	while (1)
 	{
-		result = waitpid(pid, NULL, WNOHANG);
+		result = waitpid(pid, &status, WNOHANG);
 		if (result == pid)
+		{
+			if (WIFEXITED(status))
+			{
+				if(WEXITSTATUS(status))
+					Logger::setErrorAndLog(&errorCode, 502, "child process failed");
+			}
 			break;
+		}
 		if (elapsed > CGI_TIMEOUT)
 		{
 			Logger::setErrorAndLog(&errorCode, 504, "Child process teminated due timeout");
@@ -135,6 +142,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 
         // Close the write end of the pipe now that it's duplicated
         close(pipe_fds[WRITE_END]);
+		std::cerr << _execInfo << '\n';
 		const char *const argv[] = {_scriptName.c_str(), nullptr};
         if (execve(_execInfo.c_str(), (char *const *)argv, environ) == -1) {
             Logger::log("execve: " + (std::string)strerror(errno), ERROR, false);
@@ -142,6 +150,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
         }
 
     } else {
+		std::cout << _scriptName << std::endl;
         // Parent process
 		if (request.method == 2) {  // POST method
 			std::string body = request.body;
@@ -165,11 +174,10 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 			// delete client_node;
 		}
 
-		//Allow child process to finish or timeout
-		CGITimeout(pid, request.errorFlag);
+		CGITimeout(pid, request.errorFlag); //Allow child process to finish or timeout
 
-        // Wait for the child process to finish
-        waitpid(pid, NULL, 0);
+		// waitpid(pid, &status, 0); // Wait for the child process to finish
+		
         // Read the output from the child process
 		if (request.errorFlag == 0)
 		{

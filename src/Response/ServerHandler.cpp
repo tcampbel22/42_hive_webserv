@@ -65,6 +65,8 @@ void ServerHandler::responseCode(int code)
 
 int ServerHandler::checkMethod()
 {
+	if (locSettings->isCgiBlock())
+		return 0;
 	std::vector<int> allowedMethods = locSettings->getMethods();
 	for (auto& method : allowedMethods)
 	{
@@ -127,7 +129,7 @@ void ServerHandler::parsePath()
 
 void ServerHandler::executeInput()
 {
-	if (_input.errorFlag > 1)
+	if (_input.errorFlag > 0)
 	{
 		doError();
 		return ;
@@ -140,7 +142,7 @@ void ServerHandler::executeInput()
 		doDelete();
 	else
 		throw std::invalid_argument("Invalid argument");
-	if (_input.errorFlag > 1)
+	if (_input.errorFlag > 0)
 		doError();
 }
 void	ServerHandler::makeMIME()
