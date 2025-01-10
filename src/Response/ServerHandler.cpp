@@ -53,8 +53,7 @@ void ServerHandler::checkPath()
 	if (_input.path.empty())
 		return Logger::setErrorAndLog(&_input.errorFlag, 400, "check-path: path is empty");
 	std::regex validPathRegex("^[a-zA-Z0-9/_.-]+$");
-	if (!std::regex_match(_input.path, validPathRegex) || _input.path.find("..") != std::string::npos \
-		|| _input.path.find("//") != std::string::npos)
+	if (!std::regex_match(_input.path, validPathRegex) || _input.path.find("..") != std::string::npos)
 		return Logger::setErrorAndLog(&_input.errorFlag, 400, "check-path: path syntax error");
 }
 
@@ -78,14 +77,14 @@ int ServerHandler::checkMethod()
 void ServerHandler::getLocationSettings()
 {
 	std::string key = _input.path;
-	int len = 2;
+	int len = key.length();
 
 	while (42)
 	{
 		locSettings = _input.settings->getLocationBlock(key);
 		if (locSettings != nullptr || len < 2)
 			break ;
-		len = key.rfind('/');
+		len--;
 		if (len < 1)
 			len = 1;
 		key = key.substr(0, len);
