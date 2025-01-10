@@ -89,20 +89,22 @@ void	ServerSettings::parsePort(std::vector<std::string>& directive, std::vector<
 	ConfigUtilities::checkDuplicates(port, "port:");
 	ConfigUtilities::checkVectorEnd(directive, it, "port: empty value");
 	ConfigUtilities::checkSemiColon(directive, it, "port: syntax error");
-	int port_num;
+	int n_port;
+	std::string s_port = *it;
+	std::regex port_num("^\\d{4,6}$");
 	try {
-		port_num = stoi(*it);
+		n_port = stoi(s_port);
 	} catch(std::exception& e) {
 		throw std::invalid_argument("port: (nan)");
 	}
-	if (port_num >= 0 && port_num < 65535)
+	if (std::regex_match(s_port, port_num) && n_port >= 1024 && n_port <= 65535)
 	{
-		port = port_num;
+		port = n_port;
 		it++;
 		checkConfigValues(directive, it);
 	}
 	else
-		throw std::runtime_error("invalid port number/invalid syntax" + *it);
+		throw std::runtime_error("invalid port number/invalid syntax: " + *it);
 }
 
 int	checkBodySizeUnit(std::string& num)
