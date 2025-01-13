@@ -184,7 +184,7 @@ void Response::sendResponse(int fd)
 		_buffer += _body;
 	
 	//uncomment this in order to see the response in the terminal
-	//std::cout <<  _buffer << std::endl;
+	// std::cout <<  _buffer << std::endl;
 	
 	try
 	{

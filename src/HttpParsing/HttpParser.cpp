@@ -79,14 +79,14 @@ void HttpParser::checkRedirect(HttpRequest& request, ServerSettings *serverPtr) 
 int HttpParser::isBlockCGI(HttpRequest& request, HttpParser& parser)
 {
 	std::string key = request.path;
-	int len = 2;
+	int len = key.length();
 	LocationSettings *locSettings;
 	while (42)
 	{
 		locSettings = request.settings->getLocationBlock(key);
 		if (locSettings != nullptr || len < 2)
 			break ;
-		len = key.rfind('/');
+		len--;
 		if (len < 1)
 			len = 1;
 		key = key.substr(0, len);
@@ -188,8 +188,8 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events) 
 {
 	// std::cout << "size of clientdatabuffer: " << requestNode->_clientDataBuffer.size() << std::endl;
-	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.begin() + 1000); // Convert to string
-   	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str << "\n\n";
+	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.begin()+1000); // Convert to string
+   	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str;
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr, epollFd, _events);
 	parser._fullyRead = true;

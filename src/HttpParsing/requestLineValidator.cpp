@@ -48,11 +48,14 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 				Logger::setErrorAndLog(&request.errorFlag, 400, "request-line: incorrect path"); //if Path is incorrect: error handling here(HTTP Status 400 or HTTP Status 404).
 			return false;
 		}
-		if (!checkPath(tmp)) { // checking if any there is additional slashes and that it's ascii ('/')
-			if (!request.errorFlag)
-				Logger::setErrorAndLog(&request.errorFlag, 400, "request-line: path syntax error");
-			request.closeConnection = true;
-		}
+		// if (!checkPath(tmp)) { // checking if any there is additional slashes and that it's ascii ('/')
+		// 	if (!request.errorFlag)
+		// 		Logger::setErrorAndLog(&request.errorFlag, 400, "request-line: path syntax error");
+		// 	request.closeConnection = true;
+		// }
+
+		//checks if there are conscutive / in the path and normalizes them to 1 / if so
+		normalizePath(tmp);
 		request.path = tmp;
 		
 		startPos = spPos + 1;
@@ -89,6 +92,14 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 // 		path = trimmedPath;
 // 	}
 // }
+
+void	requestLineValidator::normalizePath(std::string &path)
+{
+	size_t pos;
+
+	while ((pos = path.find("//")) != std::string::npos)
+		path.erase(pos, 1);
+}	
 
 bool requestLineValidator::checkPath(const std::string path) {
 	int	count = 0;
