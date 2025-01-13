@@ -16,7 +16,7 @@
 
 CGIparsing::CGIparsing(std::string root, std::string script) {
 	_scriptName = script.substr(script.find_last_of('/'));
-	_execInfo = "." + root + _scriptName;
+	_execInfo = "." + root;
 }
 
 void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser, LocationSettings& cgiBlock) {
@@ -174,7 +174,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 			// delete client_node;
 		}
 
-		//CGITimeout(pid, request.errorFlag); //Allow child process to finish or timeout
+		CGITimeout(pid, request.errorFlag); //Allow child process to finish or timeout
 
 		waitpid(pid, NULL, 0); // Wait for the child process to finish
 		

@@ -209,7 +209,7 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 				requestComplete = true;
 			}
 			else
-				break;
+				continue;
 		}
 		else if (bytesReceived == 0) //read is successful and client closes connection
 		{

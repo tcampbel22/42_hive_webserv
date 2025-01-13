@@ -204,7 +204,7 @@ def upload_file():
                 print(f"<p>Field name: {field_name}</p>")
                 print(f"<p>File saved as: {filename}</p>")
                 print("</body></html>")
-                print("<a href='/checkbox.html'><button>Back</button></a>")
+                print("<a href='/uploader.html'><button>Back</button></a>")
                 return  # Exit after successful upload
             except Exception as e:
                 # Handle any unexpected errors
@@ -213,13 +213,14 @@ def upload_file():
                 print(f"<h1>Error uploading file</h1>")
                 print(f"<p>{str(e)}</p>")
                 print("</body></html>")
-                print("<a href='/checkbox.html'><button>Back</button></a>")
+                print("<a href='/uploader.html'><button>Back</button></a>")
+                print("<a href='/index.html'><button>Front-Page</button></a>")
                 return
 
     # If no file was uploaded
-    print("Content-Type: text/html\n")
     print("<html><body><h1>No file uploaded. Please select a file to upload.</h1></body></html>")
-    print("<a href='/checkbox.html'><button>Back</button></a>")
+    print("<a href='/uploader.html'><button>Back</button></a>")
+    print("<a href='/index.html'><button>Front-Page</button></a>")
 
 
 if __name__ == "__main__":

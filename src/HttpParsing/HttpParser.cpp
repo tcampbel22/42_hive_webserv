@@ -146,7 +146,6 @@ void HttpParser::checkForCgi(HttpRequest& request, HttpParser& parser, LocationS
 	}
 	std::filesystem::path scriptPath = "." + parser.cgiPath;
 	cgiflag = true;
-	std::cout << scriptPath << '\n';
 	// if (std::filesystem::exists(scriptPath)) {
 	// 	cgiflag = true;
 	// 	std::cout << "path exists" << std::endl; // remove before pushing
