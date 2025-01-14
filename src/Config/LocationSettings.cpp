@@ -241,8 +241,8 @@ void	LocationSettings::addLocationErrorPage(int status, std::string path)
 }
 
 //GETTERS
-std::string&				LocationSettings::getPath() { return path; }
-std::string&				LocationSettings::getRoot() { return root; }
+std::string&				LocationSettings::getPath() { return path;}
+std::string&				LocationSettings::getRoot() { if (isCgi == false) return root; else return cgi_path;}
 std::string&				LocationSettings::getDefaultFile() { return default_file; }
 std::pair<int, std::string>	LocationSettings::getRedirect() { return redirect; }
 std::vector<int>&			LocationSettings::getMethods() { return methods; }
