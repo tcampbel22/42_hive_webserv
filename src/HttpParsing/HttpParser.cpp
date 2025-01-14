@@ -126,9 +126,11 @@ int HttpParser::isBlockCGI(HttpRequest& request, HttpParser& parser)
 // }
 
 void HttpParser::checkForCgi(HttpRequest& request, HttpParser& parser, LocationSettings& cgibloc) {
-	std::string location = cgibloc.getPath();
+	//std::string location = cgibloc.getPath();
 	parser.cgiPath.append(request.path);
 	parser.cgiPath.erase(0, cgibloc.getPath().length());
+	if (parser.cgiPath.front() != '/' && cgibloc.getCgiPath().back() != '/')
+		parser.cgiPath.insert(0, "/");
 	parser.cgiPath.insert(0, cgibloc.getCgiPath());
 	size_t pos = parser.cgiPath.find('?');
 	if (pos != std::string::npos)
@@ -144,6 +146,11 @@ void HttpParser::checkForCgi(HttpRequest& request, HttpParser& parser, LocationS
 		if (parser.cgiPath[parser.cgiPath.find(".py") + 3] == '/')
 			parser.cgiPath.erase(parser.cgiPath.find(".py") + 3);
 	}
+	if (parser.cgiPath.back() == '/')
+		{
+			cgiflag = false;
+			return ;
+		}
 	std::filesystem::path scriptPath = "." + parser.cgiPath;
 	cgiflag = true;
 	// if (std::filesystem::exists(scriptPath)) {

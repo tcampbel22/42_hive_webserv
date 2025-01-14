@@ -194,7 +194,7 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 	{
 		nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
 		bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
-		usleep(100);
+		// usleep(100);
 		if (bytesReceived < bytes) 
 		{
 			if (bytesReceived < 0)
