@@ -129,7 +129,6 @@ void ServerHandler::parsePath()
 	}
 	if (checkMethod())
 		return Logger::setErrorAndLog(&_input.errorFlag, 405, "parse-path: method not allowed");
-	std::cout << _input.path << "\n";
 }
 
 
@@ -409,7 +408,6 @@ void ServerHandler::doGet()
 	//if so, generate the directory index
 	if (_input.path.back() == '/' && locSettings->isAutoIndex() == true)
 	{
-		std::cout << "got here\n";
 		if (std::filesystem::is_directory(_input.path))
 			generateIndex();
 		else
