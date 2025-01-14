@@ -194,22 +194,20 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 	{
 		nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
 		bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
-		// usleep(100);
 		if (bytesReceived < bytes) 
 		{
+			int temp = bytesReceived;
 			if (bytesReceived < 0)
-				bytesReceived = 0;
-			nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - bytesReceived));
+				temp = 0;
+			nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - temp));
 		}
 		if (bytesReceived < 0)
 		{
-			if (!isNonBlockingSocket(nodePtr->fd)) //check if there is an error with recv
+			if (isNonBlockingSocket(nodePtr->fd)) //check if there is an error with recv
 			{
-				Logger::log("recv error: " + (std::string)strerror(errno), ERROR, false);
+				Logger::log("recv: " + (std::string)strerror(errno), ERROR, false);
 				requestComplete = true;
 			}
-			else
-				continue;
 		}
 		else if (bytesReceived == 0) //read is successful and client closes connection
 		{
