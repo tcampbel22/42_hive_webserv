@@ -48,12 +48,6 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 				Logger::setErrorAndLog(&request.errorFlag, 400, "request-line: incorrect path"); //if Path is incorrect: error handling here(HTTP Status 400 or HTTP Status 404).
 			return false;
 		}
-		// if (!checkPath(tmp)) { // checking if any there is additional slashes and that it's ascii ('/')
-		// 	if (!request.errorFlag)
-		// 		Logger::setErrorAndLog(&request.errorFlag, 400, "request-line: path syntax error");
-		// 	request.closeConnection = true;
-		// }
-
 		//checks if there are conscutive / in the path and normalizes them to 1 / if so
 		normalizePath(tmp);
 		request.path = tmp;
@@ -68,31 +62,6 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 	return true;
 }
 
-// void requestLineValidator::trimPath(std::string& path) {
-// 	if (!checkPath(path))
-// 	{
-// 		std::string trimmedPath;
-// 		bool		lastWasSlash = false;
-// 		for (size_t i = 0; i < path.length(); i++) {
-// 			if (path[i] == '/') {
-// 				if (!lastWasSlash) {
-// 					trimmedPath += '/';
-// 					lastWasSlash = true;
-// 				}
-// 			}
-// 			else {
-// 				trimmedPath += path[i];
-// 				lastWasSlash = false;
-// 			}
-// 		}
-// 		if (trimmedPath.length() > 1 && trimmedPath.back() == '/') { //might need to remove, removes the trailing slash ('/')
-//             trimmedPath.pop_back();
-//         }
-// 		// std::cout << trimmedPath << std::endl;
-// 		path = trimmedPath;
-// 	}
-// }
-
 void	requestLineValidator::normalizePath(std::string &path)
 {
 	size_t pos;
@@ -101,19 +70,19 @@ void	requestLineValidator::normalizePath(std::string &path)
 		path.erase(pos, 1);
 }	
 
-bool requestLineValidator::checkPath(const std::string path) {
-	int	count = 0;
-	for (size_t i = 0; i < path.length(); i++) {
-		if (path[i] && path[i] == '/' && path[i + 1] == '/')
-			count++;
-	}
-	if (count > 0)
-		return false;
-	if (!path.compare("/"))
-		return true ;
-	// std::regex regex("^(\\/[a-zA-Z0-9._~-]+(?:%[0-9A-Fa-f]{2}|[a-zA-Z0-9._~-])*)*$");
-	// return std::regex_search(path, regex);
-	return true;
+// bool requestLineValidator::checkPath(const std::string path) {
+// 	int	count = 0;
+// 	for (size_t i = 0; i < path.length(); i++) {
+// 		if (path[i] && path[i] == '/' && path[i + 1] == '/')
+// 			count++;
+// 	}
+// 	if (count > 0)
+// 		return false;
+// 	if (!path.compare("/"))
+// 		return true ;
+// 	// std::regex regex("^(\\/[a-zA-Z0-9._~-]+(?:%[0-9A-Fa-f]{2}|[a-zA-Z0-9._~-])*)*$");
+// 	// return std::regex_search(path, regex);
+// 	return true;
 	
-}
+// }
 

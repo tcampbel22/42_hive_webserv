@@ -104,8 +104,6 @@ import cgi
 import os
 from urllib.parse import parse_qs, unquote
 
-UPLOAD_DIR = './root/var/html/temp/'  # Define your upload directory
-
 def parse_query_strings(query_string):
     decoded_string = unquote(query_string)  # Decodes the URL-encoded query string
     parsed_key_value_pairs = parse_qs(decoded_string)  # Parse into key-value pairs
@@ -114,7 +112,6 @@ def parse_query_strings(query_string):
 
 def handle_get():
     query_string = os.getenv("QUERY_STRING")
-    print("Content-Type: text/html\n")  # Make sure to output headers first
     if query_string:
         query_pairs = parse_query_strings(query_string)
         print("<html>")
@@ -131,41 +128,8 @@ def handle_get():
         print("<html><body><h1>Whats up this is the cgi</h1></body></html>")
     print("<a href='/index.html'><button>Front-Page</button></a>")
 
-def upload_file():
-    if not os.path.exists(UPLOAD_DIR):
-        os.makedirs(UPLOAD_DIR)  # Ensure the upload directory exists
-
-    # Get the form data
-    form = cgi.FieldStorage()
-
-    # Check if the file was uploaded
-    file_item = form['file']
-    if file_item.filename:
-        # Sanitize the filename
-        filename = os.path.basename(file_item.filename)
-        filepath = os.path.join(UPLOAD_DIR, filename)
-
-        # Open a new file to write the uploaded content
-        with open(filepath, 'wb') as f:
-            f.write(file_item.file.read())
-
-        # Send a success message
-        print("Content-Type: text/html\n")
-        print("<html><body>")
-        print(f"<h2>File uploaded successfully!</h2>")
-        print(f"<p>Your file has been saved as {filename}.</p>")
-        print("</body></html>")
-        return  # Stop further processing
-
 def handle_post():
     # Create FieldStorage manually using the read data
-    contentType = os.getenv("CONTENT_TYPE")
-    print("Content-Type: text/html\n")
-    
-    if contentType and "multipart/form-data" in contentType:
-        upload_file()  # Handle file upload
-        return  # Stop further processing after file upload
-
     form = cgi.FieldStorage()
     if form:
         print("<html><body>")

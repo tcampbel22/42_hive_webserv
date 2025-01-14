@@ -142,7 +142,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 
         // Close the write end of the pipe now that it's duplicated
         close(pipe_fds[WRITE_END]);
-		std::cerr << _execInfo << '\n';
+		std::cerr << "exec info: " <<_execInfo << '\n';
 		const char *const argv[] = {_scriptName.c_str(), nullptr};
         if (execve(_execInfo.c_str(), (char *const *)argv, environ) == -1) {
             Logger::log("execve: " + (std::string)strerror(errno), ERROR, false);
@@ -176,7 +176,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 
 		CGITimeout(pid, request.errorFlag); //Allow child process to finish or timeout
 
-		// waitpid(pid, &status, 0); // Wait for the child process to finish
+		waitpid(pid, NULL, 0); // Wait for the child process to finish
 		
         // Read the output from the child process
 		if (request.errorFlag == 0)

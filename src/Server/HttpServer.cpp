@@ -194,6 +194,7 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 	{
 		nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
 		bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
+		usleep(100);
 		if (bytesReceived < bytes) 
 		{
 			if (bytesReceived < 0)
@@ -208,7 +209,7 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 				requestComplete = true;
 			}
 			else
-				break;
+				continue;
 		}
 		else if (bytesReceived == 0) //read is successful and client closes connection
 		{

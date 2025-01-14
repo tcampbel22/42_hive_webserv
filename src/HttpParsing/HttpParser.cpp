@@ -146,7 +146,6 @@ void HttpParser::checkForCgi(HttpRequest& request, HttpParser& parser, LocationS
 	}
 	std::filesystem::path scriptPath = "." + parser.cgiPath;
 	cgiflag = true;
-	std::cout << scriptPath << '\n';
 	// if (std::filesystem::exists(scriptPath)) {
 	// 	cgiflag = true;
 	// 	std::cout << "path exists" << std::endl; // remove before pushing
@@ -202,6 +201,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 			myCgi.setCGIenvironment(request, parser, *cgiBlock);
 			myCgi.execute(request, cgiBlock, epollFd, _events);
 			// request.isCGI = true;
+			//std::cout << request.body << std::endl;
 		}
 		else {
 			Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
