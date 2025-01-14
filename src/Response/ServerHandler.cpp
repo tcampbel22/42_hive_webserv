@@ -353,6 +353,7 @@ void ServerHandler::doPost()
 				return Logger::setErrorAndLog(&_input.errorFlag, 401, "do-post: no write permissions/file failed to open");
 			file << _input.body;
 			file.close();
+			_response.setResponseCode(200);
 		}
 		else
 		{
@@ -361,8 +362,9 @@ void ServerHandler::doPost()
 				return Logger::setErrorAndLog(&_input.errorFlag, 500, "do-post: failed to create file");
 			new_file << _input.body;
 			new_file.close();
+			_response.setResponseCode(201);
+			_response.setLocation("Location: " + _baseInput + "\r\n");
 		}
-		_response.setResponseCode(200);
 	}
 	else
 		return Logger::setErrorAndLog(&_input.errorFlag, 405, "do-post: directory does not exist"); //creation of directory not allowed

@@ -175,7 +175,7 @@ void Response::sendResponse(int fd)
 	_buffer += getContentLength();
 	if (_closeConnection == true)
 		_buffer += "Connection: close\r\n";
-	if (_redirect == true)
+	if (_redirect == true || getResponseCode() == 201)
 		_buffer += _location;
 	_buffer += makeDate();
 	_buffer += "\r\n";
