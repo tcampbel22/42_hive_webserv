@@ -227,7 +227,7 @@ void	ServerSettings::parseLocationBlock(std::vector<std::string>& location, std:
 {
 	
 	ConfigUtilities::checkVectorEnd(location, it, "location: invalid URI/path");
-	std::regex uri("\\/[a-zA-Z0-9._\\-\\/]*");
+	std::regex uri("^(?!.*//)(?!.*--)(?!.*\\.\\.)[a-zA-Z0-9._\\-/]*$");
 	if (std::next(it) != location.end() && std::regex_match(*it, uri) && !std::next(it)->compare("{"))
 		parseLocationBlockSettings(location, it);
 	else

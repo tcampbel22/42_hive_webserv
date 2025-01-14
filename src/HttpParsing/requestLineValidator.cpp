@@ -69,20 +69,3 @@ void	requestLineValidator::normalizePath(std::string &path)
 	while ((pos = path.find("//")) != std::string::npos)
 		path.erase(pos, 1);
 }	
-
-// bool requestLineValidator::checkPath(const std::string path) {
-// 	int	count = 0;
-// 	for (size_t i = 0; i < path.length(); i++) {
-// 		if (path[i] && path[i] == '/' && path[i + 1] == '/')
-// 			count++;
-// 	}
-// 	if (count > 0)
-// 		return false;
-// 	if (!path.compare("/"))
-// 		return true ;
-// 	// std::regex regex("^(\\/[a-zA-Z0-9._~-]+(?:%[0-9A-Fa-f]{2}|[a-zA-Z0-9._~-])*)*$");
-// 	// return std::regex_search(path, regex);
-// 	return true;
-	
-// }
-

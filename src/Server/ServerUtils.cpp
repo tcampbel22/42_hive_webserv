@@ -40,8 +40,10 @@ void	HttpServer::setNonBlocking(int socket)
 bool HttpServer::isNonBlockingSocket(int fd) 
 {
     int flags = fcntl(fd, F_GETFL, 0);
-    if (flags == -1) {
-        return false;
+    if (flags == -1) 
+	{
+		Logger::log("fcntl: " + (std::string)strerror(errno), ERROR, false);
+		return false;
     }
     return (flags & O_NONBLOCK) != 0;
 }
