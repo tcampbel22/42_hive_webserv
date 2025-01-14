@@ -75,7 +75,7 @@ void HttpParser::checkRedirect(HttpRequest& request, ServerSettings *serverPtr) 
 		request.path = block->getRedirectPath();
 }
 
-//tries to get the location settings by using location block matching rules, defaults to / if unsuccessful
+//tries to get the location settings by using location bloccgi-bin/cgitester.pyk matching rules, defaults to / if unsuccessful
 int HttpParser::isBlockCGI(HttpRequest& request, HttpParser& parser)
 {
 	std::string key = request.path;
