@@ -194,19 +194,23 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 	{
 		nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
 		bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
+		//Logger::log("Bytes received: " + std::to_string(bytesReceived), INFO, true);
+		//Logger::log("Request completeness: " + std::to_string(requestComplete), INFO, true);
 		if (bytesReceived < bytes) 
 		{
 			int temp = bytesReceived;
 			if (bytesReceived < 0)
 				temp = 0;
 			nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - temp));
+			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
+			//Logger::log("Received data: " + std::string(nodePtr->_clientDataBuffer.begin(), nodePtr->_clientDataBuffer.end()), INFO, true);
 		}
 		if (bytesReceived < 0)
 		{
 			if (isNonBlockingSocket(nodePtr->fd)) //check if there is an error with recv
 			{
 				Logger::log("recv: " + (std::string)strerror(errno), ERROR, false);
-				requestComplete = true;
+				requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, bytesReceived);
 			}
 		}
 		else if (bytesReceived == 0) //read is successful and client closes connection
@@ -232,31 +236,29 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
 		else
 			return false;
 	}
-	(void) bytesReceived; //remove this if not needed
 	bool isMulti = isMultiPart(requestStr);
 	if (isMulti)
 	{
 		if (requestStr.find("--\r\n") != std::string::npos) {  // End of multipart data
-        	return true;
+        		return true;
    		}
 		else
 			return false;
 	}
 	bool hasBody = isRequestWithBody(requestStr);
 	if (hasBody && !isMulti) {
-		// size_t complete = getContentLength(requestStr); //with nonchunked body;
-		// if (complete > 0 && bytesReceived != 1024)
-		// if (bytesReceived != 1024)
-		int test = 0;
-		test = requestStr.find("\r\n\r\n");
-		if (requestStr.find("\r\n\r\n", test + 4) != std::string::npos)
+		size_t complete = getContentLength(requestStr); //with nonchunked body;
+		if (complete < 0)
+			return true;
+		size_t test = requestStr.find("\r\n\r\n") + 4;
+		if ((requestStr.find("\r\n\r\n", test) != std::string::npos) || (bytesReceived - test == complete))
 			return true;
 		else
 			return false;
 	}
 	if (!isChunked && !hasBody && !isMulti) 
 	{
-		if (requestStr.find("\r\n\r\n") != std::string::npos)  // End of nonBody data 
+		if (requestStr.find("\r\n\r\n") != std::string::npos)  // End of nonBody data
 			return true;
 		else
 			return false;
