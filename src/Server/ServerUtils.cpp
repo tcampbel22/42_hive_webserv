@@ -55,8 +55,16 @@ size_t HttpServer::getContentLength(const std::string& requestStr)
     {
         size_t start = pos + 15;
         size_t end = requestStr.find("\r\n", start);
-        std::string lengthStr = requestStr.substr(start, end - start);
-        return std::stoi(lengthStr);
+		if (end != std::string::npos) {
+        	std::string lengthStr = requestStr.substr(start, end - start);
+        	try {
+				return std::stoi(lengthStr);
+			} catch(std::exception& e) 
+			{
+				Logger::log("stoi: " + (std::string)strerror(errno), ERROR, false);
+				return -1;
+			}
+		}
     }
     return 0;
 }
