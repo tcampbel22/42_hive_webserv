@@ -150,7 +150,6 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
         }
 
     } else {
-		std::cout << _scriptName << std::endl;
         // Parent process
 		if (request.method == 2) {  // POST method
 			std::string body = request.body;

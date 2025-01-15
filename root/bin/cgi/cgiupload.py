@@ -10,12 +10,54 @@ UPLOAD_DIR = os.getenv("UPLOAD_DIR")
 def get_file_extension(content_type):
     # Map common content types to file extensions
     mime_map = {
-        "image/png": ".png",
-        "image/jpeg": ".jpg",
-        "image/gif": ".gif",
-        "application/pdf": ".pdf",
-        "text/plain": ".txt",
-        "application/json": ".json",
+        # Images
+    "image/png": ".png",
+    "image/jpg": ".jpg",
+    "image/jpeg": ".jpeg",
+    "image/gif": ".gif",
+    "image/bmp": ".bmp",
+    "image/webp": ".webp",
+    "image/tiff": ".tiff",
+
+    # Documents
+    "application/pdf": ".pdf",
+    "application/octet-stream": ".jpg",
+    "application/msword": ".doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "application/vnd.ms-excel": ".xls",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+    "application/vnd.ms-powerpoint": ".ppt",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+    "text/plain": ".txt",
+    "application/json": ".json",
+    "text/csv": ".csv",
+    "text/html": ".html",
+    "application/xml": ".xml",
+
+    # Audio
+    "audio/mpeg": ".mp3",
+    "audio/wav": ".wav",
+    "audio/ogg": ".ogg",
+    "audio/aac": ".aac",
+
+    # Video
+    "video/mp4": ".mp4",
+    "video/mpeg": ".mpeg",
+    "video/ogg": ".ogv",
+    "video/webm": ".webm",
+
+    # Archives
+    "application/zip": ".zip",
+    "application/x-tar": ".tar",
+    "application/x-7z-compressed": ".7z",
+    "application/x-rar-compressed": ".rar",
+    "application/gzip": ".gz",
+
+    # Fonts
+    "font/ttf": ".ttf",
+    "font/otf": ".otf",
+    "font/woff": ".woff",
+    "font/woff2": ".woff2"
     }
     return mime_map.get(content_type, ".")  # Default to no extension if unknown
 
