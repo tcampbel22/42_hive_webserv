@@ -236,12 +236,11 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
 		else
 			return false;
 	}
-	//(void) bytesReceived; //remove this if not needed
 	bool isMulti = isMultiPart(requestStr);
 	if (isMulti)
 	{
 		if (requestStr.find("--\r\n") != std::string::npos) {  // End of multipart data
-        	return true;
+        		return true;
    		}
 		else
 			return false;
