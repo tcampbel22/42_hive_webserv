@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload Without Fetch</title>
+</head>
+<body>
+
+    <h2>Upload a File Without Fetch</h2>
+    <input type="file" id="fileInput" />
+    <button onclick="uploadFile()">Upload</button>
+
+    <script>
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert("Please select a file to upload.");
+                return;
+            }
+
+            // Create a new XMLHttpRequest
+            const xhr = new XMLHttpRequest();
+
+            // Set up the request with the method and URL
+            const fileName = encodeURIComponent(file.name);
+            const uploadUrl = `/temp/${fileName}`;
+
+            xhr.open("POST", uploadUrl, true);
+            xhr.setRequestHeader("Content-Type", "application/octet-stream");
+
+            // Event listener for successful file upload
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    console.log("File uploaded successfully!");
+                    alert("File uploaded successfully!");
+                } else {
+                    console.error("Error uploading file:", xhr.statusText);
+                    alert("Error uploading file.");
+                }
+            };
+
+            // Send the file content as raw binary data (ArrayBuffer)
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const fileContent = event.target.result; // Binary file data
+                xhr.send(fileContent);  // Send the file data as the request body
+            };
+
+            reader.readAsArrayBuffer(file);  // Read file as binary
+        }
+    </script>
+
+</body>
+</html>
