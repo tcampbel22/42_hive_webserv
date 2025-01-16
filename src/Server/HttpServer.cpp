@@ -190,12 +190,10 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 	ssize_t bytesReceived = 0;
 	ssize_t bytes = 1024;
 	requestComplete = false;
-	while (!requestComplete)
-	{
+	//while (!requestComplete)
+	//{
 		nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
 		bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
-		//Logger::log("Bytes received: " + std::to_string(bytesReceived), INFO, true);
-		//Logger::log("Request completeness: " + std::to_string(requestComplete), INFO, true);
 		if (bytesReceived < bytes) 
 		{
 			int temp = bytesReceived;
@@ -203,14 +201,14 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 				temp = 0;
 			nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - temp));
 			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
-			//Logger::log("Received data: " + std::string(nodePtr->_clientDataBuffer.begin(), nodePtr->_clientDataBuffer.end()), INFO, true);
 		}
 		if (bytesReceived < 0)
 		{
 			if (isNonBlockingSocket(nodePtr->fd)) //check if there is an error with recv
 			{
 				Logger::log("recv: " + (std::string)strerror(errno), ERROR, false);
-				requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, bytesReceived);
+				requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
+				// requestComplete = true;
 			}
 		}
 		else if (bytesReceived == 0) //read is successful and client closes connection
@@ -220,10 +218,15 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 			_clientClosedConn = true;
 		}
 		else
-			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, bytesReceived);
-	}
+			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
+	//}
 }
-
+std::string getBoundary(std::string requestString) {
+	size_t pos = requestString.find("WebKitFormBoundary");
+	std::string boundaryCode = requestString.substr(pos, requestString.find_first_of("\r\n", pos) - pos);
+	boundaryCode.append("--");
+	return boundaryCode;
+}
 // Function to check if the request is fully received (for chunked encoding or complete body)
 bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived)
 {
@@ -239,15 +242,16 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
 	bool isMulti = isMultiPart(requestStr);
 	if (isMulti)
 	{
-		if (requestStr.find("--\r\n") != std::string::npos) {  // End of multipart data
-        		return true;
+		std::string multi = getBoundary(requestStr);
+		if (requestStr.find(multi) != std::string::npos) {  // End of multipart data
+        	return true;
    		}
 		else
 			return false;
 	}
 	bool hasBody = isRequestWithBody(requestStr);
 	if (hasBody && !isMulti) {
-		size_t complete = getContentLength(requestStr); //with nonchunked body;
+		size_t complete = getContentLength(requestStr);
 		if (complete < 0)
 			return true;
 		size_t test = requestStr.find("\r\n\r\n") + 4;
