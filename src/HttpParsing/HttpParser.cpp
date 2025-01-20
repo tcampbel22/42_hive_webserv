@@ -32,7 +32,6 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
     	std::string line;
 		//Parse the requestline and store the relevant stuff (path and method)
 		if (!std::getline(requestStream, line) || !requestLineValidator::isValidRequestLine(line, request)) {
-			//error shit in here if first line is bad: ERROR 400 according to RFC
 			if (requestStream.bad() || requestStream.fail())
 				Logger::log("parseClientRequest: could not read request line", ERROR, false);
 			else
@@ -125,16 +124,7 @@ void HttpParser::checkForCgi(HttpRequest& request, HttpParser& parser, LocationS
 			cgiflag = false;
 			return ;
 		}
-	std::filesystem::path scriptPath = "." + parser.cgiPath;
 	cgiflag = true;
-	// if (std::filesystem::exists(scriptPath)) {
-	// 	cgiflag = true;
-	// 	std::cout << "path exists" << std::endl; // remove before pushing
-	// }
-	// else {
-	// 	cgiflag = false;
-	// 	std::cout << "path doesn't exist" << std::endl; //remove berfore bushing
-	// }
 }
 
 void HttpParser::parseBody(HttpRequest& request, std::istringstream& stream) {
@@ -167,9 +157,6 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 
 int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events) 
 {
-	// std::cout << "size of clientdatabuffer: " << requestNode->_clientDataBuffer.size() << std::endl;
-	// std::string str(requestNode->_clientDataBuffer.begin(), requestNode->_clientDataBuffer.end()); // Convert to string
-   	// std::cout << "-------------------------------------------------------------------------------------\n\n" << str << "\n";
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr, epollFd, _events);
 	parser._fullyRead = true;
@@ -181,8 +168,6 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 			CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
 			myCgi.setCGIenvironment(request, parser, *cgiBlock);
 			myCgi.execute(request, cgiBlock, epollFd, _events);
-			// request.isCGI = true;
-			//std::cout << request.body << std::endl;
 		}
 		else {
 			Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");

@@ -103,7 +103,7 @@ void HttpServer::startListening()
 					}
                 }
                 else
-                    Logger::log("Waiting for more data...", INFO, true);
+                    Logger::log("Waiting for more data...", INFO, false);
             }
 			else if (_eventsArr[i].events & EPOLLOUT && nodePtr->_readyToSend)
 			{
@@ -190,8 +190,7 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 	ssize_t bytesReceived = 0;
 	ssize_t bytes = 1024;
 	requestComplete = false;
-	//while (!requestComplete)
-	//{
+
 		nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
 		bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
 		if (bytesReceived < bytes) 
@@ -219,7 +218,6 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 		}
 		else
 			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
-	//}
 }
 std::string getBoundary(std::string requestString) {
 	size_t pos = requestString.find("WebKitFormBoundary");
@@ -239,18 +237,8 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
 		else
 			return false;
 	}
-	bool isMulti = isMultiPart(requestStr);
-	if (isMulti)
-	{
-		std::string multi = getBoundary(requestStr);
-		if (requestStr.find(multi) != std::string::npos) {  // End of multipart data
-        	return true;
-   		}
-		else
-			return false;
-	}
 	bool hasBody = isRequestWithBody(requestStr);
-	if (hasBody && !isMulti) {
+	if (hasBody) {
 		size_t complete = getContentLength(requestStr);
 		if (complete < 0)
 			return true;
@@ -260,7 +248,7 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
 		else
 			return false;
 	}
-	if (!isChunked && !hasBody && !isMulti) 
+	if (!isChunked && !hasBody) 
 	{
 		if (requestStr.find("\r\n\r\n") != std::string::npos)  // End of nonBody data
 			return true;
