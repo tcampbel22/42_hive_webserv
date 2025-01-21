@@ -205,7 +205,7 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 		{
 			if (isNonBlockingSocket(nodePtr->fd)) //check if there is an error with recv
 			{
-				Logger::log("recv: " + (std::string)strerror(errno), ERROR, false);
+				Logger::log("recv: failed to read, better check ERRNO :/", ERROR, false);
 				requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
 				// requestComplete = true;
 			}

@@ -105,7 +105,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 	(void)cgiblock;
     // Create a pipe
     if (pipe(pipe_fds) == -1) {
-        Logger::log("pipe: "  + (std::string)strerror(errno), ERROR, false);
+        Logger::log("pipe: failed to open", ERROR, false);
         exit(1);
     }
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, pipe_fds[WRITE_END], &_events) == -1)
@@ -119,7 +119,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
     // Fork the child process
     pid = fork();
     if (pid == -1) {
-        Logger::log("fork: " + (std::string)strerror(errno), ERROR, false);
+        Logger::log("fork: failed to fork", ERROR, false);
         exit(1);
     }
 	
@@ -130,11 +130,11 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 
         // Redirect stdout to the write end of the pipe
         if (dup2(pipe_fds[WRITE_END], STDOUT_FILENO) == -1) {
-            Logger::log("dup2: " + (std::string)strerror(errno), ERROR, false);
+            Logger::log("dup2: failed", ERROR, false);
             exit(1);
         }
 		if (dup2(pipe_fds[READ_END], STDIN_FILENO) == -1) {
-            Logger::log("dup2: "  + (std::string)strerror(errno), ERROR, false);
+            Logger::log("dup2: failed", ERROR, false);
             exit(1);
         }
 
@@ -144,7 +144,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
         close(pipe_fds[WRITE_END]);
 		const char *const argv[] = {_scriptName.c_str(), nullptr};
         if (execve(_execInfo.c_str(), (char *const *)argv, environ) == -1) {
-            Logger::log("execve: " + (std::string)strerror(errno), ERROR, false);
+            Logger::log("execve: failed to execute command", ERROR, false);
             exit(1);
         }
 

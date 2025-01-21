@@ -11,21 +11,20 @@
 /**********************************************************************************/
 
 #pragma once
-# include <string>
-# include <sys/socket.h>
-# include <iostream>
-# include <stdlib.h>
-# include <unistd.h>
-# include <netinet/in.h>
-# include <sstream>
-# include <arpa/inet.h>
-# include <vector>
-# include <sys/epoll.h>
-# include <fcntl.h>
-# include <sys/sendfile.h>
-# include "../HttpParsing/HttpParser.hpp"
-# include "../Config/ServerSettings.hpp"
-#include <errno.h>
+#include <string>
+#include <sys/socket.h>
+#include <iostream>
+#include <stdlib.h>
+#include <unistd.h>
+#include <netinet/in.h>
+#include <sstream>
+#include <arpa/inet.h>
+#include <vector>
+#include <sys/epoll.h>
+#include <fcntl.h>
+#include <sys/sendfile.h>
+#include "../HttpParsing/HttpParser.hpp"
+#include "../Config/ServerSettings.hpp"
 #include <string.h>
 #include "../Response/Response.hpp"
 #include <memory>
