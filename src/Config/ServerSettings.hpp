@@ -40,6 +40,7 @@ private:
 	std::string host;
 	int			port;
 	int			max_client_body_size;
+	std::vector <std::string> server_names;
 	std::unordered_map<int, std::string> error_pages;
 	std::unordered_map<std::string, LocationSettings> locations;
 
@@ -52,6 +53,7 @@ public:
 	void						parseServerBlock(std::vector<std::string>& serverBlock, std::vector<std::string>::iterator& it, std::vector<std::string>::iterator end);
 	void						parseHost(std::vector<std::string>& directive, std::vector<std::string>::iterator& it);
 	void						parsePort(std::vector<std::string>& directive, std::vector<std::string>::iterator& it);
+	void						parseServerNames(std::vector<std::string>& directive, std::vector<std::string>::iterator& it);
 	void						parseMaxBodySize(std::vector<std::string>& directive, std::vector<std::string>::iterator& it);
 	void						parseErrorPages(std::vector<std::string>& serverBlock, std::vector<std::string>::iterator& it);
 	void						checkConfigValues(std::vector<std::string>& directive, std::vector<std::string>::iterator& it);
@@ -73,5 +75,6 @@ public:
 	std::unordered_map<int, std::string>&				getAllErrorPages();
 	std::string											getErrorPages(int key);
 	LocationSettings*									getLocationBlock(const std::string key);
-	std::shared_ptr<LocationSettings>					getCgiBlock();	
+	std::shared_ptr<LocationSettings>					getCgiBlock();
+	std::vector<std::string>							getServerNames();
 };

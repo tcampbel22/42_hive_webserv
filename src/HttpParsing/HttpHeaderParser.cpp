@@ -64,12 +64,28 @@ void HttpHeaderParser::procesHeaderFields(HttpRequest& request, int& contentLeng
 		contentLength = 0;
 	}
 }
+
+bool	checkServerNames(ServerSettings* ptr, HttpRequest& request)
+{
+	std::vector<std::string> temp = ptr->getServerNames();
+	std::string	host = request.host.substr(0, request.host.find(':'));
+	auto it = std::find(temp.begin(), temp.end(), host);
+	if (it != temp.end())
+	{
+		std::string temp_host = *it;
+		request.host.erase(0, temp_host.length());
+		request.host.insert(0, ptr->getHost());
+		return true;
+	}
+	return false;
+}
+
 bool HttpHeaderParser::HostParse(ServerSettings* serverPtr, HttpRequest& request) 
 {
-	if (request.host.find("localhost") != std::string::npos) {
+	if (!checkServerNames(serverPtr, request) && request.host.find("localhost") != std::string::npos) {
 		std::string host = "localhost";
 		request.host.erase(0, host.length());
-		request.host.insert(0, "127.0.0.1");
+		request.host.insert(0, serverPtr->getHost());
 	}
 	if (request.host  == serverPtr->getKey()) {
 		return true;

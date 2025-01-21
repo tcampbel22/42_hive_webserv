@@ -32,10 +32,11 @@ public:
 	static	void	shiftLocationBlock(std::vector<std::string>& location, std::vector<std::string>::iterator& it);
 	static	void	checkVectorEnd(std::vector<std::string>& vec, std::vector<std::string>::iterator& it, std::string msg);
 	static	void	checkSemiColon(std::vector<std::string>& vec, std::vector<std::string>::iterator it, std::string msg);
-	static	void	checkDuplicates(std::variant<int, bool, std::string, std::vector<int>, std::pair<int, std::string>> val, std::string msg);
+	static	void	checkDuplicates(std::variant<int, bool, std::string, std::vector<int>, std::vector<std::string>, std::pair<int, std::string>> val, std::string msg);
 	static	void	printServerBlock(ServerSettings server);
 	static	void	printLocationBlock(LocationSettings location);
 	static	void	checkMethodDuplicates(std::vector<int>& location);
+	static	void	checkServerNameDuplicates(std::vector<std::string> server_names);
 	static	void	checkDefaultBlock(ServerSettings block, bool server);
 	static	bool	checkErrorCode(int code, bool error);
 	static	void	printWhiteSpace(std::string str);

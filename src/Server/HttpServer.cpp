@@ -144,10 +144,10 @@ void	HttpServer::addServerToEpoll()
 	 {
 		auto it = settings_vec[i];
 		_events.events = EPOLLIN;
-		fdNode* server_node = new fdNode;
+		std::shared_ptr<fdNode> server_node = std::make_shared<fdNode>();
 		server_node->fd = settings_vec[i]._fd;
 		server_node->serverPtr = &settings_vec[i];
-		_events.data.ptr = server_node;
+		_events.data.ptr = server_node.get();
 		server_nodes.push_back(server_node);
 		setNonBlocking(server_node->fd);
 		
@@ -205,7 +205,7 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 		{
 			if (isNonBlockingSocket(nodePtr->fd)) //check if there is an error with recv
 			{
-				Logger::log("recv: " + (std::string)strerror(errno), ERROR, false);
+				Logger::log("recv: failed to read, better check ERRNO :/", ERROR, false);
 				requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
 				// requestComplete = true;
 			}
@@ -239,11 +239,11 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
 	}
 	bool hasBody = isRequestWithBody(requestStr);
 	if (hasBody) {
-		size_t complete = getContentLength(requestStr);
+		int complete = getContentLength(requestStr);
 		if (complete < 0)
 			return true;
 		size_t test = requestStr.find("\r\n\r\n") + 4;
-		if ((requestStr.find("\r\n\r\n", test) != std::string::npos) || (bytesReceived - test == complete))
+		if ((requestStr.find("\r\n\r\n", test) != std::string::npos) || (bytesReceived - test == (size_t)complete))
 			return true;
 		else
 			return false;
@@ -261,10 +261,9 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
 void HttpServer::closeServer()
 {
 	close(epollFd);
+	_ip_port_list.clear();
 	for (auto it = settings_vec.begin(); it != settings_vec.end(); it++)
 		close(it->_fd);
-	for (auto it : server_nodes)
-		delete it;
 	for (auto it : client_nodes)
 	{
 		close(it.first);
@@ -273,6 +272,7 @@ void HttpServer::closeServer()
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
 	Logger::log("\nExit signal received, server shutting down.. ", INFO, true);
+	Logger::closeLogger();
 }
 
 HttpServer::~HttpServer()

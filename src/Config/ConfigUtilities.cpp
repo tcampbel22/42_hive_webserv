@@ -58,7 +58,7 @@ void	ConfigUtilities::checkSemiColon(std::vector<std::string>& vec, std::vector<
 		throw std::runtime_error(msg);
 }
 
-void	ConfigUtilities::checkDuplicates(std::variant<int, bool, std::string, std::vector<int>, std::pair<int, std::string>> val, std::string msg)
+void	ConfigUtilities::checkDuplicates(std::variant<int, bool, std::string, std::vector<int>, std::vector<std::string>, std::pair<int, std::string>> val, std::string msg)
 {
 	if (auto ptr = std::get_if<int>(&val))
 	{
@@ -76,6 +76,11 @@ void	ConfigUtilities::checkDuplicates(std::variant<int, bool, std::string, std::
 			throw std::runtime_error(msg + " duplicate error");
 	}
 	else if (auto ptr = std::get_if<std::vector<int>>(&val))
+	{
+		if (!ptr->empty())
+			throw std::runtime_error(msg + " duplicate error");
+	}
+	else if (auto ptr = std::get_if<std::vector<std::string>>(&val))
 	{
 		if (!ptr->empty())
 			throw std::runtime_error(msg + " duplicate error");
@@ -153,6 +158,20 @@ void	ConfigUtilities::printLocationBlock(LocationSettings location)
 	else
 		std::cout << "CGI upload: no upload\n";
 	std::cout << '\n';
+}
+
+void	ConfigUtilities::checkServerNameDuplicates(std::vector<std::string> server_names)
+{
+	std::vector<std::string> dup;
+	for (auto it = server_names.begin(); it != server_names.end(); it++)
+		dup.push_back(*it);
+	std::sort(dup.begin(), dup.end());
+	for (auto it = dup.begin()+1; it != dup.end(); it++)
+	{
+		if (!it->compare(*(it-1)))
+			throw std::runtime_error("config: duplicate server name");
+	}
+	dup.clear();
 }
 
 void	ConfigUtilities::checkMethodDuplicates(std::vector<int>& method)

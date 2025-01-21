@@ -27,13 +27,13 @@ ServerSettings::~ServerSettings()
 void	ServerSettings::parseServerBlock(std::vector<std::string>& serverBlock, std::vector<std::string>::iterator& it, std::vector<std::string>::iterator end)
 {
 	ConfigUtilities::trimServerBlock(serverBlock, it);
-	const std::string	directives[6] = {"host", "port", "client_max_body_size", "location", "error_page"};
+	const std::string	directives[6] = {"host", "port", "client_max_body_size", "location", "error_page", "server_names"};
 	bool				isValid = false;
 	
 	for (; it != end; it++)
 	{
 		isValid = false;
-		for (int i = 0; i < 5; i++)
+		for (int i = 0; i < 6; i++)
 		{
 			if (!it->compare(directives[i]))
 			{
@@ -54,6 +54,9 @@ void	ServerSettings::parseServerBlock(std::vector<std::string>& serverBlock, std
 					break;
 				case 5: //error page
 					parseErrorPages(serverBlock, it);
+					break;
+				case 6: //error page
+					parseServerNames(serverBlock, it);
 					break;
 				default:
 					throw std::logic_error("Something went very wrong....");
@@ -105,6 +108,34 @@ void	ServerSettings::parsePort(std::vector<std::string>& directive, std::vector<
 	}
 	else
 		throw std::runtime_error("invalid port number/invalid syntax: " + *it);
+}
+
+
+void	ServerSettings::parseServerNames(std::vector<std::string>& directive, std::vector<std::string>::iterator& it)
+{
+	ConfigUtilities::checkDuplicates(server_names, "server_names:");
+	ConfigUtilities::checkVectorEnd(directive, it, "server_names: syntax error");
+	std::regex names("^(?!-)(?:[A-Za-z0-9-]{1,63}\\.?)+[A-Za-z]{2,}$");
+	int count = 0;
+	for (; it != directive.end(); it++)
+	{
+		if (!it->compare(";"))
+			break ;
+		if (std::regex_match(*it, names))
+		{
+			if (it->length() > 50)
+				throw std::invalid_argument("server_names: server name has 50 char size limit");
+			server_names.push_back(*it);
+		}
+		else 
+			throw std::runtime_error("server_names: invalid server_name/syntax error");
+		count++;
+	}
+	if (count > 3)
+		throw std::invalid_argument("server_names: max 3 servers names   allowed");
+	ConfigUtilities::checkSemiColon(directive, std::prev(it), "server_names: syntax error");
+	ConfigUtilities::checkServerNameDuplicates(server_names);
+	checkConfigValues(directive, it);
 }
 
 int	checkBodySizeUnit(std::string& num)
