@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <iostream>
 #include <vector>
+#include <filesystem>
 
 class LocationSettings
 {
@@ -67,4 +68,5 @@ public:
 	std::string&					getCgiScript();
 	std::string&					getCgiUploadPath();
 	std::string						getErrorPagePath(int key);
+	bool							hasDelete();
 };

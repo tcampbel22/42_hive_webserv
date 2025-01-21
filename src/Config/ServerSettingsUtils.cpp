@@ -20,6 +20,7 @@ std::string&							ServerSettings::getHost() { return host; }
 int										ServerSettings::getMaxClientBody() { return max_client_body_size; } //in bytes
 std::string								ServerSettings::getKey() { return _key; }
 std::unordered_map<int, std::string>&	ServerSettings::getAllErrorPages() { return error_pages; }
+std::vector<std::string>				ServerSettings::getServerNames() { return server_names; }
 
 std::string ServerSettings::getErrorPages(int status) 
 {
@@ -75,8 +76,11 @@ void	ServerSettings::checkConfigValues(std::vector<std::string>& directive, std:
 			throw std::runtime_error("host or port missing from configuration file");
 		if (locations.find("/") == locations.end())
 			throw std::runtime_error("root directory missing from configuration file");
-		if (max_client_body_size == -1 || max_client_body_size == 0)
+		if (max_client_body_size == -1)
+		{
+			Logger::log("max_client_body defaulted to " + std::to_string(MAX_BODY_SIZE), INFO, false);
 			max_client_body_size = MAX_BODY_SIZE;
+		}
 	}
 }
 

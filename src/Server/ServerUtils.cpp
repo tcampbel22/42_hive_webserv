@@ -17,6 +17,7 @@ void HttpServer::signalHandler(int signal)
 	(void)signal;
 	_instance->closeServer();
 	Logger::closeLogger();
+	_instance->~HttpServer();
 	exit(0);
 }
 
@@ -32,9 +33,9 @@ void	HttpServer::setNonBlocking(int socket)
 {
 	int	flag = fcntl(socket, F_GETFL, 0); //retrieves flags/settings from socket
 	if (flag < 0)
-		Logger::log("GETFL failed", ERROR, true);
+		Logger::log("fcntl: GETFL failed", ERROR, true);
 	if (fcntl(socket, F_SETFL, flag | O_NONBLOCK) < 0) //Sets socket to be nonblocking
-		Logger::log("SETFL failed", ERROR, true); 
+		Logger::log("fcntl: SETFL failed", ERROR, true); 
 }
 
 bool HttpServer::isNonBlockingSocket(int fd) 
@@ -42,13 +43,13 @@ bool HttpServer::isNonBlockingSocket(int fd)
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1) 
 	{
-		Logger::log("fcntl: " + (std::string)strerror(errno), ERROR, false);
+		Logger::log("fcntl: failed to retrive flags", ERROR, false);
 		return false;
     }
     return (flags & O_NONBLOCK) != 0;
 }
 
-size_t HttpServer::getContentLength(const std::string& requestStr)
+int HttpServer::getContentLength(const std::string& requestStr)
 {
     size_t pos = requestStr.find("Content-Length: ");
     if (pos != std::string::npos)
@@ -61,7 +62,7 @@ size_t HttpServer::getContentLength(const std::string& requestStr)
 				return std::stoi(lengthStr);
 			} catch(std::exception& e) 
 			{
-				Logger::log("stoi: " + (std::string)strerror(errno), ERROR, false);
+				Logger::log("stoi: " + (std::string)e.what(), ERROR, false);
 				return -1;
 			}
 		}
@@ -106,7 +107,8 @@ void	HttpServer::cleanUpFds(fdNode *nodePtr)
 	_fd_activity_map.erase(nodePtr->fd);
 	nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
 	close(nodePtr->fd);  // Close the client socket
-	delete nodePtr;
+	if (nodePtr)
+		delete nodePtr;
 	_clientClosedConn = false;
 }
 

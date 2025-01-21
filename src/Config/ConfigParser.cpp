@@ -72,7 +72,6 @@ void	ConfigParser::removeComments()
 void	ConfigParser::tokenise(const std::string& c)
 {
 	std::string token;
-
 	for (size_t i = 0; i < c.length(); i++)
 	{
 		if (isspace(c[i]))
@@ -121,7 +120,7 @@ void	createKey(std::vector<std::string>::iterator start,  std::vector<std::strin
 void	ConfigParser::splitServerBlocks() 
 {
 	if (tokens.begin()->compare("server") || tokens[1] != "{")
-		throw std::runtime_error("splitServerBlock: syntax error");
+		throw std::runtime_error("splitServerBlock: syntax error: empty value");
 	ConfigUtilities::checkBrackets(tokens);
 	auto it = tokens.begin();
 	int	server_count = -1;
@@ -154,6 +153,7 @@ void	ConfigParser::splitServerBlocks()
 		}
 	}
 	checkHostPortDuplicates();
+	tokens.clear();
 }
 
 ServerSettings*	ConfigParser::getServerBlock(const std::string key)
@@ -174,15 +174,17 @@ void	ConfigParser::checkHostPortDuplicates()
 	std::sort(dup.begin(), dup.end());
 	for (auto it = dup.begin()+1; it != dup.end(); it++)
 	{
-		if (it == std::prev(it))
+		if (!it->compare(*(it-1)))
 			throw std::runtime_error("config: duplicate host and port");
 	}
+	dup.clear();
 }
 
 bool ConfigParser::getDefaultServer() { return defaultServer; }
 
 ConfigParser::~ConfigParser() 
 {
+	settings_vec.clear();
 	tokens.clear();
 	tokens.shrink_to_fit();
 }

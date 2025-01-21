@@ -62,6 +62,16 @@ LocationSettings::~LocationSettings()
 
 //PARSERS
 
+bool LocationSettings::hasDelete()
+{
+	for (auto it = methods.begin(); it != methods.end(); it++)
+	{
+		if (*it == DELETE)
+			return true;
+	}
+	return false;
+}
+
 void	LocationSettings::checkLocationValues(std::vector<std::string>::iterator& it)
 {
 	
@@ -69,23 +79,25 @@ void	LocationSettings::checkLocationValues(std::vector<std::string>::iterator& i
 	{
 
 		if (isCgi && (cgi_script.empty() || upload_path.empty() || cgi_path.empty()))
-			throw std::runtime_error("location: missing directives in cgi block");
-		if (isCgi && (autoindex || !methods.empty() || !default_file.empty()))
-			throw std::runtime_error("location: extra directives in cgi block");
+			throw std::runtime_error("location: missing directives in cgi block: " + getPath());
+		if (isCgi && (!methods.empty() || !default_file.empty()))
+			throw std::runtime_error("location: extra directives in cgi block: " + getPath());
 		if (!isCgi && redirect.first > 0 && (!root.empty() || autoindex || !methods.empty() || !default_file.empty()))
 			throw std::runtime_error("location: extra directives in redirect block");
 		if (!isCgi && !path.compare("/"))
 		{
 			if (default_file.empty() && !autoindex)
-				throw std::runtime_error("location: default file missing from root directory");
+				throw std::runtime_error("location: root: index/default file missing");
+			if (hasDelete())
+				throw std::invalid_argument("location: root: DELETE method forbidden");
 		}
-		if (!isCgi && !path.compare("/temp/"))
+		if (!isCgi && !is_redirect)
 		{
 			if (methods.empty())
-				throw std::runtime_error("location: methods missing from /temp/ directory");
+				throw std::runtime_error("location: methods missing from location block: " + this->getPath());
 		}
-		if (!isCgi && root.empty())
-			throw std::runtime_error("location: root path missing");
+		if (!isCgi && !is_redirect && root.empty())
+			throw std::runtime_error("location: root path missing from location block: " + getPath());
 	}
 }
 
@@ -109,8 +121,8 @@ void	LocationSettings::parseDefaultFile(std::vector<std::string>& location, std:
 	ConfigUtilities::checkSemiColon(location, it, "location: default file: syntax error");
 	default_file = *it;
 	is_default_file = true;
-	checkLocationValues(it);
 	ConfigUtilities::checkVectorEnd(location, it, "location: default file: invalid syntax");
+	checkLocationValues(it);
 }
 
 void	LocationSettings::parseAutoIndex(std::vector<std::string>& location, std::vector<std::string>::iterator& it) 
@@ -124,8 +136,8 @@ void	LocationSettings::parseAutoIndex(std::vector<std::string>& location, std::v
 		autoindex = false;
 	else
 		throw std::runtime_error("location: autoindex: value must be on or off");
-	checkLocationValues(it);
 	ConfigUtilities::checkVectorEnd(location, it, "location: autoindex: invalid syntax");
+	checkLocationValues(it);
 }
 
 void	LocationSettings::parseRedirect(std::vector<std::string>& location, std::vector<std::string>::iterator& it)
@@ -148,8 +160,8 @@ void	LocationSettings::parseRedirect(std::vector<std::string>& location, std::ve
 	}
 	else
 		throw std::runtime_error("location: redirect: invalid status code: " + *it);
-	checkLocationValues(it);
 	ConfigUtilities::checkVectorEnd(location, it, "location: redirect: invalid syntax");
+	checkLocationValues(it);
 }
 
 void	LocationSettings::parseMethods(std::vector<std::string>& location, std::vector<std::string>::iterator& it)
