@@ -17,11 +17,13 @@
 #include "../CGI/CGIparsing.hpp"
 #include "../Response/Response.hpp"
 
-HttpParser::HttpParser() : _fullyRead(true), _contentLength(0), cgiflag(false), query(""), pathInfo("") {}
+HttpParser::HttpParser() : _contentLength(0), cgiflag(false), query(""), pathInfo("") {}
 
 HttpParser::~HttpParser() {}
 
-HttpRequest::HttpRequest(ServerSettings *serverPtr, int fd, epoll_event& _event) : closeConnection(false), errorFlag(0), settings(serverPtr), isCGI(false), epollFd(fd), events(_event) {}
+HttpRequest::HttpRequest(ServerSettings *serverPtr, int fd, epoll_event& _event) : closeConnection(false), errorFlag(0), settings(serverPtr), isCGI(false), epollFd(fd), events(_event)  {
+	this->path = "";
+}
 
 //Empty the vector to the requestMap, needs to be parsed in the response.
 void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *serverPtr, HttpParser& parser)
@@ -159,8 +161,9 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 {
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr, epollFd, _events);
-	parser._fullyRead = true;
-	parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
+	request.errorFlag = requestNode->_error;
+	if (!request.errorFlag)
+		parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
 	if (parser.cgiflag && !request.errorFlag){
 		std::shared_ptr <LocationSettings> cgiBlock = request.settings->getCgiBlock();
 		if (cgiBlock && request.method != 3)
@@ -181,6 +184,8 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 		else
 			request.closeConnection = true;
 	}
+	// std::cout << request.errorFlag << std::endl;
+	// std::cout << request.path << std::endl;
 	ServerHandler response(requestNode->fd, request);
 	if (request.closeConnection == true)
 		return (1);

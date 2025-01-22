@@ -141,7 +141,13 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
         close(pipe_fds[READ_END]);
 
         // Close the write end of the pipe now that it's duplicated
-        close(pipe_fds[WRITE_END]);
+		if (request.method == 2) {  // POST method
+			ssize_t bytesRecieved = write(pipe_fds[WRITE_END], request.body.c_str(), request.body.size());
+			close(pipe_fds[WRITE_END]);
+            if (bytesRecieved == -1 || bytesRecieved == 0) {
+				exit(1);
+			}
+        }
 		const char *const argv[] = {_scriptName.c_str(), nullptr};
         if (execve(_execInfo.c_str(), (char *const *)argv, environ) == -1) {
             Logger::log("execve: failed to execute command", ERROR, false);
@@ -150,11 +156,6 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 
     } else {
         // Parent process
-		if (request.method == 2) {  // POST method
-			std::string body = request.body;
-			request.body.clear();
-            write(pipe_fds[WRITE_END], body.c_str(), body.size());
-        }
         // Close the write end of the pipe since the parent will only read from the pipe
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, pipe_fds[WRITE_END], &_events) == -1)
 		{
@@ -177,6 +178,7 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 		waitpid(pid, NULL, 0); // Wait for the child process to finish
 		
         // Read the output from the child process
+		request.body.clear();
 		if (request.errorFlag == 0)
 		{
 			while ((bytesRead = read(pipe_fds[READ_END], buffer, sizeof(buffer) - 1)) > 0) {
