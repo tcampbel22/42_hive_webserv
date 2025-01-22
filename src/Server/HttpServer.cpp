@@ -143,7 +143,7 @@ void	HttpServer::addServerToEpoll()
 	for (u_long i = 0 ; i < settings_vec.size() ; i++)  //iterate through fd vector and add to epoll
 	 {
 		auto it = settings_vec[i];
-		_events.events = EPOLLIN;
+		_events.events = EPOLLIN | EPOLLOUT;
 		std::shared_ptr<fdNode> server_node = std::make_shared<fdNode>();
 		server_node->fd = settings_vec[i]._fd;
 		server_node->serverPtr = &settings_vec[i];
@@ -173,7 +173,7 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 		{
 			Logger::log("New client connected: " + std::to_string(_clientSocket), INFO, false);
 			setNonBlocking(_clientSocket);
-			_events.events = EPOLLIN;
+			_events.events = EPOLLIN | EPOLLOUT;
 			createClientNode(nodePtr);
 			_fd_activity_map[_clientSocket] = current_time;
 		}
@@ -287,10 +287,8 @@ void HttpServer::closeServer()
 	for (auto it = settings_vec.begin(); it != settings_vec.end(); it++)
 		close(it->_fd);
 	for (auto it : client_nodes)
-	{
-		close(it.first);
-		delete it.second;
-	}
+		cleanUpFds(it.second);
+	client_nodes.clear();
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
 	Logger::log("\nExit signal received, server shutting down.. ", INFO, true);
