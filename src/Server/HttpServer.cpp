@@ -181,6 +181,17 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 	else
 		Logger::log("max connections reached", ERROR, false);
 }
+void validateHeaders(const std::vector<char>& data, int *errorFlag) {
+	std::string requestStr(data.begin(), data.end());
+
+	if (requestStr.find("\r\n\r\n") != std::string::npos)
+	{
+		*errorFlag = 0;
+	}
+	else
+		*errorFlag = 431;
+	//std::cout << *errorFlag << std::endl;
+}
 
 //Read data from client stream
 void	HttpServer::readRequest(fdNode *nodePtr)
@@ -199,6 +210,16 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 			if (bytesReceived < 0)
 				temp = 0;
 			nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - temp));
+			if (!headerCorrect && nodePtr->_clientDataBuffer.size() >= MAX_HEADER_SIZE) {
+				validateHeaders(nodePtr->_clientDataBuffer, &nodePtr->_error);
+				if (nodePtr->_error != 0) {
+					requestComplete = true;
+					headerCorrect = true;
+					_clientClosedConn = true;
+					return ;
+				}
+				headerCorrect = true;
+			}
 			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
 		}
 		if (bytesReceived < 0)
@@ -207,7 +228,6 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 			{
 				Logger::log("recv: failed to read, better check ERRNO :/", ERROR, false);
 				requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
-				// requestComplete = true;
 			}
 		}
 		else if (bytesReceived == 0) //read is successful and client closes connection
@@ -219,6 +239,8 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 		else
 			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
 }
+
+
 std::string getBoundary(std::string requestString) {
 	size_t pos = requestString.find("WebKitFormBoundary");
 	std::string boundaryCode = requestString.substr(pos, requestString.find_first_of("\r\n", pos) - pos);

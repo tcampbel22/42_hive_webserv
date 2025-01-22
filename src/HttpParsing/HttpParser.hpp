@@ -51,7 +51,6 @@ class HttpParser
 private:
 	//std::map<std::string, std::string> _requestMap;
 	std::vector<char> _clientDataBuffer;
-	bool _fullyRead;
 	int _contentLength;
 	bool cgiflag;
 	std::string query;
