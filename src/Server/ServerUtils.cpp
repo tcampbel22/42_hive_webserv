@@ -102,12 +102,14 @@ void	HttpServer::cleanUpFds(fdNode *nodePtr)
 	_connections--;
 	if (_connections < 4)
 		_connections = 4;
+	if (nodePtr == nullptr)
+		return;
 	epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events);  // Remove client socket from epoll
-	client_nodes.erase(nodePtr->fd); //delete fd from fd map
 	_fd_activity_map.erase(nodePtr->fd);
 	nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
 	close(nodePtr->fd);  // Close the client socket
-	if (nodePtr)
+	auto it = client_nodes.find(nodePtr->fd);
+	if (it != client_nodes.end())
 		delete nodePtr;
 	_clientClosedConn = false;
 }
