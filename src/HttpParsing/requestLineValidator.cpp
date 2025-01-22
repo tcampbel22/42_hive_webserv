@@ -43,7 +43,9 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 			return false;
 		
 		tmp = rLine.substr(startPos, spPos - startPos);
-		if (tmp.empty() ||  tmp[0] != '/') { // probably needs more checking for the path, but that is the most important check atleast :D. will come back to this.
+		if (tmp.empty() ||  tmp[0] != '/' || tmp.size() >= MAX_HEADER_SIZE) {
+			if (tmp.size() >= MAX_HEADER_SIZE)
+				Logger::setErrorAndLog(&request.errorFlag, 414, "request-line: URI too long");
 			if (!request.errorFlag)
 				Logger::setErrorAndLog(&request.errorFlag, 400, "request-line: incorrect path"); //if Path is incorrect: error handling here(HTTP Status 400 or HTTP Status 404).
 			return false;

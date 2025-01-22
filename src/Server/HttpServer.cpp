@@ -143,7 +143,7 @@ void	HttpServer::addServerToEpoll()
 	for (u_long i = 0 ; i < settings_vec.size() ; i++)  //iterate through fd vector and add to epoll
 	 {
 		auto it = settings_vec[i];
-		_events.events = EPOLLIN;
+		_events.events = EPOLLIN | EPOLLOUT;
 		std::shared_ptr<fdNode> server_node = std::make_shared<fdNode>();
 		server_node->fd = settings_vec[i]._fd;
 		server_node->serverPtr = &settings_vec[i];
@@ -173,13 +173,24 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 		{
 			Logger::log("New client connected: " + std::to_string(_clientSocket), INFO, false);
 			setNonBlocking(_clientSocket);
-			_events.events = EPOLLIN;
+			_events.events = EPOLLIN | EPOLLOUT;
 			createClientNode(nodePtr);
 			_fd_activity_map[_clientSocket] = current_time;
 		}
 	}
 	else
 		Logger::log("max connections reached", ERROR, false);
+}
+void validateHeaders(const std::vector<char>& data, int *errorFlag) {
+	std::string requestStr(data.begin(), data.end());
+
+	if (requestStr.find("\r\n\r\n") != std::string::npos)
+	{
+		*errorFlag = 0;
+	}
+	else
+		*errorFlag = 431;
+	//std::cout << *errorFlag << std::endl;
 }
 
 //Read data from client stream
@@ -199,6 +210,16 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 			if (bytesReceived < 0)
 				temp = 0;
 			nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - temp));
+			if (!headerCorrect && nodePtr->_clientDataBuffer.size() >= MAX_HEADER_SIZE) {
+				validateHeaders(nodePtr->_clientDataBuffer, &nodePtr->_error);
+				if (nodePtr->_error != 0) {
+					requestComplete = true;
+					headerCorrect = true;
+					_clientClosedConn = true;
+					return ;
+				}
+				headerCorrect = true;
+			}
 			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
 		}
 		if (bytesReceived < 0)
@@ -207,7 +228,6 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 			{
 				Logger::log("recv: failed to read, better check ERRNO :/", ERROR, false);
 				requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
-				// requestComplete = true;
 			}
 		}
 		else if (bytesReceived == 0) //read is successful and client closes connection
@@ -219,6 +239,8 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 		else
 			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
 }
+
+
 std::string getBoundary(std::string requestString) {
 	size_t pos = requestString.find("WebKitFormBoundary");
 	std::string boundaryCode = requestString.substr(pos, requestString.find_first_of("\r\n", pos) - pos);
@@ -265,10 +287,8 @@ void HttpServer::closeServer()
 	for (auto it = settings_vec.begin(); it != settings_vec.end(); it++)
 		close(it->_fd);
 	for (auto it : client_nodes)
-	{
-		close(it.first);
-		delete it.second;
-	}
+		cleanUpFds(it.second);
+	client_nodes.clear();
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
 	Logger::log("\nExit signal received, server shutting down.. ", INFO, true);
