@@ -88,13 +88,11 @@ void	LocationSettings::checkLocationValues(std::vector<std::string>::iterator& i
 		{
 			if (default_file.empty() && !autoindex)
 				throw std::runtime_error("location: root: index/default file missing");
-			if (hasDelete())
-				throw std::invalid_argument("location: root: DELETE method forbidden");
 		}
 		if (!isCgi && !is_redirect)
 		{
 			if (methods.empty())
-				throw std::runtime_error("location: methods missing from location block: " + this->getPath());
+				throw std::runtime_error("location: methods missing from location block: " + getPath());
 		}
 		if (!isCgi && !is_redirect && root.empty())
 			throw std::runtime_error("location: root path missing from location block: " + getPath());
