@@ -175,8 +175,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 		else
 			request.closeConnection = true;
 	}
-	// std::cout << request.errorFlag << std::endl;
-	// std::cout << request.path << std::endl;
+	std::cout << request.errorFlag << std::endl;
 	ServerHandler response(requestNode->fd, request);
 	if (request.closeConnection == true)
 		return (1);

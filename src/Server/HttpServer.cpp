@@ -107,6 +107,7 @@ void HttpServer::startListening()
             }
 			else if (_eventsArr[i].events & EPOLLOUT && nodePtr->_readyToSend)
 			{
+				std::cout << "error code with long uri: " << nodePtr->_error << std::endl;
 				if (HttpParser::bigSend(nodePtr, epollFd, _events) || _clientClosedConn == true) // Once we have the full data, process the request
 				{
 					cleanUpFds(nodePtr);
@@ -120,10 +121,14 @@ void HttpServer::startListening()
 						cleanUpFds(nodePtr);
 						continue; 
 					}
+					nodePtr->headerCorrect = false;
+					nodePtr->_error = 0;
 					nodePtr->_readyToSend = false;
 					nodePtr->_clientDataBuffer.clear();
 					_fd_activity_map[nodePtr->fd] = std::time(nullptr);
 				}
+				nodePtr->headerCorrect = false;
+				nodePtr->_error = 0;
 			}
 		fdActivityLoop(current_time);
 		}
@@ -190,7 +195,7 @@ void validateHeaders(const std::vector<char>& data, int *errorFlag) {
 	}
 	else
 		*errorFlag = 431;
-	//std::cout << *errorFlag << std::endl;
+	std::cout << *errorFlag << std::endl;
 }
 
 //Read data from client stream
@@ -204,22 +209,24 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 
 		nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
 		bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
+		if (nodePtr->_clientDataBuffer.size() >= MAX_HEADER_SIZE) {
+			if (!nodePtr->headerCorrect && nodePtr->_clientDataBuffer.size() >= MAX_HEADER_SIZE) {
+				validateHeaders(nodePtr->_clientDataBuffer, &nodePtr->_error);
+				if (nodePtr->_error != 0) {
+					requestComplete = true;
+					nodePtr->headerCorrect = true;
+					_clientClosedConn = true;
+					return ;
+				}
+				nodePtr->headerCorrect = true;
+			}
+		}
 		if (bytesReceived < bytes) 
 		{
 			int temp = bytesReceived;
 			if (bytesReceived < 0)
 				temp = 0;
 			nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - temp));
-			if (!headerCorrect && nodePtr->_clientDataBuffer.size() >= MAX_HEADER_SIZE) {
-				validateHeaders(nodePtr->_clientDataBuffer, &nodePtr->_error);
-				if (nodePtr->_error != 0) {
-					requestComplete = true;
-					headerCorrect = true;
-					_clientClosedConn = true;
-					return ;
-				}
-				headerCorrect = true;
-			}
 			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
 		}
 		if (bytesReceived < 0)
@@ -251,6 +258,7 @@ std::string getBoundary(std::string requestString) {
 bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived)
 {
     std::string requestStr(data.begin(), data.end());
+	std::cout << requestStr << std::endl;
 	bool isChunked = isChunkedTransferEncoding(requestStr);
 	if (isChunked) {
 		if (requestStr.find("0\r\n\r\n") != std::string::npos) {  // End of chunked data

@@ -44,6 +44,7 @@ struct fdNode
 	bool			_connection = true;
 	bool			_readyToSend = false;
 	int				_error;
+	bool			headerCorrect = false;
 };
 
 class HttpServer
@@ -65,7 +66,6 @@ private:
 	std::unordered_map<int, time_t> _fd_activity_map;
 	bool			_clientClosedConn = false;
 	bool			requestComplete = false;
-	bool			headerCorrect = false;
 public:
 	std::vector<ServerSettings> settings_vec;
 	//constructors & destructors
