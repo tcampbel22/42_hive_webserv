@@ -38,7 +38,7 @@
 
 struct fdNode
 {
-	int				fd;
+	int				fd = -1;
 	ServerSettings *serverPtr = nullptr;
 	std::vector<char> _clientDataBuffer;
 	bool			_connection = true;
@@ -55,8 +55,9 @@ private:
 	static HttpServer	*_instance;
 	std::vector<std::pair<std::string, int>> _ip_port_list;
 	std::vector<int> _server_fds;
+	std::vector<std::pair<int, int>> pipe_vec;
 	std::vector<std::shared_ptr<fdNode>> server_nodes;
-	std::map<int, fdNode*> client_nodes;
+	std::map<int, std::shared_ptr<fdNode>> client_nodes;
 	int 			_clientSocket;
 	sockaddr_in 	_socketInfo; //reusable
 	int				epollFd;
@@ -69,7 +70,7 @@ private:
 public:
 	std::vector<ServerSettings> settings_vec;
 	//constructors & destructors
-	HttpServer(std::vector<ServerSettings>& vec);
+	HttpServer(std::vector<ServerSettings> vec);
 	~HttpServer();
 	
 	//methods

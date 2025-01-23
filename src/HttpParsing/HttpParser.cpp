@@ -148,7 +148,7 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 	}
 }
 
-int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events) 
+int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, std::vector<std::pair<int, int>>& pipe_vec) 
 {
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr, epollFd, _events);
@@ -156,12 +156,12 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 	if (!request.errorFlag)
 		parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
 	if (parser.cgiflag && !request.errorFlag){
-		std::shared_ptr <LocationSettings> cgiBlock = request.settings->getCgiBlock();
+		auto cgiBlock = request.settings->getCgiBlock();
 		if (cgiBlock && request.method != 3)
 		{
 			CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
 			myCgi.setCGIenvironment(request, parser, *cgiBlock);
-			myCgi.execute(request, cgiBlock, epollFd, _events);
+			myCgi.execute(request, cgiBlock, epollFd, _events, pipe_vec);
 		}
 		else {
 			Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
@@ -173,7 +173,10 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 			return (0);
 		}
 		else
+		{
 			request.closeConnection = true;
+			cgiBlock.reset();
+		}
 	}
 	std::cout << request.errorFlag << std::endl;
 	ServerHandler response(requestNode->fd, request);
@@ -186,3 +189,5 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events)
 std::string HttpParser::getQuery() {return query; }
 std::string HttpParser::getPathInfo() { return pathInfo; }
 uint HttpParser::getContentLength() { return _contentLength; }
+
+HttpRequest::~HttpRequest() {}

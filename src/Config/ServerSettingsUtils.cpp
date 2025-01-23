@@ -78,7 +78,7 @@ void	ServerSettings::checkConfigValues(std::vector<std::string>& directive, std:
 			throw std::runtime_error("root directory missing from configuration file");
 		if (max_client_body_size == -1)
 		{
-			Logger::log("max_client_body defaulted to " + std::to_string(MAX_BODY_SIZE), INFO, false);
+			Logger::log("max_client_body in server block " + this->getKey() + " defaulted to " + std::to_string(MAX_BODY_SIZE), INFO, false);
 			max_client_body_size = MAX_BODY_SIZE;
 		}
 	}

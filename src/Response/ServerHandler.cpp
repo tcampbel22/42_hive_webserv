@@ -306,7 +306,7 @@ void ServerHandler::doError()
 	}
 	catch(const std::exception& e){}
 
-	//and finally, if no pages found, generate deafult pages;
+	//and finally, if no pages found, generate default pages;
 	defaultError();
 }
 

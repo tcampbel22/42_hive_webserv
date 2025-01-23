@@ -14,7 +14,7 @@
 
 HttpServer* HttpServer::_instance = nullptr;
 
-HttpServer::HttpServer(std::vector<ServerSettings>& vec)
+HttpServer::HttpServer(std::vector<ServerSettings> vec)
 {
 	this->_instance = this;
 	settings_vec = vec;
@@ -107,7 +107,7 @@ void HttpServer::startListening()
             }
 			else if (_eventsArr[i].events & EPOLLOUT && nodePtr->_readyToSend)
 			{
-				if (HttpParser::bigSend(nodePtr, epollFd, _events) || _clientClosedConn == true) // Once we have the full data, process the request
+				if (HttpParser::bigSend(nodePtr, epollFd, _events, pipe_vec) || _clientClosedConn == true) // Once we have the full data, process the request
 				{
 					cleanUpFds(nodePtr);
 				}
@@ -141,7 +141,7 @@ void	HttpServer::addServerToEpoll()
 	if (epollFd < 0)
 	{
 		Logger::log("epoll_create: create failed", ERROR, true);
-		closeServer();
+		this->~HttpServer();
 		return ;
 	}
 	for (u_long i = 0 ; i < settings_vec.size() ; i++)  //iterate through fd vector and add to epoll
@@ -286,22 +286,26 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
     return false;
 }
 
-void HttpServer::closeServer()
+HttpServer::~HttpServer()
 {
 	close(epollFd);
+	for (const auto& it : pipe_vec)
+	{
+		close(it.first);
+		close(it.second);
+	}
 	_ip_port_list.clear();
 	for (auto it = settings_vec.begin(); it != settings_vec.end(); it++)
 		close(it->_fd);
 	for (auto it : client_nodes)
-		cleanUpFds(it.second);
+		cleanUpFds(it.second.get());
+	for (auto it : server_nodes)
+		close(it->fd);
+	pipe_vec.clear();
 	client_nodes.clear();
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
+	_server_fds.clear();
 	Logger::log("\nExit signal received, server shutting down.. ", INFO, true);
 	Logger::closeLogger();
-}
-
-HttpServer::~HttpServer()
-{
-	closeServer();
 }
