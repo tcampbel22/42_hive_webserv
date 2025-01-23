@@ -45,7 +45,7 @@ public:
 	uint getResponseCode();
 	std::string getResponseCodeStr();	
 	std::string makeDate();
-	void sendResponse(int fd);
+	int sendResponse(int fd);
 	std::string makeDay(int day);
 	std::string makeMonth(int _month);
 };

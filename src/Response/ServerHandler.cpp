@@ -39,7 +39,8 @@ _response(), _input(_newInput)
 		executeInput();
 
 		//send a response
-		_response.sendResponse(fd);
+		if (_response.sendResponse(fd) == 1)
+			_input.closeConnection = true;
 	}
 	catch(const std::exception& e)
 	{
@@ -113,9 +114,9 @@ void ServerHandler::parsePath()
 	{
 		if (locSettings->getPath().length() > 1)
 			_input.path = _input.path.substr(locSettings->getPath().length(), _input.path.length() - locSettings->getPath().length()); //remove the alias from the front of the URI
-		if (locSettings->getPath().back() == '/' && _input.path.front() != '/')
+		if (locSettings->getPath().back() != '/' && _input.path.front() != '/')
 			_input.path = '/' + _input.path;
-		if (locSettings->getRoot().back() != '/' && !_input.path.empty() && _input.path.front() != '/')
+		if (locSettings->getRoot().back() != '/' && _input.path.front() != '/')
 			_input.path = locSettings->getRoot() + '/' + _input.path;
 		else
 			_input.path = locSettings->getRoot() + _input.path;
@@ -324,7 +325,7 @@ int	ServerHandler::checkDirectorySize(std::filesystem::path path)
 	}
 	catch(const std::exception& e)
 	{
-		Logger::log(e.what(), ERROR, false);
+		Logger::log("check directory size " + (std::string)e.what(), ERROR, false);
 	}
 	return (1);
 }
@@ -406,9 +407,9 @@ void ServerHandler::generateIndex()
 
 void ServerHandler::doGet()
 {
-	//check if it is asking for a directory and if autoindex is on
+	//check if it is asking for a directory and if autoindex is on...
 	//if so, generate the directory index
-	if (_input.path.back() == '/' && locSettings->isAutoIndex() == true)
+	if ((_input.path.back() == '/' || std::filesystem::is_directory(_input.path) )&& locSettings->isAutoIndex() == true)
 	{
 		if (std::filesystem::is_directory(_input.path))
 			generateIndex();
@@ -416,7 +417,6 @@ void ServerHandler::doGet()
 			Logger::setErrorAndLog(&_input.errorFlag, 404, "do-get: Directory dose not exist");	
 		return;
 	}
-
 	//check if the request is a directory, and return a 301 permanently moved with a / if so
 	if (std::filesystem::is_directory(_input.path))
 	{
@@ -441,7 +441,7 @@ void ServerHandler::doDelete()
 	std::filesystem::path path(_input.path);
 	std::filesystem::path dirPath(_input.path.substr(0, _input.path.rfind('/')));
 	//check if the path ends with / meaning its a directory
-	if (_input.path.back() == '/')
+	if (_input.path.back() == '/' || std::filesystem::is_directory(_input.path))
 		return Logger::setErrorAndLog(&_input.errorFlag, 403, "do-delete: directory deletion is forbidden");
 
 	//first check if the directory where the file is exists	

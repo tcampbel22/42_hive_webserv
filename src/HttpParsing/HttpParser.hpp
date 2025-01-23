@@ -70,7 +70,6 @@ public:
 	void parseBody(HttpRequest&, std::istringstream&);
 	void parseRegularBody(std::istringstream&, HttpRequest&);
 	void checkForCgi(HttpRequest&, HttpParser&, LocationSettings&);
-	void checkRedirect(HttpRequest& request, ServerSettings *);
 	uint getContentLength();
 	int isBlockCGI(HttpRequest&, HttpParser&);
 	//void validateLocation(LocationSettings*, int*);

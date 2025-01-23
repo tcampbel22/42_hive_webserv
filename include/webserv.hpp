@@ -23,7 +23,7 @@
 #define MAX_FILE_SIZE 500000000
 #define MAX_BODY_SIZE 9000000
 #define CGI_TIMEOUT 5000 //CGI timeout in milliseconds (1000 = 1sec)
-#define MAX_HEADER_SIZE 8192
+#define MAX_HEADER_SIZE 8912
 #define GET 1
 #define POST 2
 #define DELETE 3

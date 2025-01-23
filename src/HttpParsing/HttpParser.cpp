@@ -40,7 +40,6 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 				Logger::log("parseClientRequest: request line is invalid", ERROR, false);
 			return;
 		}
-		checkRedirect(request, serverPtr);
 		isBlockCGI(request, parser);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
@@ -66,14 +65,6 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		} catch (std::exception& e) {
 			Logger::log(e.what(), ERROR, false);
 		}
-}
-
-void HttpParser::checkRedirect(HttpRequest& request, ServerSettings *serverPtr) {
-	LocationSettings *block = serverPtr->getLocationBlock(request.path);
-	if (!block)
-		return;
-	if (block->isRedirect())
-		request.path = block->getRedirectPath();
 }
 
 //tries to get the location settings by using location bloccgi-bin/cgitester.pyk matching rules, defaults to / if unsuccessful
@@ -187,8 +178,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 			cgiBlock.reset();
 		}
 	}
-	// std::cout << request.errorFlag << std::endl;
-	// std::cout << request.path << std::endl;
+	std::cout << request.errorFlag << std::endl;
 	ServerHandler response(requestNode->fd, request);
 	if (request.closeConnection == true)
 		return (1);
