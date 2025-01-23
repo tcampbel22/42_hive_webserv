@@ -166,7 +166,7 @@ std::string Response::makeDate()
 	return (_date);
 }
 
-void Response::sendResponse(int fd)
+int Response::sendResponse(int fd)
 {
 	std::string _buffer = getResponseCodeStr();
 	
@@ -190,10 +190,13 @@ void Response::sendResponse(int fd)
 	{
 		if (getResponseCode() == 200)
 			Logger::log("[200] Great Success!", INFO, false);
-		send(fd, _buffer.c_str(), _buffer.size(), 0);
+			//if send receives 0 or -1, return 1 in order to close the connection with the client
+		if (send(fd, _buffer.c_str(), _buffer.size(), 0) <= 0)
+			return 1;
 	}
 	catch(const std::exception& e)
 	{
 		Logger::log(e.what(), ERROR, false);
 	}
+	return 0;
 }
