@@ -43,6 +43,7 @@ struct HttpRequest {
 	bool isCGI;
 	int epollFd;
 	epoll_event& events;
+	~HttpRequest();
 };
 
 
@@ -59,7 +60,7 @@ private:
 public:
 	HttpParser();
 	~HttpParser();
-	static int	bigSend(fdNode*, int, epoll_event&);
+	static int	bigSend(fdNode*, int, epoll_event&, std::vector<std::pair<int, int>>&);
 	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *, HttpParser&);
 	//void recieveRequest(int out_fd);
 	//bool isValidRequestline(std::string, HttpRequest&);

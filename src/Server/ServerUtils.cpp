@@ -11,12 +11,16 @@
 /**********************************************************************************/
 
 #include "HttpServer.hpp"
+#include <sys/wait.h>
 
 void HttpServer::signalHandler(int signal)
 {
 	(void)signal;
-	_instance->closeServer();
-	Logger::closeLogger();
+	pid_t pid;
+    int status;
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+        // Handle child process exit status if needed
+    }
 	_instance->~HttpServer();
 	exit(0);
 }
@@ -90,7 +94,7 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 			Logger::log("timeout: closing client socket " + std::to_string(it->first), INFO, true);
 			auto node = client_nodes.find(it->first);
 			it = _fd_activity_map.erase(it);
-			cleanUpFds(node->second);
+			cleanUpFds(node->second.get());
         } 
 		else 
 			++it;
@@ -102,15 +106,14 @@ void	HttpServer::cleanUpFds(fdNode *nodePtr)
 	_connections--;
 	if (_connections < 4)
 		_connections = 4;
-	if (nodePtr == nullptr)
-		return;
-	epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events);  // Remove client socket from epoll
-	_fd_activity_map.erase(nodePtr->fd);
-	nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
-	close(nodePtr->fd);  // Close the client socket
-	auto it = client_nodes.find(nodePtr->fd);
-	if (it != client_nodes.end())
-		delete nodePtr;
+	if (!nodePtr->_clientDataBuffer.empty())
+		nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
+	if (nodePtr->fd != -1)
+	{
+		epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events);  // Remove client socket from epoll
+		_fd_activity_map.erase(nodePtr->fd);
+		close(nodePtr->fd);
+	}
 	_clientClosedConn = false;
 }
 
@@ -119,15 +122,14 @@ void	HttpServer::createClientNode(fdNode* nodePtr)
 	_connections++;
 	if (_connections > MAX_CONNECTIONS)
 		_connections = MAX_CONNECTIONS;
-	fdNode *client_node = new fdNode;
+	std::shared_ptr<fdNode> client_node = std::make_shared<fdNode>();
 	client_node->fd = _clientSocket;
 	client_nodes[_clientSocket] = client_node;
 	client_node->serverPtr = nodePtr->serverPtr;
-	_events.data.ptr = client_node;
+	_events.data.ptr = client_node.get();
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events) == -1)
 	{
 		Logger::log("Failed to add to epoll", ERROR, false);
 		close(_clientSocket);
-		delete client_node;
 	}
 }

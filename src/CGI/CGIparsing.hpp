@@ -33,14 +33,14 @@ class CGIparsing
 private:
 	std::string _scriptName; //path where to upload the cgi file
 	std::string _execInfo;
+	static CGIparsing *_instance;
 public:
 	CGIparsing(std::string, std::string);
 	void setCGIenvironment(HttpRequest&, HttpParser&, LocationSettings&);
-	void execute(HttpRequest&, std::shared_ptr<LocationSettings>&, int, epoll_event&);
+	void execute(HttpRequest&, std::shared_ptr<LocationSettings>&, int, epoll_event&, std::vector<std::pair<int, int>>&);
 	std::string getMethod(int);
 	std::string getIp(std::string&);
 	std::string getPort(std::string&);
 	std::string getPath();
-	~CGIparsing();
 };
 
