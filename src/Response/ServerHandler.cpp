@@ -325,7 +325,7 @@ int	ServerHandler::checkDirectorySize(std::filesystem::path path)
 	}
 	catch(const std::exception& e)
 	{
-		Logger::log(e.what(), ERROR, false);
+		Logger::log("check directory size " + (std::string)e.what(), ERROR, false);
 	}
 	return (1);
 }
@@ -407,7 +407,7 @@ void ServerHandler::generateIndex()
 
 void ServerHandler::doGet()
 {
-	//check if it is asking for a directory and if autoindex is on
+	//check if it is asking for a directory and if autoindex is on...
 	//if so, generate the directory index
 	if ((_input.path.back() == '/' || std::filesystem::is_directory(_input.path) )&& locSettings->isAutoIndex() == true)
 	{
@@ -417,7 +417,6 @@ void ServerHandler::doGet()
 			Logger::setErrorAndLog(&_input.errorFlag, 404, "do-get: Directory dose not exist");	
 		return;
 	}
-
 	//check if the request is a directory, and return a 301 permanently moved with a / if so
 	if (std::filesystem::is_directory(_input.path))
 	{

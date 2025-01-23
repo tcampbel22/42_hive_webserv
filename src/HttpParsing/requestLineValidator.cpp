@@ -14,6 +14,27 @@
 
 const std::unordered_set<std::string> requestLineValidator::_validMethods = {"GET", "POST", "DELETE"};
 
+std::vector<std::string> split(const std::string& tmp, char delimiter) {
+    std::vector<std::string> array;
+    std::string token;
+    std::stringstream stream(tmp);
+
+    while (std::getline(stream, token, delimiter)) {
+        array.push_back(token);
+    }
+    return array;
+}
+
+bool validatePath(std::string tmp) {
+	std::vector<std::string> result = split(tmp, '/');
+
+	 for (const auto& array : result) {
+        if (array.length() > 254)
+			return false;
+    }
+	return true;
+}
+
 bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& request)
 {
 	std::string tmp;
@@ -43,15 +64,18 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 			return false;
 		
 		tmp = rLine.substr(startPos, spPos - startPos);
-		if (tmp.empty() ||  tmp[0] != '/' || tmp.size() >= MAX_HEADER_SIZE) {
-			if (tmp.size() >= MAX_HEADER_SIZE)
+		if (tmp.empty() ||  tmp[0] != '/' || tmp.size() >= MAX_HEADER_SIZE || !validatePath(tmp)) {
+			if (tmp.size() >= MAX_HEADER_SIZE || !validatePath(tmp))
 				Logger::setErrorAndLog(&request.errorFlag, 414, "request-line: URI too long");
+			if(!validatePath(tmp)) {
+				Logger::setErrorAndLog(&request.errorFlag, 414, "request-line: file name too long");
+			}
 			if (!request.errorFlag)
 				Logger::setErrorAndLog(&request.errorFlag, 400, "request-line: incorrect path"); //if Path is incorrect: error handling here(HTTP Status 400 or HTTP Status 404).
 			return false;
 		}
 		//checks if there are conscutive / in the path and normalizes them to 1 / if so
-		normalizePath(tmp);
+		normalizePath(tmp);	
 		request.path = tmp;
 		
 		startPos = spPos + 1;
