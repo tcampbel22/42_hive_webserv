@@ -107,7 +107,6 @@ void HttpServer::startListening()
             }
 			else if (_eventsArr[i].events & EPOLLOUT && nodePtr->_readyToSend)
 			{
-				std::cout << "error code with long uri: " << nodePtr->_error << std::endl;
 				if (HttpParser::bigSend(nodePtr, epollFd, _events) || _clientClosedConn == true) // Once we have the full data, process the request
 				{
 					cleanUpFds(nodePtr);
@@ -195,7 +194,6 @@ void validateHeaders(const std::vector<char>& data, int *errorFlag) {
 	}
 	else
 		*errorFlag = 431;
-	std::cout << *errorFlag << std::endl;
 }
 
 //Read data from client stream
