@@ -121,6 +121,18 @@ void HttpServer::startListening()
 							nodePtr->CGIReady = false;
 							nodePtr->pid = 0;
 							nodePtr->CGIBody.erase();
+							_events.events = EPOLLIN;
+							if (epoll_ctl(epollFd, EPOLL_CTL_MOD, nodePtr->fd, &_events) == -1)		
+							{
+								Logger::log("Failed to mod epoll", ERROR, false);
+								cleanUpFds(nodePtr);
+								continue; 
+							}
+							nodePtr->headerCorrect = false;
+							nodePtr->_error = 0;
+							nodePtr->_readyToSend = false;
+							nodePtr->_clientDataBuffer.clear();
+							_fd_activity_map[nodePtr->fd] = std::time(nullptr);
 						}
 					}
 				}
@@ -307,38 +319,38 @@ int HttpServer::checkCGI(fdNode *requestNode)
 	char 	buffer[1024]; //CGI buffer
 	ssize_t bytesRead = 0; //for CGI reading
 
-   		int status;
-		pid_t result = waitpid(requestNode->pid, &status, WNOHANG);
-		if (result == requestNode->pid)
+	int status;
+	pid_t result = waitpid(requestNode->pid, &status, WNOHANG);
+	if (result == requestNode->pid)
+	{
+		if (WIFEXITED(status))
 		{
-			if (WIFEXITED(status))
+			if(WEXITSTATUS(status))
 			{
-				if(WEXITSTATUS(status))
-				{
-					Logger::setErrorAndLog(&requestNode->CGIError, 502, "child process failed");
-					requestNode->CGIReady = true;
-					close(requestNode->pipe_fds[READ_END]);
-					return (1);
-				}
+				Logger::setErrorAndLog(&requestNode->CGIError, 502, "child process failed");
+				requestNode->CGIReady = true;
+				close(requestNode->pipe_fds[READ_END]);
+				return (1);
 			}
 		}
-		else
-			return (0);
-		requestNode->CGIReady = true;
-        // Read the output from the child process
-		requestNode->CGIBody.clear();
-		while ((bytesRead = read(requestNode->pipe_fds[READ_END], buffer, sizeof(buffer) - 1)) > 0) {
-			buffer[bytesRead] = '\0'; // Null-terminate the output
-			//printf("CGI Output: %s", buffer); // Or store it in a variable if needed
-			requestNode->CGIBody += buffer;
-			if (requestNode->CGIBody.size() > MAX_BODY_SIZE)
-			{		
-				Logger::setErrorAndLog(&requestNode->CGIError, 413, "too large body from child");
-				break ;
-			}
+	}
+	else
+		return (0);
+	requestNode->CGIReady = true;
+	// Read the output from the child process
+	requestNode->CGIBody.clear();
+	while ((bytesRead = read(requestNode->pipe_fds[READ_END], buffer, sizeof(buffer) - 1)) > 0) {
+		buffer[bytesRead] = '\0'; // Null-terminate the output
+		//printf("CGI Output: %s", buffer); // Or store it in a variable if needed
+		requestNode->CGIBody += buffer;
+		if (requestNode->CGIBody.size() > MAX_BODY_SIZE)
+		{		
+			Logger::setErrorAndLog(&requestNode->CGIError, 413, "too large body from child");
+			break ;
 		}
-        close(requestNode->pipe_fds[READ_END]);
-		return (1);
+	}
+	close(requestNode->pipe_fds[READ_END]);
+	return (1);
 
 }
 

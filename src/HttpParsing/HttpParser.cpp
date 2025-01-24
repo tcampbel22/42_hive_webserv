@@ -158,16 +158,17 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 	{
 		request.body = requestNode->CGIBody;
 		request.errorFlag = requestNode->CGIError; //shoud be made into _error
-		if (request.errorFlag == 0) {
-				Response response(200, request.body.size(), request.body, request.closeConnection, false);
-				response.sendResponse(requestNode->fd);
-				return (0);
-			}
-			else
-			{
-				request.closeConnection = true;
+		if (request.errorFlag == 0)
+			request.errorFlag = 200;
+				ServerHandler response(requestNode->fd, request);
+			return (0);
+			// }
+			// else
+			// {
+			// 	request.closeConnection = true;
+			// 	return (1);
 				// cgiBlock.reset();
-			}
+			// }
 	}
 	else
 	{
@@ -175,7 +176,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 			parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
 		if (parser.cgiflag && !request.errorFlag){
 			auto cgiBlock = request.settings->getCgiBlock();
-			if (cgiBlock && request.method != 3 && requestNode->cgiStarted != true)
+			if (cgiBlock && request.method != 3 && requestNode->cgiStarted == false)
 			{
 				CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
 				myCgi.setCGIenvironment(request, parser, *cgiBlock);
@@ -186,6 +187,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 				Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
 				return (1);
 			}
+			//might be not needed
 			if (request.errorFlag == 0) {
 				Response response(200, request.body.size(), request.body, request.closeConnection, false);
 				response.sendResponse(requestNode->fd);
