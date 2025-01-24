@@ -83,7 +83,7 @@ void HttpServer::startListening()
 			_events.data.ptr = nodePtr; //store event data in a temp variable for use in epoll functions
 			if (std::find(_server_fds.begin(), _server_fds.end(), nodePtr->fd) != _server_fds.end()) //eventFd is a server_socket meaning a new request is incoming
 				acceptNewClient(nodePtr, nodePtr->fd, current_time);
-			else if (_eventsArr[i].events & EPOLLIN) //client socket has data to read from
+			else if (!checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLIN) //client socket has data to read from
 			{
 				readRequest(nodePtr);
                 if (requestComplete)
@@ -177,7 +177,7 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 		{
 			Logger::log("New client connected: " + std::to_string(_clientSocket), INFO, false);
 			setNonBlocking(_clientSocket);
-			_events.events = EPOLLIN | EPOLLOUT;
+			_events.events = EPOLLIN;
 			createClientNode(nodePtr);
 			_fd_activity_map[_clientSocket] = current_time;
 		}
@@ -207,6 +207,7 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 
 		nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
 		bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
+		Logger::log("Bytes recieved: " + std::to_string(bytesReceived), INFO, false);
 		if (nodePtr->_clientDataBuffer.size() >= MAX_HEADER_SIZE) {
 			if (!nodePtr->headerCorrect && nodePtr->_clientDataBuffer.size() >= MAX_HEADER_SIZE) {
 				validateHeaders(nodePtr->_clientDataBuffer, &nodePtr->_error);
@@ -256,7 +257,7 @@ std::string getBoundary(std::string requestString) {
 bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived)
 {
     std::string requestStr(data.begin(), data.end());
-	std::cout << requestStr << std::endl;
+	// std::cout << requestStr << std::endl;
 	bool isChunked = isChunkedTransferEncoding(requestStr);
 	if (isChunked) {
 		if (requestStr.find("0\r\n\r\n") != std::string::npos) {  // End of chunked data

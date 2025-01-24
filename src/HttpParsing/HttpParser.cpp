@@ -161,6 +161,8 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 		{
 			CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
 			myCgi.setCGIenvironment(request, parser, *cgiBlock);
+			request.headers.clear();
+			cgiBlock.reset();
 			myCgi.execute(request, cgiBlock, epollFd, _events, pipe_vec);
 		}
 		else {
@@ -178,7 +180,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 			cgiBlock.reset();
 		}
 	}
-	std::cout << request.errorFlag << std::endl;
+	// std::cout << request.errorFlag << std::endl;
 	ServerHandler response(requestNode->fd, request);
 	if (request.closeConnection == true)
 		return (1);
@@ -186,7 +188,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 		return (0);
 }
 
-std::string HttpParser::getQuery() {return query; }
+std::string HttpParser::getQuery() { return query; }
 std::string HttpParser::getPathInfo() { return pathInfo; }
 uint HttpParser::getContentLength() { return _contentLength; }
 

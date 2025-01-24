@@ -62,7 +62,10 @@ std::string CGIparsing::getPort(std::string& host) {
 void	setToNonBlocking(int socket)
 {
 	int	flag = fcntl(socket, F_GETFL, 0); //retrieves flags/settings from socket
-	fcntl(socket, F_SETFL, flag | O_NONBLOCK); //Sets socket to be nonblocking
+	if (flag < 0)
+		Logger::log("fcntl: GETFL failed", ERROR, true);
+	if (fcntl(socket, F_SETFL, flag | O_NONBLOCK) < 0) //Sets socket to be nonblocking
+		Logger::log("fcntl: SETFL failed", ERROR, true); 
 }
 
 //checks if the child process (CGI) has finished each iteration, if it take stoo long, then it send a kill command to the child process

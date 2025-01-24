@@ -47,7 +47,7 @@ bool HttpServer::isNonBlockingSocket(int fd)
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1) 
 	{
-		Logger::log("fcntl: failed to retrive flags", ERROR, false);
+		Logger::log("fcntl: failed to retrieve flags", ERROR, false);
 		return false;
     }
     return (flags & O_NONBLOCK) != 0;
@@ -132,4 +132,28 @@ void	HttpServer::createClientNode(fdNode* nodePtr)
 		Logger::log("Failed to add to epoll", ERROR, false);
 		close(_clientSocket);
 	}
+}
+
+bool	HttpServer::checkSystemMemory(fdNode* node)
+{
+	struct sysinfo sys_data;
+	if (sysinfo(&sys_data) != 0) {
+        Logger::log("error: failed to get system memory info", ERROR, false);
+        return false;
+    }
+	uint total_mem = (sys_data.freeram + sys_data.bufferram) * sys_data.mem_unit / (1024 * 1024);
+	if (total_mem < 1000 && node->_error != 507) 
+	{
+		Logger::log("Total memory available: " + std::to_string(total_mem) + "MB", INFO, false);
+		Logger::setErrorAndLog(&node->_error, 507, "error: system memory critically low, closing connection..");
+		node->_readyToSend = true;
+		_events.events = EPOLLOUT;
+		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, node->fd, &_events) == -1)		
+		{
+			Logger::log("Failed to mod epoll", ERROR, false);
+			cleanUpFds(node);
+		}
+		return true;
+	}
+	return false;
 }

@@ -28,7 +28,6 @@ _response(), _input(_newInput)
 
 		//get the correct serverblock (/ if no other found)
 		getLocationSettings();
-
 		//sanitize the path
 		if (_input.errorFlag < 1)
 			checkPath();
