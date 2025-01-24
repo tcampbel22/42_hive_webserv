@@ -175,7 +175,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 			parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
 		if (parser.cgiflag && !request.errorFlag){
 			auto cgiBlock = request.settings->getCgiBlock();
-			if (cgiBlock && request.method != 3)
+			if (cgiBlock && request.method != 3 && requestNode->cgiStarted != true)
 			{
 				CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
 				myCgi.setCGIenvironment(request, parser, *cgiBlock);

@@ -20,6 +20,11 @@ _responseCode(999), _contentLength(0)
 {
 }
 
+Response::Response(int errorCode): 
+_responseCode(errorCode)
+{
+}
+
 Response::Response(int responseCode, uint contentLenght, std::string body, bool closeConnection, bool _redirect)
 : _responseCode(responseCode), _contentType("text/html"), _contentLength(contentLenght), _body(body), _closeConnection(closeConnection), _redirect(_redirect) {
 

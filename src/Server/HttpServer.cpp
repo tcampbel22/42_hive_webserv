@@ -111,7 +111,17 @@ void HttpServer::startListening()
 				{	
 					if (HttpServer::checkCGI(nodePtr) == 1)
 					{
-						(HttpParser::bigSend(nodePtr, epollFd, _events, pipe_vec));
+						if (HttpParser::bigSend(nodePtr, epollFd, _events, pipe_vec) || _clientClosedConn == true)
+						{
+							cleanUpFds(nodePtr);
+						}
+						else
+						{
+							nodePtr->cgiStarted = false;
+							nodePtr->CGIReady = false;
+							nodePtr->pid = 0;
+							nodePtr->CGIBody.erase();
+						}
 					}
 				}
 				else if (HttpParser::bigSend(nodePtr, epollFd, _events, pipe_vec) || _clientClosedConn == true) // Once we have the full data, process the request
