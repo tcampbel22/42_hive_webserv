@@ -30,11 +30,14 @@
 #include <memory>
 #include "../Response/ServerHandler.hpp"
 #include <csignal>
+#include <sys/wait.h>
 
 # define MAX_EVENTS 200 //Can define this in config file or create a funct based on cpu load or leave it
 # define TIME_OUT_PERIOD 50
-# define MAX_CONNECTIONS 1024
+# define MAX_CONNECTIONS 300
 # define TIME_OUT_MOD 0.0011
+#define READ_END 0
+#define WRITE_END 1
 
 struct fdNode
 {
@@ -45,6 +48,13 @@ struct fdNode
 	bool			_readyToSend = false;
 	int				_error;
 	bool			headerCorrect = false;
+	//CGI stuff
+	int				pipe_fds[2];
+	bool			cgiStarted = false;
+	pid_t 			pid;
+	std::string 	CGIBody;
+	bool 			CGIReady = false;
+	int				CGIError = 0;
 };
 
 class HttpServer
@@ -92,4 +102,6 @@ public:
 	bool	isNonBlockingSocket(int fd);
 	void	cleanUpFds(fdNode *nodePtr);
 	void	createClientNode(fdNode* nodePtr);
+	static int checkCGI(fdNode *requestNode);
+
 };
