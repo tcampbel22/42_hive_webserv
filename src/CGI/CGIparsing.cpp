@@ -101,12 +101,11 @@ void	CGITimeout(pid_t &pid, int& errorCode, int* pipe_fds)
 	}
 }
 
-void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>& cgiblock, int epollFd, epoll_event& _events, std::vector<std::pair<int, int>>& pipe_vec) {
+void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events, std::vector<std::pair<int, int>>& pipe_vec) {
    	int pipe_fds[2]; // File descriptors for the pipe
     pid_t pid;
     char buffer[1024]; // Buffer to hold the output from the CGI script
     ssize_t bytesRead;
-	(void)cgiblock;
 	(void)epollFd;
 	(void)_events;
     // Create a pipe
@@ -158,7 +157,6 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 		{
             Logger::log("execve: failed to execute command", ERROR, false);
             close(pipe_fds[WRITE_END]);
-			cgiblock.reset();
 			exit(1);
         }
 
@@ -170,7 +168,6 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 		// 	Logger::log("epll_ctl: failed to delete fd", ERROR, false);
 		// 	close(pipe_fds[READ_END]);
 		// 	close(pipe_fds[WRITE_END]);
-		// 	// delete client_node;
 		// }
         close(pipe_fds[WRITE_END]);
 		// if (epoll_ctl(epollFd, EPOLL_CTL_ADD, pipe_fds[READ_END], &_events) == -1)
@@ -178,7 +175,6 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 		// 	Logger::log("epoll_ctl: failed to add fd to epoll", ERROR, false);
 		// 	close(pipe_fds[READ_END]);
 		// 	close(pipe_fds[WRITE_END]);
-		// 	// delete client_node;
 		// }
 
 		CGITimeout(pid, request.errorFlag, pipe_fds); //Allow child process to finish or timeout

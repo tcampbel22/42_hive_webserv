@@ -142,10 +142,10 @@ bool	HttpServer::checkSystemMemory(fdNode* node)
         return false;
     }
 	uint total_mem = (sys_data.freeram + sys_data.bufferram) * sys_data.mem_unit / (1024 * 1024);
-	if (total_mem < 1000 && node->_error != 507) 
+	if (total_mem < 100 && !node->_error) 
 	{
 		Logger::log("Total memory available: " + std::to_string(total_mem) + "MB", INFO, false);
-		Logger::setErrorAndLog(&node->_error, 507, "error: system memory critically low, closing connection..");
+		Logger::setErrorAndLog(&node->_error, 507, "error: system memory critically low, retry later");
 		node->_readyToSend = true;
 		_events.events = EPOLLOUT;
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, node->fd, &_events) == -1)		
