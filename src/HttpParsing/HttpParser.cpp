@@ -148,11 +148,28 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 	}
 }
 
+void checkHeaderError(const std::vector<char> clientData, HttpRequest& request) {
+	std::string tmp(clientData.begin(), clientData.end());
+	
+	if (tmp.find(' ') == std::string::npos) {
+			Logger::setErrorAndLog(&request.errorFlag, 405, "request-line: invalid method");
+	}
+	else if (size_t pos = tmp.find(' ') != std::string::npos)
+	{
+		if (tmp.find("HTTP/1.1") == std::string::npos)
+			Logger::setErrorAndLog(&request.errorFlag, 414, "request-line: too long URI");
+		else
+			request.errorFlag = 431;
+	}
+}
+
 int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, std::vector<std::pair<int, int>>& pipe_vec) 
 {
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr, epollFd, _events);
-	request.errorFlag = requestNode->_error;
+
+	if (requestNode->_error != 0)
+		checkHeaderError(requestNode->_clientDataBuffer, request);
 	if (!request.errorFlag)
 		parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
 	if (parser.cgiflag && !request.errorFlag){
@@ -178,7 +195,6 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 			cgiBlock.reset();
 		}
 	}
-	std::cout << request.errorFlag << std::endl;
 	ServerHandler response(requestNode->fd, request);
 	if (request.closeConnection == true)
 		return (1);

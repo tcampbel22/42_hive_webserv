@@ -29,8 +29,9 @@ bool validatePath(std::string tmp) {
 	std::vector<std::string> result = split(tmp, '/');
 
 	 for (const auto& array : result) {
-        if (array.length() > 254)
+        if (array.length() > 254) {
 			return false;
+		}
     }
 	return true;
 }
@@ -42,10 +43,10 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 	
 		size_t spPos = rLine.find(' ');    //find the first space in the RL and check that it's either GET, POST or DELETE request. Anything else it's false
 		if (spPos == std::string::npos) {
-			Logger::setErrorAndLog(&request.errorFlag, 400, "request-line: syntax error");
+			Logger::setErrorAndLog(&request.errorFlag, 405, "request-line: syntax error");
 			return false;
 		}
-
+		
 		tmp = rLine.substr(0, rLine.find(' '));
 		if (_validMethods.find(tmp) == _validMethods.end()) {
 			if (!request.errorFlag)
@@ -62,7 +63,7 @@ bool requestLineValidator::isValidRequestLine(std::string rLine, HttpRequest& re
 		spPos = rLine.find(' ', startPos);
 		if (spPos == std::string::npos)
 			return false;
-		
+
 		tmp = rLine.substr(startPos, spPos - startPos);
 		if (tmp.empty() ||  tmp[0] != '/' || tmp.size() >= MAX_HEADER_SIZE || !validatePath(tmp)) {
 			if (tmp.size() >= MAX_HEADER_SIZE || !validatePath(tmp))
