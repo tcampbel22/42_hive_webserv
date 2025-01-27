@@ -94,6 +94,15 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 			Logger::log("timeout: closing client socket " + std::to_string(it->first), INFO, true);
 			auto node = client_nodes.find(it->first);
 			it = _fd_activity_map.erase(it);
+			if (node->second->cgiStarted == true)
+			{
+				kill(node->second->pid, SIGKILL);
+				close(node->second->pipe_fds[READ_END]);
+				close(node->second->pipe_fds[WRITE_END]);
+				HttpRequest request(node->second->serverPtr, epollFd, _events);
+				request.errorFlag = 504;
+				ServerHandler response(node->second->fd, request);
+			}
 			cleanUpFds(node->second.get());
         } 
 		else 

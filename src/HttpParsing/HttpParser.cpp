@@ -150,38 +150,60 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 
 int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, std::vector<std::pair<int, int>>& pipe_vec) 
 {
+
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr, epollFd, _events);
 	request.errorFlag = requestNode->_error;
-	if (!request.errorFlag)
-		parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
-	if (parser.cgiflag && !request.errorFlag){
-		auto cgiBlock = request.settings->getCgiBlock();
-		if (cgiBlock && request.method != 3)
-		{
-			CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
-			myCgi.setCGIenvironment(request, parser, *cgiBlock);
-			request.headers.clear();
-			cgiBlock.reset();
-			myCgi.execute(request, cgiBlock, epollFd, _events, pipe_vec);
-		}
-		else {
-			Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
-			return (1);
-		}
-		if (request.errorFlag == 0) {
-			Response response(200, request.body.size(), request.body, request.closeConnection, false);
-			response.sendResponse(requestNode->fd);
+	if (requestNode->CGIReady == true)
+	{
+		request.body = requestNode->CGIBody;
+		request.errorFlag = requestNode->CGIError; //shoud be made into _error
+		if (request.errorFlag == 0)
+			request.errorFlag = 200;
+				ServerHandler response(requestNode->fd, request);
 			return (0);
-		}
-		else
-		{
-			request.closeConnection = true;
-			cgiBlock.reset();
+			// }
+			// else
+			// {
+			// 	request.closeConnection = true;
+			// 	return (1);
+				// cgiBlock.reset();
+			// }
+	}
+	else
+	{
+		if (!request.errorFlag)
+			parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
+		if (parser.cgiflag && !request.errorFlag){
+			auto cgiBlock = request.settings->getCgiBlock();
+			if (cgiBlock && request.method != 3 && requestNode->cgiStarted == false)
+			{
+				CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
+				myCgi.setCGIenvironment(request, parser, *cgiBlock);
+				myCgi.execute(request, cgiBlock, epollFd, _events, pipe_vec, requestNode);
+				return (0);
+			}
+			else {
+				Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
+				return (1);
+			}
+			//might be not needed
+			if (request.errorFlag == 0) {
+				Response response(200, request.body.size(), request.body, request.closeConnection, false);
+				response.sendResponse(requestNode->fd);
+				return (0);
+			}
+			else
+			{
+				request.closeConnection = true;
+				cgiBlock.reset();
+			}
 		}
 	}
-	// std::cout << request.errorFlag << std::endl;
-	ServerHandler response(requestNode->fd, request);
+	if (requestNode->cgiStarted == false)
+		ServerHandler response(requestNode->fd, request);
+	else
+		return (0);
 	if (request.closeConnection == true)
 		return (1);
 	else
