@@ -101,7 +101,7 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 				close(node->second->pipe_fds[WRITE_END]);
 				HttpRequest request(node->second->serverPtr, epollFd, _events);
 				request.errorFlag = 504;
-				ServerHandler response(node->second->fd, request, false);
+				ServerHandler response(node->second->fd, request);
 			}
 			cleanUpFds(node->second.get());
         } 
@@ -172,7 +172,7 @@ bool	HttpServer::resetCGI(fdNode* nodePtr)
 	nodePtr->cgiStarted = false;
 	nodePtr->CGIReady = false;
 	nodePtr->pid = 0;
-	// nodePtr->CGIBody.erase();
+	nodePtr->CGIBody.erase();
 	_events.events = EPOLLIN;
 	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, nodePtr->fd, &_events) == -1)		
 	{
@@ -201,4 +201,25 @@ void	HttpServer::validateHeaders(const std::vector<char>& data, int *errorFlag)
 		*errorFlag = 0;
 	else
 		*errorFlag = 431;
+}
+
+void	HttpServer::cleanUpChild(fdNode *nodePtr)
+{
+	if (!nodePtr->_clientDataBuffer.empty())
+		nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
+	// if (nodePtr->fd != -1)
+	// {
+	// epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events);  // Remove client socket from epoll
+	// close(nodePtr->fd);
+	// }
+	for (auto it = settings_vec.begin(); it != settings_vec.end(); it++)
+		close(it->_fd);
+	for (auto it : client_nodes)
+		close(it.second->fd);
+	for (auto it : server_nodes)
+		close(it->fd);
+	close(epollFd);
+	_ip_port_list.clear();
+	settings_vec.clear();
+	settings_vec.shrink_to_fit();
 }

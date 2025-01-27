@@ -13,9 +13,11 @@
 #include "CGIparsing.hpp"
 #include "../HttpParsing/HttpParser.hpp"
 
-CGIparsing::CGIparsing(std::string root, std::string script) {
+CGIparsing::CGIparsing(std::string root, std::string script) 
+{
 	_scriptName = script.substr(script.find_last_of('/'));
 	_execInfo = "." + root;
+
 }
 
 void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser, LocationSettings& cgiBlock) {
@@ -75,6 +77,8 @@ bool	setToNonBlocking(int socket)
 	return true;
 }
 
+
+
 //checks if the child process (CGI) has finished each iteration, if it take stoo long, then it send a kill command to the child process
 void	CGITimeout(pid_t &pid, int& errorCode, int* pipe_fds)
 {
@@ -108,7 +112,8 @@ void	CGITimeout(pid_t &pid, int& errorCode, int* pipe_fds)
 	}
 }
 
-void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events, std::vector<std::pair<int, int>>& pipe_vec, fdNode *requestNode) 
+
+void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events, HttpServer& server, fdNode *requestNode) 
 {
     // Create a pipe
 	if (pipe(requestNode->pipe_fds) == -1) 
@@ -124,7 +129,7 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
 	}
 	if (!setToNonBlocking(requestNode->pipe_fds[WRITE_END]) || !setToNonBlocking(requestNode->pipe_fds[READ_END]))
 		return ;
-	pipe_vec.emplace_back(requestNode->pipe_fds[WRITE_END], requestNode->pipe_fds[READ_END]); //probably not needed
+	server.pipe_vec.emplace_back(requestNode->pipe_fds[WRITE_END], requestNode->pipe_fds[READ_END]); //probably not needed
     // Fork the child process
     requestNode->pid = fork();
     if (requestNode->pid == -1) 
@@ -136,17 +141,17 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
     // Child process
     if (requestNode->pid == 0) 
 	{
-        // Redirect stdout to the write end of the pipe
+		// Redirect stdout to the write end of the pipe
         if (dup2(requestNode->pipe_fds[WRITE_END], STDOUT_FILENO) == -1) 
 		{
             Logger::log("dup2: failed", ERROR, false);
-			//clean up child
+			// server.cleanUpChild(requestNode);
             exit(1);
         }
 		if (dup2(requestNode->pipe_fds[READ_END], STDIN_FILENO) == -1) 
 		{
             Logger::log("dup2: failed", ERROR, false);
-			//clean up child
+			// server.cleanUpChild(requestNode);
             exit(1);
         }
 
@@ -159,7 +164,7 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
 			close(requestNode->pipe_fds[WRITE_END]);
             if (bytesRecieved == -1 || bytesRecieved == 0)
 			{
-				//clean up
+				// server.cleanUpChild(requestNode);
 				exit(1);
 			}
         }
@@ -167,8 +172,8 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
         if (execve(_execInfo.c_str(), (char *const *)argv, environ) == -1) 
 		{
             Logger::log("execve: failed to execute command", ERROR, false);
+			server.cleanUpChild(requestNode);
             close(requestNode->pipe_fds[WRITE_END]);
-			//clean up
 			exit(1);
         }
 

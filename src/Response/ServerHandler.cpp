@@ -17,7 +17,7 @@
 #include <regex>
 #include <string>
 
-ServerHandler::ServerHandler(int fd, HttpRequest& _newInput, bool isCGI):
+ServerHandler::ServerHandler(int fd, HttpRequest& _newInput):
 _response(), _input(_newInput)
 {
 	try
@@ -29,10 +29,10 @@ _response(), _input(_newInput)
 		//get the correct serverblock (/ if no other found)
 		getLocationSettings();
 		//sanitize the path
-		if (_input.errorFlag < 1 && !isCGI)
+		if (_input.errorFlag < 1)
 			checkPath();
 		//parse the full path together using information from the server block and check if the method is allowed
-		if (_input.errorFlag < 1 && !isCGI)
+		if (_input.errorFlag < 1)
 			parsePath();
 		//handle the request 
 		executeInput();
@@ -146,9 +146,7 @@ void ServerHandler::executeInput()
 	else if (_input.method == DELETE)
 		doDelete();
 	else
-		throw std::invalid_argument("Invalid argument");
-	if (_input.errorFlag > 0)
-		doError();
+		throw std::invalid_argument("execute-input: Invalid argument");
 }
 void	ServerHandler::makeMIME()
 {
@@ -270,7 +268,7 @@ void ServerHandler::defaultError()
 void ServerHandler::doError()
 {
 	_response.setResponseCode(_input.errorFlag);
-	if (locSettings->isRedirect() == true)
+	if (locSettings->isRedirect() == true || _input.errorFlag == 200)
 		return ;
 	std::string errorPath;
 	//check if there are location level error pages for the requested code

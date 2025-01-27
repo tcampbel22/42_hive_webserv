@@ -98,7 +98,7 @@ bool HttpServer::handle_write(fdNode* nodePtr)
 	{	
 		if (HttpServer::checkCGI(nodePtr) == 1)
 		{
-			if (HttpParser::bigSend(nodePtr, epollFd, _events, pipe_vec) || _clientClosedConn == true)
+			if (HttpParser::bigSend(nodePtr, epollFd, _events, *_instance) || _clientClosedConn == true)
 				cleanUpFds(nodePtr);
 			else
 			{
@@ -107,7 +107,7 @@ bool HttpServer::handle_write(fdNode* nodePtr)
 			}
 		}
 	}
-	else if (HttpParser::bigSend(nodePtr, epollFd, _events, pipe_vec) || _clientClosedConn == true) // Once we have the full data, process the request
+	else if (HttpParser::bigSend(nodePtr, epollFd, _events, *_instance) || _clientClosedConn == true) // Once we have the full data, process the request
 	{
 		cleanUpFds(nodePtr);
 	}

@@ -57,6 +57,8 @@ struct fdNode
 	std::string 	CGIBody;
 	bool 			CGIReady = false;
 	int				CGIError = 0;
+	int				method = -1;
+	std::string		path;
 };
 
 class HttpServer
@@ -67,7 +69,6 @@ private:
 	static HttpServer	*_instance;
 	std::vector<std::pair<std::string, int>> _ip_port_list;
 	std::vector<int> _server_fds;
-	std::vector<std::pair<int, int>> pipe_vec;
 	std::vector<std::shared_ptr<fdNode>> server_nodes;
 	std::map<int, std::shared_ptr<fdNode>> client_nodes;
 	int 			_clientSocket;
@@ -81,6 +82,7 @@ private:
 	bool			requestComplete = false;
 public:
 	std::vector<ServerSettings> settings_vec;
+	std::vector<std::pair<int, int>> pipe_vec;
 	//constructors & destructors
 	HttpServer(std::vector<ServerSettings> vec);
 	~HttpServer();
@@ -111,4 +113,5 @@ public:
 	bool	handle_read(fdNode* nodePtr);
 	bool	handle_write(fdNode* nodePtr);
 	void	validateHeaders(const std::vector<char>& data, int *errorFlag);
+	void	cleanUpChild(fdNode *nodePtr);
 };

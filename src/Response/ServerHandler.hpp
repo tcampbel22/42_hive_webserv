@@ -29,7 +29,7 @@ private:
 	std::string _baseInput; //for storing the original unmodified input string
 
 public:
-	ServerHandler(int fd, HttpRequest& _newInput, bool isCGI);
+	ServerHandler(int fd, HttpRequest& _newInput);
 	void	getLocationSettings();
 	void	generateIndex();
 	int 	checkMethod();

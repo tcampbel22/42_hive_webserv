@@ -163,7 +163,7 @@ void checkHeaderError(const std::vector<char> clientData, HttpRequest& request) 
 	}
 }
 
-int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, std::vector<std::pair<int, int>>& pipe_vec) 
+int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, HttpServer& server) 
 {
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr, epollFd, _events);
@@ -171,19 +171,20 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 	if (requestNode->CGIReady == true)
 	{
 		request.body = requestNode->CGIBody;
-		request.errorFlag = requestNode->CGIError; //shoud be made into _error, Why though?
-		std::cout << request.body << "\nerror: " << request.errorFlag << '\n';
-		if (request.errorFlag == 0){
-			// request.errorFlag = 200;
-			ServerHandler response(requestNode->fd, request, true);
-			return (0);}
-			// }
-			// else
-			// {
-			// 	request.closeConnection = true;
-			// 	return (1);
-				// cgiBlock.reset();
-			// }
+		request.errorFlag = requestNode->CGIError; //shoud be made into _error
+		request.method = requestNode->method;
+		request.path = requestNode->path;
+		if (request.errorFlag == 0)
+		{
+			Response response(200, request.body.size(), request.body, request.closeConnection, false);
+			response.sendResponse(requestNode->fd);
+			return (0);
+		}
+		else
+		{
+			ServerHandler Response(requestNode->fd, request);
+			return (1);
+		}
 	}
 	else
 	{
@@ -195,7 +196,9 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 			{
 				CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
 				myCgi.setCGIenvironment(request, parser, *cgiBlock);
-				myCgi.execute(request, epollFd, _events, pipe_vec, requestNode);
+				myCgi.execute(request, epollFd, _events, server, requestNode);
+				requestNode->path = request.path;
+				requestNode->method = request.method;
 				return (0);
 			}
 			else {
@@ -216,7 +219,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 		}
 	}
 	if (requestNode->cgiStarted == false)
-		ServerHandler response(requestNode->fd, request, false);
+		ServerHandler response(requestNode->fd, request);
 	else
 		return (0);
 	if (request.closeConnection == true)
