@@ -104,4 +104,11 @@ public:
 	bool	isNonBlockingSocket(int fd);
 	void	cleanUpFds(fdNode *nodePtr);
 	void	createClientNode(fdNode* nodePtr);
+	bool	checkSystemMemory(fdNode* node);
+	int		checkCGI(fdNode *requestNode);
+	bool	resetCGI(fdNode* nodePtr);
+	void	resetNode(fdNode* nodePtr);
+	bool	handle_read(fdNode* nodePtr);
+	bool	handle_write(fdNode* nodePtr);
+	void	validateHeaders(const std::vector<char>& data, int *errorFlag);
 };

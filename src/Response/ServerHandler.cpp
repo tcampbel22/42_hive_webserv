@@ -17,7 +17,7 @@
 #include <regex>
 #include <string>
 
-ServerHandler::ServerHandler(int fd, HttpRequest& _newInput):
+ServerHandler::ServerHandler(int fd, HttpRequest& _newInput, bool isCGI):
 _response(), _input(_newInput)
 {
 	try
@@ -29,10 +29,10 @@ _response(), _input(_newInput)
 		//get the correct serverblock (/ if no other found)
 		getLocationSettings();
 		//sanitize the path
-		if (_input.errorFlag < 1)
+		if (_input.errorFlag < 1 && !isCGI)
 			checkPath();
 		//parse the full path together using information from the server block and check if the method is allowed
-		if (_input.errorFlag < 1)
+		if (_input.errorFlag < 1 && !isCGI)
 			parsePath();
 		//handle the request 
 		executeInput();

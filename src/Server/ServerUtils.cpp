@@ -101,7 +101,7 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 				close(node->second->pipe_fds[WRITE_END]);
 				HttpRequest request(node->second->serverPtr, epollFd, _events);
 				request.errorFlag = 504;
-				ServerHandler response(node->second->fd, request);
+				ServerHandler response(node->second->fd, request, false);
 			}
 			cleanUpFds(node->second.get());
         } 
@@ -165,4 +165,40 @@ bool	HttpServer::checkSystemMemory(fdNode* node)
 		return true;
 	}
 	return false;
+}
+
+bool	HttpServer::resetCGI(fdNode* nodePtr)
+{
+	nodePtr->cgiStarted = false;
+	nodePtr->CGIReady = false;
+	nodePtr->pid = 0;
+	// nodePtr->CGIBody.erase();
+	_events.events = EPOLLIN;
+	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, nodePtr->fd, &_events) == -1)		
+	{
+		Logger::log("Failed to mod epoll", ERROR, false);
+		cleanUpFds(nodePtr);
+		return false; 
+	}
+	resetNode(nodePtr);
+	return true;
+}
+
+void	HttpServer::resetNode(fdNode* nodePtr)
+{
+	nodePtr->headerCorrect = false;
+	nodePtr->_error = 0;
+	nodePtr->_readyToSend = false;
+	nodePtr->_clientDataBuffer.clear();
+	_fd_activity_map[nodePtr->fd] = std::time(nullptr);
+}
+
+void	HttpServer::validateHeaders(const std::vector<char>& data, int *errorFlag) 
+{
+	std::string requestStr(data.begin(), data.end());
+
+	if (requestStr.find("\r\n\r\n") != std::string::npos)
+		*errorFlag = 0;
+	else
+		*errorFlag = 431;
 }

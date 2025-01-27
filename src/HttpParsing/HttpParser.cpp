@@ -150,18 +150,18 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 
 int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, std::vector<std::pair<int, int>>& pipe_vec) 
 {
-
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr, epollFd, _events);
 	request.errorFlag = requestNode->_error;
 	if (requestNode->CGIReady == true)
 	{
 		request.body = requestNode->CGIBody;
-		request.errorFlag = requestNode->CGIError; //shoud be made into _error
-		if (request.errorFlag == 0)
-			request.errorFlag = 200;
-				ServerHandler response(requestNode->fd, request);
-			return (0);
+		request.errorFlag = requestNode->CGIError; //shoud be made into _error, Why though?
+		std::cout << request.body << "\nerror: " << request.errorFlag << '\n';
+		if (request.errorFlag == 0){
+			// request.errorFlag = 200;
+			ServerHandler response(requestNode->fd, request, true);
+			return (0);}
 			// }
 			// else
 			// {
@@ -180,7 +180,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 			{
 				CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
 				myCgi.setCGIenvironment(request, parser, *cgiBlock);
-				myCgi.execute(request, cgiBlock, epollFd, _events, pipe_vec, requestNode);
+				myCgi.execute(request, epollFd, _events, pipe_vec, requestNode);
 				return (0);
 			}
 			else {
@@ -201,7 +201,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 		}
 	}
 	if (requestNode->cgiStarted == false)
-		ServerHandler response(requestNode->fd, request);
+		ServerHandler response(requestNode->fd, request, false);
 	else
 		return (0);
 	if (request.closeConnection == true)
