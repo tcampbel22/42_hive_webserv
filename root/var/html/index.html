@@ -48,11 +48,20 @@
             bottom: 0;
             width: 100%;
         }
+		.logo {
+            color: white;
+            text-decoration: none;
+            font-size: 24px;
+            font-weight: bold;
+            font-family: 'Fira sans', sans-serif;
+            display: flex;
+        }
     </style>
 </head>
 <body>
     <header>
-        <h1>Welcome to My Website</h1>
+		<a href="index.html" class="logo">WEBSERV</a>
+        <h1>Welcome</h1>
     </header>
     <nav>
         <button onclick="location.href='/html/about.html'">About</button>
@@ -61,6 +70,10 @@
         <button onclick="location.href='/html/eromon.html'">Eromon</button>
 		<button onclick="location.href='/html/void.html'">Void</button>
     </nav>
+	<nav>
+		<button onclick="location.href='/html/checkbox.html'">Cgi-Post</button>
+		<button onclick="location.href='/html/filer.html'">Upload</button>
+	</nav>
     <main>
         <h2>Homepage Content</h2>
         <p>Welcome To Our Homepage.</p>

@@ -148,6 +148,21 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 	}
 }
 
+void checkHeaderError(const std::vector<char> clientData, HttpRequest& request) {
+	std::string tmp(clientData.begin(), clientData.end());
+	
+	if (tmp.find(' ') == std::string::npos) {
+			Logger::setErrorAndLog(&request.errorFlag, 405, "request-line: invalid method");
+	}
+	else if (size_t pos = tmp.find(' ') != std::string::npos)
+	{
+		if (tmp.find("HTTP/1.1") == std::string::npos)
+			Logger::setErrorAndLog(&request.errorFlag, 414, "request-line: too long URI");
+		else
+			request.errorFlag = 431;
+	}
+}
+
 int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, std::vector<std::pair<int, int>>& pipe_vec) 
 {
 	HttpParser parser;
