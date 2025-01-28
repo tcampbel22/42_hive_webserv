@@ -154,7 +154,7 @@ void checkHeaderError(const std::vector<char> clientData, HttpRequest& request) 
 	if (tmp.find(' ') == std::string::npos) {
 			Logger::setErrorAndLog(&request.errorFlag, 405, "request-line: invalid method");
 	}
-	else if (size_t pos = tmp.find(' ') != std::string::npos)
+	else if (tmp.find(' ') != std::string::npos)
 	{
 		if (tmp.find("HTTP/1.1") == std::string::npos)
 			Logger::setErrorAndLog(&request.errorFlag, 414, "request-line: too long URI");
@@ -163,46 +163,72 @@ void checkHeaderError(const std::vector<char> clientData, HttpRequest& request) 
 	}
 }
 
-int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, std::vector<std::pair<int, int>>& pipe_vec) 
+int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, HttpServer& server) 
 {
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr, epollFd, _events);
-
-	if (requestNode->_error != 0)
-		checkHeaderError(requestNode->_clientDataBuffer, request);
-	if (!request.errorFlag)
-		parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
-	if (parser.cgiflag && !request.errorFlag){
-		auto cgiBlock = request.settings->getCgiBlock();
-		if (cgiBlock && request.method != 3)
+	request.errorFlag = requestNode->_error;
+	if (requestNode->CGIReady == true)
+	{
+		request.body = requestNode->CGIBody;
+		request.errorFlag = requestNode->CGIError; //shoud be made into _error
+		request.method = requestNode->method;
+		request.path = requestNode->path;
+		if (request.errorFlag == 0)
 		{
-			CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
-			myCgi.setCGIenvironment(request, parser, *cgiBlock);
-			myCgi.execute(request, cgiBlock, epollFd, _events, pipe_vec);
-		}
-		else {
-			Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
-			return (1);
-		}
-		if (request.errorFlag == 0) {
 			Response response(200, request.body.size(), request.body, request.closeConnection, false);
 			response.sendResponse(requestNode->fd);
 			return (0);
 		}
 		else
 		{
-			request.closeConnection = true;
-			cgiBlock.reset();
+			ServerHandler Response(requestNode->fd, request);
+			return (1);
 		}
 	}
-	ServerHandler response(requestNode->fd, request);
+	else
+	{
+		if (!request.errorFlag)
+			parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
+		if (parser.cgiflag && !request.errorFlag){
+			auto cgiBlock = request.settings->getCgiBlock();
+			if (cgiBlock && request.method != 3 && requestNode->cgiStarted == false)
+			{
+				CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
+				myCgi.setCGIenvironment(request, parser, *cgiBlock);
+				myCgi.execute(request, epollFd, _events, server, requestNode);
+				requestNode->path = request.path;
+				requestNode->method = request.method;
+				return (0);
+			}
+			else {
+				Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
+				return (1);
+			}
+			//might be not needed
+			if (request.errorFlag == 0) {
+				Response response(200, request.body.size(), request.body, request.closeConnection, false);
+				response.sendResponse(requestNode->fd);
+				return (0);
+			}
+			else
+			{
+				request.closeConnection = true;
+				cgiBlock.reset();
+			}
+		}
+	}
+	if (requestNode->cgiStarted == false)
+		ServerHandler response(requestNode->fd, request);
+	else
+		return (0);
 	if (request.closeConnection == true)
 		return (1);
 	else
 		return (0);
 }
 
-std::string HttpParser::getQuery() {return query; }
+std::string HttpParser::getQuery() { return query; }
 std::string HttpParser::getPathInfo() { return pathInfo; }
 uint HttpParser::getContentLength() { return _contentLength; }
 

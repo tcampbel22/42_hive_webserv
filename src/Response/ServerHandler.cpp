@@ -28,7 +28,6 @@ _response(), _input(_newInput)
 
 		//get the correct serverblock (/ if no other found)
 		getLocationSettings();
-
 		//sanitize the path
 		if (_input.errorFlag < 1)
 			checkPath();
@@ -147,9 +146,10 @@ void ServerHandler::executeInput()
 	else if (_input.method == DELETE)
 		doDelete();
 	else
-		throw std::invalid_argument("Invalid argument");
+		throw std::invalid_argument("execute-input: Invalid argument");
 	if (_input.errorFlag > 0)
 		doError();
+
 }
 void	ServerHandler::makeMIME()
 {

@@ -8,7 +8,7 @@
 		header {
 			background-color: #333;
 			color: #fff;
-			padding: 20px;
+			padding: 30px;
 		}
 		.logo {
 			color: white;
@@ -18,10 +18,12 @@
 			font-family: 'Fira sans', sans-serif;
 			display: flex;
 		}
-        body {
+        body, html {
             font-family: Arial, sans-serif;
             background-color: #f0f0f0;
             text-align: center;
+			margin: 0;
+            padding: 0;
         }
         h1 {
             font-size: 24px;
@@ -54,8 +56,9 @@
     </style>
 </head>
 <body>
-	<header><a href="index.html" class="logo">WEBSERV</a></header>
-    <h1>Post_It</h1>
+	<header><a href="index.html" class="logo">WEBSERV</a>
+	</header>
+	<h1>Post_It</h1>
     <!-- Form with method 'post', action 'cgitester.py', and enctype for file upload -->
     <form method='POST' action='/cgi-bin/cgitester.py' enctype="application/x-www-form-urlencoded">
         <!-- Name input field -->

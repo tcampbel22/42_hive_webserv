@@ -83,51 +83,15 @@ void HttpServer::startListening()
 			_events.data.ptr = nodePtr; //store event data in a temp variable for use in epoll functions
 			if (std::find(_server_fds.begin(), _server_fds.end(), nodePtr->fd) != _server_fds.end()) //eventFd is a server_socket meaning a new request is incoming
 				acceptNewClient(nodePtr, nodePtr->fd, current_time);
-			else if (_eventsArr[i].events & EPOLLIN) //client socket has data to read from
+			else if (!checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLIN) //client socket has data to read from
 			{
-				readRequest(nodePtr);
-                if (requestComplete)
-                {
-                    if (nodePtr->_clientDataBuffer.empty())
-						cleanUpFds(nodePtr);
-					else
-					{
-						nodePtr->_readyToSend = true;
-						_events.events = EPOLLOUT;
-						if (epoll_ctl(epollFd, EPOLL_CTL_MOD, nodePtr->fd, &_events) == -1)		
-						{
-							Logger::log("Failed to mod epoll", ERROR, false);
-							cleanUpFds(nodePtr);
-							continue; 
-						}
-					}
-                }
-                else
-                    Logger::log("Waiting for more data...", INFO, false);
+				if (!handle_read(nodePtr))
+					continue;
             }
 			else if (_eventsArr[i].events & EPOLLOUT && nodePtr->_readyToSend)
 			{
-				if (HttpParser::bigSend(nodePtr, epollFd, _events, pipe_vec) || _clientClosedConn == true) // Once we have the full data, process the request
-				{
-					cleanUpFds(nodePtr);
-				}
-				else
-				{
-					_events.events = EPOLLIN;
-					if (epoll_ctl(epollFd, EPOLL_CTL_MOD, nodePtr->fd, &_events) == -1)		
-					{
-						Logger::log("Failed to mod epoll", ERROR, false);
-						cleanUpFds(nodePtr);
-						continue; 
-					}
-					nodePtr->headerCorrect = false;
-					nodePtr->_error = 0;
-					nodePtr->_readyToSend = false;
-					nodePtr->_clientDataBuffer.clear();
-					_fd_activity_map[nodePtr->fd] = std::time(nullptr);
-				}
-				nodePtr->headerCorrect = false;
-				nodePtr->_error = 0;
+				if (!handle_write(nodePtr))
+					continue;
 			}
 		fdActivityLoop(current_time);
 		}
@@ -177,7 +141,7 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 		{
 			Logger::log("New client connected: " + std::to_string(_clientSocket), INFO, false);
 			setNonBlocking(_clientSocket);
-			_events.events = EPOLLIN | EPOLLOUT;
+			_events.events = EPOLLIN;
 			createClientNode(nodePtr);
 			_fd_activity_map[_clientSocket] = current_time;
 		}
@@ -185,105 +149,12 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 	else
 		Logger::log("max connections reached", ERROR, false);
 }
-void validateHeaders(const std::vector<char>& data, int *errorFlag) {
-	std::string requestStr(data.begin(), data.end());
-
-	if (requestStr.find("\r\n\r\n") != std::string::npos)
-	{
-		*errorFlag = 0;
-	}
-	else
-		*errorFlag = 431;
-}
-
-//Read data from client stream
-void	HttpServer::readRequest(fdNode *nodePtr)
-{
-	int _fd_out = nodePtr->fd;
-
-	ssize_t bytesReceived = 0;
-	ssize_t bytes = 1024;
-	requestComplete = false;
-
-		nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
-		bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
-		if (nodePtr->_clientDataBuffer.size() >= MAX_HEADER_SIZE) {
-			if (!nodePtr->headerCorrect && nodePtr->_clientDataBuffer.size() >= MAX_HEADER_SIZE) {
-				validateHeaders(nodePtr->_clientDataBuffer, &nodePtr->_error);
-				if (nodePtr->_error != 0) {
-					requestComplete = true;
-					nodePtr->headerCorrect = true;
-					_clientClosedConn = true;
-					return ;
-				}
-				nodePtr->headerCorrect = true;
-			}
-		}
-		if (bytesReceived < bytes) 
-		{
-			int temp = bytesReceived;
-			if (bytesReceived < 0)
-				temp = 0;
-			nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - temp));
-			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
-		}
-		if (bytesReceived < 0)
-		{
-			if (isNonBlockingSocket(nodePtr->fd)) //check if there is an error with recv
-			{
-				Logger::log("recv: failed to read, better check ERRNO :/", ERROR, false);
-				requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
-			}
-		}
-		else if (bytesReceived == 0) //read is successful and client closes connection
-		{
-			Logger::log("Client closed the connection.", INFO, false);
-			requestComplete = true;
-			_clientClosedConn = true;
-		}
-		else
-			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
-}
-
 
 std::string getBoundary(std::string requestString) {
 	size_t pos = requestString.find("WebKitFormBoundary");
 	std::string boundaryCode = requestString.substr(pos, requestString.find_first_of("\r\n", pos) - pos);
 	boundaryCode.append("--");
 	return boundaryCode;
-}
-// Function to check if the request is fully received (for chunked encoding or complete body)
-bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived)
-{
-    std::string requestStr(data.begin(), data.end());
-	//std::cout << requestStr << std::endl;
-	bool isChunked = isChunkedTransferEncoding(requestStr);
-	if (isChunked) {
-		if (requestStr.find("0\r\n\r\n") != std::string::npos) {  // End of chunked data
-        	return true;
-   		}
-		else
-			return false;
-	}
-	bool hasBody = isRequestWithBody(requestStr);
-	if (hasBody) {
-		int complete = getContentLength(requestStr);
-		if (complete < 0)
-			return true;
-		size_t test = requestStr.find("\r\n\r\n") + 4;
-		if ((requestStr.find("\r\n\r\n", test) != std::string::npos) || (bytesReceived - test == (size_t)complete))
-			return true;
-		else
-			return false;
-	}
-	if (!isChunked && !hasBody) 
-	{
-		if (requestStr.find("\r\n\r\n") != std::string::npos)  // End of nonBody data
-			return true;
-		else
-			return false;
-	}
-    return false;
 }
 
 HttpServer::~HttpServer()

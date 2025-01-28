@@ -13,6 +13,7 @@
 #pragma once
 #include <string>
 #include <sys/socket.h>
+#include <sys/sysinfo.h>
 #include <iostream>
 #include <stdlib.h>
 #include <unistd.h>
@@ -30,11 +31,15 @@
 #include <memory>
 #include "../Response/ServerHandler.hpp"
 #include <csignal>
+#include "../../include/webserv.hpp"
+#include <sys/wait.h>
 
 # define MAX_EVENTS 200 //Can define this in config file or create a funct based on cpu load or leave it
-# define TIME_OUT_PERIOD 50
+# define TIME_OUT_PERIOD 1
 # define MAX_CONNECTIONS 1024
 # define TIME_OUT_MOD 0.0011
+#define READ_END 0
+#define WRITE_END 1
 
 struct fdNode
 {
@@ -45,6 +50,15 @@ struct fdNode
 	bool			_readyToSend = false;
 	int				_error;
 	bool			headerCorrect = false;
+	//CGI stuff
+	int				pipe_fds[2];
+	bool			cgiStarted = false;
+	pid_t 			pid = 0;
+	std::string 	CGIBody;
+	bool 			CGIReady = false;
+	int				CGIError = 0;
+	int				method = -1;
+	std::string		path;
 };
 
 class HttpServer
@@ -55,7 +69,6 @@ private:
 	static HttpServer	*_instance;
 	std::vector<std::pair<std::string, int>> _ip_port_list;
 	std::vector<int> _server_fds;
-	std::vector<std::pair<int, int>> pipe_vec;
 	std::vector<std::shared_ptr<fdNode>> server_nodes;
 	std::map<int, std::shared_ptr<fdNode>> client_nodes;
 	int 			_clientSocket;
@@ -69,6 +82,7 @@ private:
 	bool			requestComplete = false;
 public:
 	std::vector<ServerSettings> settings_vec;
+	std::vector<std::pair<int, int>> pipe_vec;
 	//constructors & destructors
 	HttpServer(std::vector<ServerSettings> vec);
 	~HttpServer();
@@ -92,4 +106,12 @@ public:
 	bool	isNonBlockingSocket(int fd);
 	void	cleanUpFds(fdNode *nodePtr);
 	void	createClientNode(fdNode* nodePtr);
+	bool	checkSystemMemory(fdNode* node);
+	int		checkCGI(fdNode *requestNode);
+	bool	resetCGI(fdNode* nodePtr);
+	void	resetNode(fdNode* nodePtr);
+	bool	handle_read(fdNode* nodePtr);
+	bool	handle_write(fdNode* nodePtr);
+	void	validateHeaders(const std::vector<char>& data, int *errorFlag);
+	void	cleanUpChild(fdNode *nodePtr);
 };

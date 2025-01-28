@@ -13,9 +13,11 @@
 #include "CGIparsing.hpp"
 #include "../HttpParsing/HttpParser.hpp"
 
-CGIparsing::CGIparsing(std::string root, std::string script) {
+CGIparsing::CGIparsing(std::string root, std::string script) 
+{
 	_scriptName = script.substr(script.find_last_of('/'));
 	_execInfo = "." + root;
+
 }
 
 void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser, LocationSettings& cgiBlock) {
@@ -59,94 +61,76 @@ std::string CGIparsing::getPort(std::string& host) {
 	return nullptr;
 }
 
-void	setToNonBlocking(int socket)
+bool	setToNonBlocking(int socket)
 {
 	int	flag = fcntl(socket, F_GETFL, 0); //retrieves flags/settings from socket
-	fcntl(socket, F_SETFL, flag | O_NONBLOCK); //Sets socket to be nonblocking
-}
-
-//checks if the child process (CGI) has finished each iteration, if it take stoo long, then it send a kill command to the child process
-void	CGITimeout(pid_t &pid, int& errorCode, int* pipe_fds)
-{
-	int elapsed = 0;
-	int	interval = 10; //milliseconds
-	pid_t result;
-    int status;
-
-	while (1)
+	if (flag < 0)
 	{
-		result = waitpid(pid, &status, WNOHANG);
-		if (result == pid)
-		{
-			if (WIFEXITED(status))
-			{
-				if(WEXITSTATUS(status))
-					Logger::setErrorAndLog(&errorCode, 502, "child process failed");
-			}
-			break;
-		}
-		if (elapsed > CGI_TIMEOUT)
-		{
-			Logger::setErrorAndLog(&errorCode, 504, "Child process teminated due timeout");
-			close(pipe_fds[WRITE_END]);
-			close(pipe_fds[READ_END]);
-			kill(pid, SIGKILL);
-			break;
-		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-		elapsed += interval;
+		Logger::log("fcntl: GETFL failed", ERROR, true);
+		return false;
 	}
+	if (fcntl(socket, F_SETFL, flag | O_NONBLOCK) < 0) //Sets socket to be nonblocking
+	{
+		Logger::log("fcntl: SETFL failed", ERROR, true); 
+		return false; 
+	}
+	return true;
 }
 
-void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>& cgiblock, int epollFd, epoll_event& _events, std::vector<std::pair<int, int>>& pipe_vec) {
-   	int pipe_fds[2]; // File descriptors for the pipe
-    pid_t pid;
-    char buffer[1024]; // Buffer to hold the output from the CGI script
-    ssize_t bytesRead;
-	(void)cgiblock;
-	(void)epollFd;
-	(void)_events;
+void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events, HttpServer& server, fdNode *requestNode) 
+{
     // Create a pipe
-	if (pipe(pipe_fds) == -1) {
+	if (pipe(requestNode->pipe_fds) == -1) 
+	{
         Logger::log("pipe: failed to open", ERROR, false);
-        exit(1);
+		return ;
     }
-	// if (epoll_ctl(epollFd, EPOLL_CTL_ADD, pipe_fds[WRITE_END], &_events) == -1)
-	// {
-	// 	Logger::log("epoll_ctl: failed to add fd to epoll", ERROR, false);
-	// 	// delete client_node;
-	// }
-	setToNonBlocking(pipe_fds[WRITE_END]);
-	setToNonBlocking(pipe_fds[READ_END]);
-	pipe_vec.emplace_back(pipe_fds[WRITE_END], pipe_fds[READ_END]);
+	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, requestNode->pipe_fds[WRITE_END], &_events) == -1)
+	{
+		Logger::log("epoll_ctl: failed to add fd to epoll", ERROR, false);
+		return ;
+		
+	}
+	if (!setToNonBlocking(requestNode->pipe_fds[WRITE_END]) || !setToNonBlocking(requestNode->pipe_fds[READ_END]))
+		return ;
+	server.pipe_vec.emplace_back(requestNode->pipe_fds[WRITE_END], requestNode->pipe_fds[READ_END]); //probably not needed
     // Fork the child process
-    pid = fork();
-    if (pid == -1) {
-        Logger::log("fork: failed to fork", ERROR, false);
-        exit(1);
+    requestNode->pid = fork();
+    if (requestNode->pid == -1) 
+	{
+        Logger::log("fork: failed to fork", ERROR, true);
+        return ;
     }
 	
-    if (pid == 0) {
-        // Child process
+    // Child process
+    if (requestNode->pid == 0) 
+	{
+		close(requestNode->pipe_fds[READ_END]);
 
-        // Close the write end of the pipe since the child will only write to stdout
-        // Redirect stdout to the write end of the pipe
-        if (dup2(pipe_fds[WRITE_END], STDOUT_FILENO) == -1) {
+		// Redirect stdout to the write end of the pipe
+        if (dup2(requestNode->pipe_fds[WRITE_END], STDOUT_FILENO) == -1) 
+		{
             Logger::log("dup2: failed", ERROR, false);
+			// server.cleanUpChild(requestNode);
             exit(1);
         }
-		if (dup2(pipe_fds[READ_END], STDIN_FILENO) == -1) {
-            Logger::log("dup2: failed", ERROR, false);
-            exit(1);
-        }
+		// if (dup2(requestNode->pipe_fds[READ_END], STDIN_FILENO) == -1) 
+		// {
+        //     Logger::log("dup2: failed", ERROR, false);
+		// 	// server.cleanUpChild(requestNode);
+        //     exit(1);
+        // }
 
-        close(pipe_fds[READ_END]);
+        close(requestNode->pipe_fds[READ_END]);
 
         // Close the write end of the pipe now that it's duplicated
-		if (request.method == 2) {  // POST method
-			ssize_t bytesRecieved = write(pipe_fds[WRITE_END], request.body.c_str(), request.body.size());
-			close(pipe_fds[WRITE_END]);
-            if (bytesRecieved == -1 || bytesRecieved == 0) {
+		if (request.method == 2) 
+		{  
+			ssize_t bytesRecieved = write(requestNode->pipe_fds[WRITE_END], request.body.c_str(), request.body.size());
+			close(requestNode->pipe_fds[WRITE_END]);
+            if (bytesRecieved == -1 || bytesRecieved == 0)
+			{
+				// server.cleanUpChild(requestNode);
 				exit(1);
 			}
         }
@@ -154,22 +138,26 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
         if (execve(_execInfo.c_str(), (char *const *)argv, environ) == -1) 
 		{
             Logger::log("execve: failed to execute command", ERROR, false);
-            close(pipe_fds[WRITE_END]);
-			cgiblock.reset();
+			server.cleanUpChild(requestNode);
+            close(requestNode->pipe_fds[WRITE_END]);
 			exit(1);
         }
 
-    } else {
+    } 
+	else 
+	{
+		requestNode->cgiStarted = true;
         // Parent process
+		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, requestNode->pipe_fds[WRITE_END], &_events) == -1)
+		{
+			Logger::log("epll_ctl: failed to delete fd", ERROR, false);
+			close(requestNode->pipe_fds[READ_END]);
+			close(requestNode->pipe_fds[WRITE_END]);
+		}
         // Close the write end of the pipe since the parent will only read from the pipe
-		// if (epoll_ctl(epollFd, EPOLL_CTL_DEL, pipe_fds[WRITE_END], &_events) == -1)
-		// {
-		// 	Logger::log("epll_ctl: failed to delete fd", ERROR, false);
-		// 	close(pipe_fds[READ_END]);
-		// 	close(pipe_fds[WRITE_END]);
-		// 	// delete client_node;
-		// }
-        close(pipe_fds[WRITE_END]);
+        
+		close(requestNode->pipe_fds[WRITE_END]);
+		
 		// if (epoll_ctl(epollFd, EPOLL_CTL_ADD, pipe_fds[READ_END], &_events) == -1)
 		// {
 		// 	Logger::log("epoll_ctl: failed to add fd to epoll", ERROR, false);
@@ -178,29 +166,17 @@ void CGIparsing::execute(HttpRequest& request, std::shared_ptr<LocationSettings>
 		// 	// delete client_node;
 		// }
 
-		CGITimeout(pid, request.errorFlag, pipe_fds); //Allow child process to finish or timeout
+		// CGITimeout(requestNode->pid, request.errorFlag, requestNode->pipe_fds); //Allow child process to finish or timeout
 
-		// waitpid(pid, NULL, 0); // Wait for the child process to finish
+		// // waitpid(pid, NULL, 0); // Wait for the child process to finish
 		
-        // Read the output from the child process
-		request.body.clear();
-		if (request.errorFlag == 0)
-		{
-			while ((bytesRead = read(pipe_fds[READ_END], buffer, sizeof(buffer) - 1)) > 0) {
-				buffer[bytesRead] = '\0'; // Null-terminate the output
-				//printf("CGI Output: %s", buffer); // Or store it in a variable if needed
-				request.body += buffer;
-			}
-		}
-		// Close the read end of the pipe after reading
-		// if (epoll_ctl(epollFd, EPOLL_CTL_DEL, pipe_fds[READ_END], &_events) == -1)
-		// {
-		// 	Logger::log("epoll_ctl: failed to add fd to epoll", ERROR, false);
-		// 	close(pipe_fds[READ_END]);
-		// 	close(pipe_fds[WRITE_END]);
-		// 	// delete client_node;
-		// }
-        close(pipe_fds[READ_END]);
+		// // if (epoll_ctl(epollFd, EPOLL_CTL_DEL, pipe_fds[READ_END], &_events) == -1)
+		// // {
+		// // 	Logger::log("epoll_ctl: failed to add fd to epoll", ERROR, false);
+		// // 	close(pipe_fds[READ_END]);
+		// // 	close(pipe_fds[WRITE_END]);
+		// // 	// delete client_node;
+		// // }
     }
 }
 

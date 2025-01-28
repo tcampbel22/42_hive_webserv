@@ -28,6 +28,7 @@
 struct fdNode;
 class ServerSettings;
 class LocationSettings;
+class HttpServer;
 
 
 struct HttpRequest {
@@ -37,7 +38,7 @@ struct HttpRequest {
 	std::string body;
 	std::string host;
 	bool closeConnection = false;
-	int errorFlag;
+	int errorFlag = 0;
 	ServerSettings* settings;
 	HttpRequest(ServerSettings *, int, epoll_event&);
 	bool isCGI;
@@ -50,7 +51,6 @@ struct HttpRequest {
 class HttpParser
 {
 private:
-	//std::map<std::string, std::string> _requestMap;
 	std::vector<char> _clientDataBuffer;
 	int _contentLength;
 	bool cgiflag;
@@ -60,20 +60,13 @@ private:
 public:
 	HttpParser();
 	~HttpParser();
-	static int	bigSend(fdNode*, int, epoll_event&, std::vector<std::pair<int, int>>&);
+	static int	bigSend(fdNode*, int, epoll_event&, HttpServer&);
 	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *, HttpParser&);
-	//void recieveRequest(int out_fd);
-	//bool isValidRequestline(std::string, HttpRequest&);
-	//void findKeys(HttpRequest& request);
-	//void handleChunkedBody(HttpRequest&, std::istringstream&);
-	//int hexToInt(std::string);
 	void parseBody(HttpRequest&, std::istringstream&);
 	void parseRegularBody(std::istringstream&, HttpRequest&);
 	void checkForCgi(HttpRequest&, HttpParser&, LocationSettings&);
 	uint getContentLength();
 	int isBlockCGI(HttpRequest&, HttpParser&);
-	//void validateLocation(LocationSettings*, int*);
-	//std::string trim(const std::string& str);
 	std::string getQuery();
 	std::string getPathInfo();
 };
