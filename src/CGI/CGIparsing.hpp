@@ -36,7 +36,7 @@ private:
 	std::string _execInfo;
 	static CGIparsing *_instance;
 public:
-	CGIparsing(std::string, std::string);
+	CGIparsing(std::string&, std::string&);
 	void setCGIenvironment(HttpRequest&, HttpParser&, LocationSettings&);
 	void execute(HttpRequest&, int, epoll_event&, HttpServer&, fdNode *requestNode);
 	std::string getMethod(int);

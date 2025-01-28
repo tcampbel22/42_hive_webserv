@@ -13,9 +13,9 @@
 #include "CGIparsing.hpp"
 #include "../HttpParsing/HttpParser.hpp"
 
-CGIparsing::CGIparsing(std::string root, std::string script) 
+CGIparsing::CGIparsing(std::string& root, std::string& script) 
 {
-	_scriptName = script.substr(script.find_last_of('/'));
+	_scriptName = script/* .substr(script.find_last_of('/')) */;
 	_execInfo = "." + root;
 
 }
@@ -46,8 +46,7 @@ std::string CGIparsing::getMethod(int val) {
 	}
 	return (NULL);
 }
-
-std::string CGIparsing::getIp(std::string& host) {
+/std::string CGIparsing::getIp(std::string& host) {
 	size_t colPos = host.find(':');
 	if (colPos != std::string::npos)
 		return host.substr(0, colPos);
@@ -114,13 +113,6 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
 			// server.cleanUpChild(requestNode);
             exit(1);
         }
-		// if (dup2(requestNode->pipe_fds[READ_END], STDIN_FILENO) == -1) 
-		// {
-        //     Logger::log("dup2: failed", ERROR, false);
-		// 	// server.cleanUpChild(requestNode);
-        //     exit(1);
-        // }
-
         close(requestNode->pipe_fds[READ_END]);
 
         // Close the write end of the pipe now that it's duplicated
@@ -138,8 +130,8 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
         if (execve(_execInfo.c_str(), (char *const *)argv, environ) == -1) 
 		{
             Logger::log("execve: failed to execute command", ERROR, false);
-			server.cleanUpChild(requestNode);
             close(requestNode->pipe_fds[WRITE_END]);
+			server.cleanUpChild(requestNode);
 			exit(1);
         }
 

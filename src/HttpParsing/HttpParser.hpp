@@ -58,6 +58,7 @@ private:
 	std::string query;
 	std::string cgiPath;
 	std::string pathInfo;
+	std::string currentCGI;
 public:
 	HttpParser();
 	~HttpParser();

@@ -113,10 +113,11 @@ void HttpParser::checkForCgi(HttpRequest& request, HttpParser& parser, LocationS
 			parser.cgiPath.erase(parser.cgiPath.find(".py") + 3);
 	}
 	if (parser.cgiPath.back() == '/')
-		{
-			cgiflag = false;
-			return ;
-		}
+	{
+		cgiflag = false;
+		return ;
+	}
+	currentCGI = cgibloc.getPath();
 	cgiflag = true;
 }
 
@@ -154,7 +155,7 @@ void checkHeaderError(const std::vector<char> clientData, HttpRequest& request) 
 	if (tmp.find(' ') == std::string::npos) {
 			Logger::setErrorAndLog(&request.errorFlag, 405, "request-line: invalid method");
 	}
-	else if (size_t pos = tmp.find(' ') != std::string::npos)
+	else if (tmp.find(' ') != std::string::npos)
 	{
 		if (tmp.find("HTTP/1.1") == std::string::npos)
 			Logger::setErrorAndLog(&request.errorFlag, 414, "request-line: too long URI");
@@ -190,12 +191,16 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 	{
 		if (!request.errorFlag)
 			parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
-		if (parser.cgiflag && !request.errorFlag){
-			auto cgiBlock = request.settings->getCgiBlock();
+		if (parser.cgiflag && !request.errorFlag)
+		{
+			LocationSettings* cgiBlock = request.settings->getLocationBlock(parser.currentCGI);
 			if (cgiBlock && request.method != 3 && requestNode->cgiStarted == false)
 			{
-				CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
+				std::string _exec_info = cgiBlock->getCgiScript().substr(cgiBlock->getCgiScript().find_last_of('/'));
+				CGIparsing myCgi(parser.cgiPath, _exec_info);
 				myCgi.setCGIenvironment(request, parser, *cgiBlock);
+				request.headers.clear();
+				request.path.clear();
 				myCgi.execute(request, epollFd, _events, server, requestNode);
 				requestNode->path = request.path;
 				requestNode->method = request.method;
@@ -214,7 +219,6 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 			else
 			{
 				request.closeConnection = true;
-				cgiBlock.reset();
 			}
 		}
 	}
