@@ -26,7 +26,7 @@ HttpRequest::HttpRequest(ServerSettings *serverPtr, int fd, epoll_event& _event)
 }
 
 //Empty the vector to the requestMap, needs to be parsed in the response.
-void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *serverPtr, HttpParser& parser)
+void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *serverPtr)
 {
 	try {
 		std::string data(clientData.begin(), clientData.end());
@@ -40,7 +40,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 				Logger::log("parseClientRequest: request line is invalid", ERROR, false);
 			return;
 		}
-		isBlockCGI(request, parser);
+		isBlockCGI(request);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
@@ -68,7 +68,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 }
 
 //tries to get the location settings by using location bloccgi-bin/cgitester.pyk matching rules, defaults to / if unsuccessful
-int HttpParser::isBlockCGI(HttpRequest& request, HttpParser& parser)
+int HttpParser::isBlockCGI(HttpRequest& request)
 {
 	std::string key = request.path;
 	int len = key.length();
@@ -88,31 +88,32 @@ int HttpParser::isBlockCGI(HttpRequest& request, HttpParser& parser)
 	if (!locSettings)
 		return 0;
 	if (locSettings->isCgiBlock() == true)
-		checkForCgi(request, parser, *locSettings);
+		checkForCgi(request, *locSettings);
 	return 0;
 }
 
-void HttpParser::checkForCgi(HttpRequest& request, HttpParser& parser, LocationSettings& cgibloc) {
-	parser.cgiPath.append(request.path);
-	parser.cgiPath.erase(0, cgibloc.getPath().length());
-	if (parser.cgiPath.front() != '/' && cgibloc.getCgiPath().back() != '/')
-		parser.cgiPath.insert(0, "/");
-	parser.cgiPath.insert(0, cgibloc.getCgiPath());
-	size_t pos = parser.cgiPath.find('?');
+void HttpParser::checkForCgi(HttpRequest& request, LocationSettings& cgibloc) 
+{
+	cgiPath.append(request.path);
+	cgiPath.erase(0, cgibloc.getPath().length());
+	if (cgiPath.front() != '/' && cgibloc.getCgiPath().back() != '/')
+		cgiPath.insert(0, "/");
+	cgiPath.insert(0, cgibloc.getCgiPath());
+	size_t pos = cgiPath.find('?');
 	if (pos != std::string::npos)
 	{
-		if (std::count(parser.cgiPath.begin(), parser.cgiPath.end(), '?') != 1)
+		if (std::count(cgiPath.begin(), cgiPath.end(), '?') != 1)
 			Logger::setErrorAndLog(&request.errorFlag, 400, "cgi: Bad query string");
-		parser.query = parser.cgiPath.substr(parser.cgiPath.find('?') + 1);
-		parser.cgiPath.erase(pos);
+		query = cgiPath.substr(cgiPath.find('?') + 1);
+		cgiPath.erase(pos);
 	}
-	if (cgibloc.getCgiScript().length() != parser.cgiPath.length())
+	if (cgibloc.getCgiScript().length() != cgiPath.length())
 	{
-		parser.pathInfo = parser.cgiPath.substr();
-		if (parser.cgiPath[parser.cgiPath.find(".py") + 3] == '/')
-			parser.cgiPath.erase(parser.cgiPath.find(".py") + 3);
+		pathInfo = cgiPath;
+		if (cgiPath[cgiPath.find(".py") + 3] == '/')
+			cgiPath.erase(cgiPath.find(".py") + 3);
 	}
-	if (parser.cgiPath.back() == '/')
+	if (cgiPath.back() == '/')
 	{
 		cgiflag = false;
 		return ;
@@ -172,7 +173,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 	if (requestNode->CGIReady == true)
 	{
 		request.body = requestNode->CGIBody;
-		request.errorFlag = requestNode->CGIError; //shoud be made into _error
+		request.errorFlag = requestNode->CGIError;
 		request.method = requestNode->method;
 		request.path = requestNode->path;
 		if (request.errorFlag == 0)
@@ -190,20 +191,17 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 	else
 	{
 		if (!request.errorFlag)
-			parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr, parser);
+			parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
 		if (parser.cgiflag && !request.errorFlag)
 		{
 			LocationSettings* cgiBlock = request.settings->getLocationBlock(parser.currentCGI);
 			if (cgiBlock && request.method != 3 && requestNode->cgiStarted == false)
 			{
 				CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
-				myCgi.setCGIenvironment(request, parser, *cgiBlock);
-				request.headers.clear();
-				request.path.clear();
-				
-				myCgi.execute(request, epollFd, _events, server, requestNode);
 				requestNode->path = request.path;
 				requestNode->method = request.method;
+				myCgi.setCGIenvironment(request, parser, *cgiBlock);
+				myCgi.execute(request, epollFd, _events, server, requestNode, parser);
 				return (0);
 			}
 			else {
@@ -211,15 +209,14 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 				return (1);
 			}
 			//might be not needed
-			if (request.errorFlag == 0) {
+			if (request.errorFlag == 0) 
+			{
 				Response response(200, request.body.size(), request.body, request.closeConnection, false);
 				response.sendResponse(requestNode->fd);
 				return (0);
 			}
 			else
-			{
 				request.closeConnection = true;
-			}
 		}
 	}
 	if (requestNode->cgiStarted == false)
@@ -235,5 +232,6 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 std::string HttpParser::getQuery() { return query; }
 std::string HttpParser::getPathInfo() { return pathInfo; }
 uint HttpParser::getContentLength() { return _contentLength; }
+std::string HttpParser::getCgiPath() { return cgiPath; }
 
 HttpRequest::~HttpRequest() {}

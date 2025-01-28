@@ -16,8 +16,7 @@
 CGIparsing::CGIparsing(std::string& root, std::string& script) 
 {
 	_scriptName = script.substr(script.find_last_of('/'));
-	_execInfo = "." + root;
-
+	_execInfo = new std::string("." + root);
 }
 
 void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser, LocationSettings& cgiBlock) {
@@ -77,7 +76,7 @@ bool	setToNonBlocking(int socket)
 	return true;
 }
 
-void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events, HttpServer& server, fdNode *requestNode) 
+void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events, HttpServer& server, fdNode *requestNode, HttpParser& parser) 
 {
     // Create a pipe
 	if (pipe(requestNode->pipe_fds) == -1) 
@@ -101,7 +100,6 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
         Logger::log("fork: failed to fork", ERROR, true);
         return ;
     }
-	
     // Child process
     if (requestNode->pid == 0) 
 	{
@@ -111,7 +109,7 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
         if (dup2(requestNode->pipe_fds[WRITE_END], STDOUT_FILENO) == -1) 
 		{
             Logger::log("dup2: failed", ERROR, false);
-			// server.cleanUpChild(requestNode);
+			server.cleanUpChild(requestNode);
             exit(1);
         }
         close(requestNode->pipe_fds[READ_END]);
@@ -123,15 +121,17 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
 			close(requestNode->pipe_fds[WRITE_END]);
             if (bytesRecieved == -1 || bytesRecieved == 0)
 			{
-				// server.cleanUpChild(requestNode);
+				server.cleanUpChild(requestNode);
 				exit(1);
 			}
         }
 		const char *const argv[] = {_scriptName.c_str(), nullptr};
-        if (execve(_execInfo.c_str(), (char *const *)argv, environ) == -1) 
+        if (execve(_execInfo->c_str(), (char *const *)argv, environ) == -1) 
 		{
             Logger::log("execve: failed to execute command", ERROR, false);
-            _execInfo.clear();
+			delete _execInfo;
+			request.~HttpRequest();
+			parser.~HttpParser();
 			close(requestNode->pipe_fds[WRITE_END]);
 			server.cleanUpChild(requestNode);
 			exit(1);
@@ -151,29 +151,11 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
         // Close the write end of the pipe since the parent will only read from the pipe
         
 		close(requestNode->pipe_fds[WRITE_END]);
-		
-		// if (epoll_ctl(epollFd, EPOLL_CTL_ADD, pipe_fds[READ_END], &_events) == -1)
-		// {
-		// 	Logger::log("epoll_ctl: failed to add fd to epoll", ERROR, false);
-		// 	close(pipe_fds[READ_END]);
-		// 	close(pipe_fds[WRITE_END]);
-		// 	// delete client_node;
-		// }
-
-		// CGITimeout(requestNode->pid, request.errorFlag, requestNode->pipe_fds); //Allow child process to finish or timeout
-
-		// // waitpid(pid, NULL, 0); // Wait for the child process to finish
-		
-		// // if (epoll_ctl(epollFd, EPOLL_CTL_DEL, pipe_fds[READ_END], &_events) == -1)
-		// // {
-		// // 	Logger::log("epoll_ctl: failed to add fd to epoll", ERROR, false);
-		// // 	close(pipe_fds[READ_END]);
-		// // 	close(pipe_fds[WRITE_END]);
-		// // 	// delete client_node;
-		// // }
     }
 }
 
 std::string CGIparsing::getPath() {
 	return _scriptName;
 }
+
+CGIparsing::~CGIparsing() { delete _execInfo; }
