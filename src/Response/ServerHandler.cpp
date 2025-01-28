@@ -147,6 +147,9 @@ void ServerHandler::executeInput()
 		doDelete();
 	else
 		throw std::invalid_argument("execute-input: Invalid argument");
+	if (_input.errorFlag > 0)
+		doError();
+
 }
 void	ServerHandler::makeMIME()
 {
@@ -268,7 +271,7 @@ void ServerHandler::defaultError()
 void ServerHandler::doError()
 {
 	_response.setResponseCode(_input.errorFlag);
-	if (locSettings->isRedirect() == true || _input.errorFlag == 200)
+	if (locSettings->isRedirect() == true)
 		return ;
 	std::string errorPath;
 	//check if there are location level error pages for the requested code

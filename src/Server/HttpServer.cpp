@@ -90,7 +90,7 @@ void HttpServer::startListening()
             }
 			else if (_eventsArr[i].events & EPOLLOUT && nodePtr->_readyToSend)
 			{
-				if (handle_write(nodePtr))
+				if (!handle_write(nodePtr))
 					continue;
 			}
 		fdActivityLoop(current_time);

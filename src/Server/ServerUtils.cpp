@@ -99,11 +99,11 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 				kill(node->second->pid, SIGKILL);
 				close(node->second->pipe_fds[READ_END]);
 				close(node->second->pipe_fds[WRITE_END]);
-				Response response(504);
-				response.sendResponse(node->second->fd);
-				// HttpRequest request(node->second->serverPtr, epollFd, _events);
-				// request.errorFlag = 504;
-				// Response response(node->second->fd, request);
+				// Response response(504);
+				// response.sendResponse(node->second->fd);
+				HttpRequest request(node->second->serverPtr, epollFd, _events);
+				request.errorFlag = 504;
+				ServerHandler response(node->second->fd, request);
 			}
 			cleanUpFds(node->second.get());
         } 

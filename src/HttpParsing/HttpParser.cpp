@@ -154,7 +154,7 @@ void checkHeaderError(const std::vector<char> clientData, HttpRequest& request) 
 	if (tmp.find(' ') == std::string::npos) {
 			Logger::setErrorAndLog(&request.errorFlag, 405, "request-line: invalid method");
 	}
-	else if (size_t pos = tmp.find(' ') != std::string::npos)
+	else if (tmp.find(' ') != std::string::npos)
 	{
 		if (tmp.find("HTTP/1.1") == std::string::npos)
 			Logger::setErrorAndLog(&request.errorFlag, 414, "request-line: too long URI");
