@@ -15,7 +15,7 @@
 
 CGIparsing::CGIparsing(std::string& root, std::string& script) 
 {
-	_scriptName = script/* .substr(script.find_last_of('/')) */;
+	_scriptName = script.substr(script.find_last_of('/'));
 	_execInfo = "." + root;
 
 }
@@ -46,7 +46,8 @@ std::string CGIparsing::getMethod(int val) {
 	}
 	return (NULL);
 }
-/std::string CGIparsing::getIp(std::string& host) {
+
+std::string CGIparsing::getIp(std::string& host) {
 	size_t colPos = host.find(':');
 	if (colPos != std::string::npos)
 		return host.substr(0, colPos);
@@ -130,7 +131,8 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
         if (execve(_execInfo.c_str(), (char *const *)argv, environ) == -1) 
 		{
             Logger::log("execve: failed to execute command", ERROR, false);
-            close(requestNode->pipe_fds[WRITE_END]);
+            _execInfo.clear();
+			close(requestNode->pipe_fds[WRITE_END]);
 			server.cleanUpChild(requestNode);
 			exit(1);
         }

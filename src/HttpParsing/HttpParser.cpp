@@ -196,11 +196,11 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 			LocationSettings* cgiBlock = request.settings->getLocationBlock(parser.currentCGI);
 			if (cgiBlock && request.method != 3 && requestNode->cgiStarted == false)
 			{
-				std::string _exec_info = cgiBlock->getCgiScript().substr(cgiBlock->getCgiScript().find_last_of('/'));
-				CGIparsing myCgi(parser.cgiPath, _exec_info);
+				CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
 				myCgi.setCGIenvironment(request, parser, *cgiBlock);
 				request.headers.clear();
 				request.path.clear();
+				
 				myCgi.execute(request, epollFd, _events, server, requestNode);
 				requestNode->path = request.path;
 				requestNode->method = request.method;

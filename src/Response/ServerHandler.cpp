@@ -147,6 +147,8 @@ void ServerHandler::executeInput()
 		doDelete();
 	else
 		throw std::invalid_argument("execute-input: Invalid argument");
+	if (_input.errorFlag > 0)
+		doError();
 }
 void	ServerHandler::makeMIME()
 {
