@@ -75,6 +75,5 @@ public:
 	std::unordered_map<int, std::string>&				getAllErrorPages();
 	std::string											getErrorPages(int key);
 	LocationSettings*									getLocationBlock(const std::string key);
-	std::shared_ptr<LocationSettings>					getCgiBlock();
 	std::vector<std::string>							getServerNames();
 };

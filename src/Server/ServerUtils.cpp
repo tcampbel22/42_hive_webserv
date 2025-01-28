@@ -96,7 +96,7 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 			it = _fd_activity_map.erase(it);
 			if (node->second->cgiStarted == true)
 			{
-				kill(node->second->pid, SIGKILL);
+				kill(node->second->pid, SIGINT);
 				close(node->second->pipe_fds[READ_END]);
 				close(node->second->pipe_fds[WRITE_END]);
 				// Response response(504);
@@ -211,11 +211,6 @@ void	HttpServer::cleanUpChild(fdNode *nodePtr)
 {
 	if (!nodePtr->_clientDataBuffer.empty())
 		nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
-	// if (nodePtr->fd != -1)
-	// {
-	// epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events);  // Remove client socket from epoll
-	// close(nodePtr->fd);
-	// }
 	for (auto it = settings_vec.begin(); it != settings_vec.end(); it++)
 		close(it->_fd);
 	for (auto it : client_nodes)
@@ -223,7 +218,9 @@ void	HttpServer::cleanUpChild(fdNode *nodePtr)
 	for (auto it : server_nodes)
 		close(it->fd);
 	close(epollFd);
+	close(nodePtr->fd);
 	_ip_port_list.clear();
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
+	_instance->~HttpServer();
 }

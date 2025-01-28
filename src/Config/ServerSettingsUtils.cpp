@@ -42,18 +42,6 @@ LocationSettings*	ServerSettings::getLocationBlock(const std::string key)
 		return nullptr;
 }
 
-std::shared_ptr<LocationSettings>	ServerSettings::getCgiBlock()
-{
-	for (auto pair : locations)
-	{
-		if (pair.second.isCgiBlock())
-		{
-			return std::make_shared<LocationSettings>(pair.second);
-		}
-	}
-	return nullptr;
-}
-
 //SETTERS
 
 void	ServerSettings::setHost(std::string ip) { host = ip; }

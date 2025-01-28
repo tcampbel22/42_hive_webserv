@@ -57,16 +57,18 @@ private:
 	std::string query;
 	std::string cgiPath;
 	std::string pathInfo;
+	std::string currentCGI;
 public:
 	HttpParser();
 	~HttpParser();
 	static int	bigSend(fdNode*, int, epoll_event&, HttpServer&);
-	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *, HttpParser&);
+	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *);
 	void parseBody(HttpRequest&, std::istringstream&);
 	void parseRegularBody(std::istringstream&, HttpRequest&);
-	void checkForCgi(HttpRequest&, HttpParser&, LocationSettings&);
+	void checkForCgi(HttpRequest&, LocationSettings&);
 	uint getContentLength();
-	int isBlockCGI(HttpRequest&, HttpParser&);
+	int isBlockCGI(HttpRequest&);
 	std::string getQuery();
 	std::string getPathInfo();
+	std::string getCgiPath();
 };
