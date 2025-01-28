@@ -77,42 +77,6 @@ bool	setToNonBlocking(int socket)
 	return true;
 }
 
-
-
-//checks if the child process (CGI) has finished each iteration, if it take stoo long, then it send a kill command to the child process
-void	CGITimeout(pid_t &pid, int& errorCode, int* pipe_fds)
-{
-	int elapsed = 0;
-	int	interval = 10; //milliseconds
-	pid_t result;
-    int status;
-
-	while (1)
-	{
-		result = waitpid(pid, &status, WNOHANG);
-		if (result == pid)
-		{
-			if (WIFEXITED(status))
-			{
-				if(WEXITSTATUS(status))
-					Logger::setErrorAndLog(&errorCode, 502, "child process failed");
-			}
-			break;
-		}
-		if (elapsed > CGI_TIMEOUT)
-		{
-			Logger::setErrorAndLog(&errorCode, 504, "Child process teminated due timeout");
-			close(pipe_fds[WRITE_END]);
-			close(pipe_fds[READ_END]);
-			kill(pid, SIGKILL);
-			break;
-		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-		elapsed += interval;
-	}
-}
-
-
 void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events, HttpServer& server, fdNode *requestNode) 
 {
     // Create a pipe
@@ -141,6 +105,8 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
     // Child process
     if (requestNode->pid == 0) 
 	{
+		close(requestNode->pipe_fds[READ_END]);
+
 		// Redirect stdout to the write end of the pipe
         if (dup2(requestNode->pipe_fds[WRITE_END], STDOUT_FILENO) == -1) 
 		{
@@ -148,12 +114,12 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
 			// server.cleanUpChild(requestNode);
             exit(1);
         }
-		if (dup2(requestNode->pipe_fds[READ_END], STDIN_FILENO) == -1) 
-		{
-            Logger::log("dup2: failed", ERROR, false);
-			// server.cleanUpChild(requestNode);
-            exit(1);
-        }
+		// if (dup2(requestNode->pipe_fds[READ_END], STDIN_FILENO) == -1) 
+		// {
+        //     Logger::log("dup2: failed", ERROR, false);
+		// 	// server.cleanUpChild(requestNode);
+        //     exit(1);
+        // }
 
         close(requestNode->pipe_fds[READ_END]);
 
@@ -182,12 +148,12 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
 	{
 		requestNode->cgiStarted = true;
         // Parent process
-		// if (epoll_ctl(epollFd, EPOLL_CTL_DEL, pipe_fds[WRITE_END], &_events) == -1)
-		// {
-		// 	Logger::log("epll_ctl: failed to delete fd", ERROR, false);
-		// 	close(pipe_fds[READ_END]);
-		// 	close(pipe_fds[WRITE_END]);
-		// }
+		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, requestNode->pipe_fds[WRITE_END], &_events) == -1)
+		{
+			Logger::log("epll_ctl: failed to delete fd", ERROR, false);
+			close(requestNode->pipe_fds[READ_END]);
+			close(requestNode->pipe_fds[WRITE_END]);
+		}
         // Close the write end of the pipe since the parent will only read from the pipe
         
 		close(requestNode->pipe_fds[WRITE_END]);

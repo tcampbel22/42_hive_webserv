@@ -176,6 +176,12 @@ int HttpServer::checkCGI(fdNode *requestNode)
 			{
 				Logger::setErrorAndLog(&requestNode->CGIError, 502, "child process failed");
 				requestNode->CGIReady = true;
+				if (epoll_ctl(epollFd, EPOLL_CTL_DEL, requestNode->pipe_fds[READ_END], &_events) == -1)
+				{
+					Logger::log("epoll_ctl: failed to delete fd from epoll", ERROR, false);
+					close(requestNode->pipe_fds[READ_END]);
+					close(requestNode->pipe_fds[WRITE_END]);
+				}
 				close(requestNode->pipe_fds[READ_END]);
 				return (1);
 			}
@@ -195,6 +201,12 @@ int HttpServer::checkCGI(fdNode *requestNode)
 			Logger::setErrorAndLog(&requestNode->CGIError, 413, "too large body from child");
 			break ;
 		}
+	}
+	if (epoll_ctl(epollFd, EPOLL_CTL_DEL, requestNode->pipe_fds[READ_END], &_events) == -1)
+	{
+		Logger::log("epoll_ctl: failed to delete fd from epoll", ERROR, false);
+		close(requestNode->pipe_fds[READ_END]);
+		close(requestNode->pipe_fds[WRITE_END]);
 	}
 	close(requestNode->pipe_fds[READ_END]);
 	return (1);
