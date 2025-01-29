@@ -85,13 +85,15 @@ void HttpServer::startListening()
 				acceptNewClient(nodePtr, nodePtr->fd, current_time);
 			else if (!checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLIN) //client socket has data to read from
 			{
-				if (!handle_read(nodePtr))
-					continue;
+				handle_read(nodePtr);
+				// if (!handle_read(nodePtr))
+				// 	continue;
             }
 			else if (_eventsArr[i].events & EPOLLOUT && nodePtr && nodePtr->_readyToSend)
 			{
-				if (!handle_write(nodePtr))
-					continue;
+				handle_write(nodePtr);
+				// if (!handle_write(nodePtr))
+				// 	continue;
 			}
 		fdActivityLoop(current_time);
 		}

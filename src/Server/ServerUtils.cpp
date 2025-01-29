@@ -134,8 +134,9 @@ void	HttpServer::cleanUpFds(fdNode *nodePtr)
 		client_nodes.erase(temp);
 		_clientClosedConn = false;
 	}
+	delete nodePtr;
+	nodePtr = nullptr;
 	// nodePtr->~fdNode();
-	// delete nodePtr;
 }
 
 void	HttpServer::createClientNode(fdNode* nodePtr)
