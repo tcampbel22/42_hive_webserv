@@ -150,7 +150,6 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
 			(void)parser;
 			request.~HttpRequest();
 			// parser.~HttpParser();
-			close(requestNode->pipe_fds[WRITE_END]);
 			server.cleanUpChild(requestNode);
 			exit(1);
         }

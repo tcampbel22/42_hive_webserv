@@ -110,7 +110,7 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 
 void	HttpServer::cleanUpFds(fdNode *nodePtr)
 {
-	if (!nodePtr)
+	if (nodePtr == nullptr)
 		return;
 	_connections--;
 	if (_connections < 4)
@@ -120,22 +120,20 @@ void	HttpServer::cleanUpFds(fdNode *nodePtr)
 	if (!nodePtr->CGIBody.empty())
 		nodePtr->CGIBody.clear();	
 	int temp = nodePtr->fd;
-	if (nodePtr->fd != -1)
+	if (epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events))
 	{
-		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events))
-		{
-			Logger::setErrorAndLog(&nodePtr->_error, 500, "clean-up-fds: fd cannot be deleted");
-			_fd_activity_map.erase(temp);
-			client_nodes.erase(temp);
-			close(temp);
-			return ;
-		}
+		Logger::setErrorAndLog(&nodePtr->_error, 500, "clean-up-fds: fd cannot be deleted");
 		_fd_activity_map.erase(temp);
 		client_nodes.erase(temp);
-		_clientClosedConn = false;
+		close(temp);
+		return ;
 	}
+	_fd_activity_map.erase(temp);
+	client_nodes.erase(temp);
+	_clientClosedConn = false;
 	// nodePtr->~fdNode();
-	// delete nodePtr;
+	delete nodePtr;
+	nodePtr = nullptr;
 }
 
 void	HttpServer::createClientNode(fdNode* nodePtr)
@@ -218,6 +216,8 @@ void	HttpServer::validateHeaders(const std::vector<char>& data, int *errorFlag)
 
 void	HttpServer::cleanUpChild(fdNode *nodePtr)
 {
+	if (nodePtr == nullptr)
+		return ;
 	if (!nodePtr->_clientDataBuffer.empty())
 		nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
 	for (auto it = settings_vec.begin(); it != settings_vec.end(); it++)
@@ -226,12 +226,15 @@ void	HttpServer::cleanUpChild(fdNode *nodePtr)
 		close(it.second->fd);
 	for (auto it : server_nodes)
 		close(it->fd);
-	close(nodePtr->fd);
 	close(nodePtr->pipe_fds[WRITE_END]);
 	close(nodePtr->pipe_fds[READ_END]);
 	close(epollFd);
 	_ip_port_list.clear();
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
+	// nodePtr->~fdNode();
+	close(nodePtr->fd);
+	delete nodePtr;
+	nodePtr = nullptr;
 	_instance->~HttpServer();
 }
