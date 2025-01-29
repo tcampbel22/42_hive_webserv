@@ -88,7 +88,7 @@ void HttpServer::startListening()
 				if (!handle_read(nodePtr))
 					continue;
             }
-			else if (_eventsArr[i].events & EPOLLOUT && nodePtr->_readyToSend)
+			else if (_eventsArr[i].events & EPOLLOUT && nodePtr && nodePtr->_readyToSend)
 			{
 				if (!handle_write(nodePtr))
 					continue;
@@ -132,7 +132,7 @@ void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_ti
 	socklen_t _sockLen = sizeof(_socketInfo);
 	memset(&_socketInfo, 0, sizeof(_socketInfo));
 
-	if (_connections < 900)
+	if (_connections < MAX_CONNECTIONS)
 	{
 		_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
 		if (_clientSocket < 0) 
@@ -169,7 +169,10 @@ HttpServer::~HttpServer()
 	for (auto it = settings_vec.begin(); it != settings_vec.end(); it++)
 		close(it->_fd);
 	for (auto it : client_nodes)
-		cleanUpFds(it.second.get());
+	{
+		close(it.first);
+		delete it.second;
+	}
 	for (auto it : server_nodes)
 		close(it->fd);
 	pipe_vec.clear();
@@ -177,6 +180,9 @@ HttpServer::~HttpServer()
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
 	_server_fds.clear();
-	Logger::log("\nExit signal received, server shutting down.. ", INFO, true);
-	Logger::closeLogger();
+}
+
+fdNode::~fdNode() 
+{
+	close(fd);
 }

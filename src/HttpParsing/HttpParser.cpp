@@ -172,12 +172,12 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 	request.errorFlag = requestNode->_error;
 	if (requestNode->CGIReady == true)
 	{
-		request.body = requestNode->CGIBody;
 		request.errorFlag = requestNode->CGIError;
-		request.method = requestNode->method;
-		request.path = requestNode->path;
 		if (request.errorFlag == 0)
 		{
+			request.body = requestNode->CGIBody;
+			request.method = requestNode->method;
+			request.path = requestNode->path;
 			Response response(200, request.body.size(), request.body, request.closeConnection, false);
 			response.sendResponse(requestNode->fd);
 			return (0);

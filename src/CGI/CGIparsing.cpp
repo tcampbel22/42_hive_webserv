@@ -143,12 +143,13 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
 			}
         }
 		const char *const argv[] = {_scriptName.c_str(), nullptr};
-        if (execve(_execInfo->c_str(), (char *const *)argv, environ) == -1) 
+		if (execve(_execInfo->c_str(), (char *const *)argv, environ) == -1) 
 		{
             Logger::log("execve: failed to execute command", ERROR, false);
 			delete _execInfo;
+			(void)parser;
 			request.~HttpRequest();
-			parser.~HttpParser();
+			// parser.~HttpParser();
 			close(requestNode->pipe_fds[WRITE_END]);
 			server.cleanUpChild(requestNode);
 			exit(1);
@@ -161,7 +162,7 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
         // Parent process
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, requestNode->pipe_fds[WRITE_END], &_events) == -1)
 		{
-			Logger::log("epll_ctl: failed to delete fd", ERROR, false);
+			Logger::log("epoll_ctl: failed to delete fd", ERROR, false);
 			close(requestNode->pipe_fds[READ_END]);
 			close(requestNode->pipe_fds[WRITE_END]);
 		}
