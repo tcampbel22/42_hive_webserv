@@ -103,10 +103,15 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
     // Child process
     if (requestNode->pid == 0) 
 	{
-		close(requestNode->pipe_fds[READ_END]);
 
 		// Redirect stdout to the write end of the pipe
         if (dup2(requestNode->pipe_fds[WRITE_END], STDOUT_FILENO) == -1) 
+		{
+            Logger::log("dup2: failed", ERROR, false);
+			server.cleanUpChild(requestNode);
+            exit(1);
+        }
+		if (dup2(requestNode->pipe_fds[READ_END], STDIN_FILENO) == -1) 
 		{
             Logger::log("dup2: failed", ERROR, false);
 			server.cleanUpChild(requestNode);
