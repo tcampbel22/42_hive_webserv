@@ -86,12 +86,24 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
     }
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, requestNode->pipe_fds[WRITE_END], &_events) == -1)
 	{
-		Logger::log("epoll_ctl: failed to add fd to epoll", ERROR, false);
+		Logger::setErrorAndLog(&requestNode->CGIError, 504, "epoll_ctl: failed to add to epoll");
+		requestNode->CGIReady = true;
+		return ;
+		
+	}
+	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, requestNode->pipe_fds[READ_END], &_events) == -1)
+	{
+		Logger::setErrorAndLog(&requestNode->CGIError, 504, "epoll_ctl: failed to add to epoll");
+		requestNode->CGIReady = true;
 		return ;
 		
 	}
 	if (!setToNonBlocking(requestNode->pipe_fds[WRITE_END]) || !setToNonBlocking(requestNode->pipe_fds[READ_END]))
+	{
+		Logger::setErrorAndLog(&requestNode->CGIError, 504, "setToNonBlocking: ");
+		requestNode->CGIReady = true;
 		return ;
+	}
 	server.pipe_vec.emplace_back(requestNode->pipe_fds[WRITE_END], requestNode->pipe_fds[READ_END]); //probably not needed
     // Fork the child process
     requestNode->pid = fork();
