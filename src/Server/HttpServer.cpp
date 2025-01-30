@@ -62,6 +62,56 @@ void HttpServer::startServer()
 	}
 }
 
+bool	HttpServer::safeEpollCtl(e_poll event_type, fdNode* node, e_ctl ctl, int fd)
+{
+	if (!node)
+		return false;
+	epoll_event event;
+	if (event_type == E_IN)
+		event.events = EPOLLIN;
+	else if (event_type == E_OUT)
+		event.events = EPOLLOUT;
+	else
+		event.events = 0;
+	event.data.ptr = node;
+	if (fd == -1)
+		fd = node->fd;
+	if (ctl == DEL)
+	{
+		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr) == -1)
+		{
+			Logger::log("epoll-ctl: Failed to delete from epoll", ERROR, false);
+			client_nodes.erase(node->fd);
+			_fd_activity_map.erase(node->fd);
+			close(node->fd);
+			return false ;
+		}
+	}
+	else if (ctl == ADD)
+	{
+		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &event) == -1)
+		{
+			Logger::log("epoll-ctl: Failed to add event to epoll", ERROR, false);
+			client_nodes.erase(node->fd);
+			_fd_activity_map.erase(node->fd);
+			close(node->fd);
+			return false ;
+		}
+	}
+	else
+	{
+		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &event) == -1)
+		{
+			Logger::log("epoll-ctl: Failed to mod event to epoll", ERROR, false);
+			client_nodes.erase(node->fd);
+			_fd_activity_map.erase(node->fd);
+			close(node->fd);
+			return false ;
+		}
+	}
+	return true;	
+}
+
 void HttpServer::startListening()
 {
 	std::signal(SIGINT, signalHandler);
@@ -80,15 +130,14 @@ void HttpServer::startListening()
 		for (int i = 0; i < numEvents; i++)
 		{
 			fdNode *nodePtr = static_cast <fdNode*>(_eventsArr[i].data.ptr);  //retrieving current serversettings and client fd
-			_events.data.ptr = nodePtr; //store event data in a temp variable for use in epoll functions
 			if (std::find(_server_fds.begin(), _server_fds.end(), nodePtr->fd) != _server_fds.end()) //eventFd is a server_socket meaning a new request is incoming
-				acceptNewClient(nodePtr, nodePtr->fd, current_time);
-			else if (!checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLIN) //client socket has data to read from
+				acceptNewClient(nodePtr->serverPtr, nodePtr->fd, current_time); //Send in server socket settings to create new node
+			else if (nodePtr && !checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLIN) //client socket has data to read from
 			{
 				if (!handle_read(nodePtr))
 					continue;
             }
-			else if (_eventsArr[i].events & EPOLLOUT && nodePtr && nodePtr->_readyToSend)
+			else if (nodePtr && !checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLOUT && nodePtr->_readyToSend)
 			{
 				if (!handle_write(nodePtr))
 					continue;
@@ -110,16 +159,18 @@ void	HttpServer::addServerToEpoll()
 	}
 	for (u_long i = 0 ; i < settings_vec.size() ; i++)  //iterate through fd vector and add to epoll
 	 {
+		epoll_event event;
+		
 		auto it = settings_vec[i];
-		_events.events = EPOLLIN | EPOLLOUT;
 		std::shared_ptr<fdNode> server_node = std::make_shared<fdNode>();
 		server_node->fd = settings_vec[i]._fd;
 		server_node->serverPtr = &settings_vec[i];
-		_events.data.ptr = server_node.get();
 		server_nodes.push_back(server_node);
-		setNonBlocking(server_node->fd);
 		
-		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, settings_vec[i]._fd, &_events) == -1)		
+		setNonBlocking(server_node->fd);
+		event.data.ptr = server_node.get();
+		event.events = EPOLLIN | EPOLLOUT;
+		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, settings_vec[i]._fd, &event) == -1)		
 		{
 			Logger::log("epoll_ctl: failed to add to epoll", ERROR, false);
 			continue; 
@@ -127,22 +178,21 @@ void	HttpServer::addServerToEpoll()
 	 }
 }
 
-void	HttpServer::acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_time)
+void	HttpServer::acceptNewClient(ServerSettings* settingsPtr, int serverFd, time_t current_time)
 {
 	socklen_t _sockLen = sizeof(_socketInfo);
 	memset(&_socketInfo, 0, sizeof(_socketInfo));
 
 	if (_connections < MAX_CONNECTIONS)
 	{
-		_clientSocket = accept(eventFd, (sockaddr *)&_socketInfo, &_sockLen);
+		_clientSocket = accept(serverFd, (sockaddr *)&_socketInfo, &_sockLen);
 		if (_clientSocket < 0) 
 			Logger::log("accept: accept failed", ERROR, false);
 		else
 		{
 			Logger::log("New client connected: " + std::to_string(_clientSocket), INFO, false);
 			setNonBlocking(_clientSocket);
-			_events.events = EPOLLIN;
-			createClientNode(nodePtr);
+			createClientNode(settingsPtr);
 			_fd_activity_map[_clientSocket] = current_time;
 		}
 	}
@@ -170,9 +220,8 @@ HttpServer::~HttpServer()
 		close(it->_fd);
 	for (auto it : client_nodes)
 	{
-		if (it.second != nullptr)
-			delete it.second;
 		close(it.first);
+		it.second.reset();
 	}
 	for (auto it : server_nodes)
 		close(it->fd);
@@ -182,8 +231,3 @@ HttpServer::~HttpServer()
 	settings_vec.shrink_to_fit();
 	_server_fds.clear();
 }
-
-// fdNode::~fdNode() 
-// {
-// 	close(fd);
-// }

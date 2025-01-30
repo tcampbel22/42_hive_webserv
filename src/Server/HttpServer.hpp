@@ -41,6 +41,20 @@
 #define READ_END 0
 #define WRITE_END 1
 
+enum e_poll
+{
+	E_IN,
+	E_OUT,
+	EMPTY,
+};
+
+enum e_ctl
+{
+	ADD,
+	MOD,
+	DEL,
+};
+
 struct fdNode
 {
 	int				fd = -1;
@@ -71,11 +85,10 @@ private:
 	std::vector<std::pair<std::string, int>> _ip_port_list;
 	std::vector<int> _server_fds;
 	std::vector<std::shared_ptr<fdNode>> server_nodes;
-	std::map<int, fdNode*> client_nodes;
-	int 			_clientSocket;
+	std::map<int, std::shared_ptr<fdNode>> client_nodes;
+	int 			_clientSocket; //Reused
 	sockaddr_in 	_socketInfo; //reusable
-	int				epollFd;
-	epoll_event		_events; //temporary placeholder of info for EPOLL CTL
+	int				epollFd; //Only one instance
 	epoll_event		_eventsArr[MAX_EVENTS];
 	int				numEvents;
 	std::unordered_map<int, time_t> _fd_activity_map;
@@ -97,16 +110,15 @@ public:
 	bool	isMultiPart(std::string requestStr);
 	int		getContentLength(const std::string& requestStr);
 	void	startServer();
-	void	closeServer();
 	void	startListening();
-	void	acceptNewClient(fdNode* nodePtr, int eventFd, time_t current_time);
+	void	acceptNewClient(ServerSettings* settingsPtr, int eventFd, time_t current_time);
 	void	addServerToEpoll();
 	void	fillHostPortPairs();
 	void	readRequest(fdNode *nodePtr);
 	void	setNonBlocking(int socket);
 	bool	isNonBlockingSocket(int fd);
-	void	cleanUpFds(fdNode *nodePtr);
-	void	createClientNode(fdNode* nodePtr);
+	void	killNode(fdNode *nodePtr);
+	void	createClientNode(ServerSettings* settingsPtr);
 	bool	checkSystemMemory(fdNode* node);
 	int		checkCGI(fdNode *requestNode);
 	bool	resetCGI(fdNode* nodePtr);
@@ -115,4 +127,5 @@ public:
 	bool	handle_write(fdNode* nodePtr);
 	void	validateHeaders(const std::vector<char>& data, int *errorFlag);
 	void	cleanUpChild(fdNode *nodePtr);
+	bool	safeEpollCtl(e_poll event_type, fdNode* node, e_ctl ctl, int fd);
 };

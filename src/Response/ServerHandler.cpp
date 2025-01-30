@@ -54,7 +54,7 @@ void ServerHandler::checkPath()
 		return Logger::setErrorAndLog(&_input.errorFlag, 400, "check-path: path is empty");
 	std::regex validPathRegex("^[a-zA-Z0-9/_.-]+$");
 	if (!std::regex_match(_input.path, validPathRegex) || _input.path.find("..") != std::string::npos)
-		return Logger::setErrorAndLog(&_input.errorFlag, 400, "check-path: path syntax error");
+		return Logger::setErrorAndLog(&_input.errorFlag, 400, "check-path: path syntax error " + _input.path);
 }
 
 void ServerHandler::responseCode(int code)

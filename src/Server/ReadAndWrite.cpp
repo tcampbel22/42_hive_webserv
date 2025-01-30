@@ -18,17 +18,13 @@ bool	HttpServer::handle_read(fdNode* nodePtr)
 	if (requestComplete)
 	{
 		if (nodePtr->_clientDataBuffer.empty())
-			cleanUpFds(nodePtr);
+			killNode(nodePtr);
 		else
 		{
+			if (nodePtr == nullptr)
+				return false;
 			nodePtr->_readyToSend = true;
-			_events.events = EPOLLOUT;
-			if (epoll_ctl(epollFd, EPOLL_CTL_MOD, nodePtr->fd, &_events) == -1)		
-			{
-				Logger::log("Failed to mod epoll", ERROR, false);
-				cleanUpFds(nodePtr);
-				return false; 
-			}
+			safeEpollCtl(E_OUT, nodePtr, MOD, -1);
 		}
 		return true;
 	}
@@ -98,9 +94,9 @@ bool HttpServer::handle_write(fdNode* nodePtr)
 	{	
 		if (HttpServer::checkCGI(nodePtr) == 1)
 		{
-			if (HttpParser::bigSend(nodePtr, epollFd, _events, *_instance) || _clientClosedConn == true)
+			if (HttpParser::bigSend(nodePtr, *_instance) || _clientClosedConn == true)
 			{ 
-				cleanUpFds(nodePtr);
+				killNode(nodePtr);
 			}
 			else
 			{
@@ -109,18 +105,16 @@ bool HttpServer::handle_write(fdNode* nodePtr)
 			}
 		}
 	}
-	else if (HttpParser::bigSend(nodePtr, epollFd, _events, *_instance) || _clientClosedConn == true) // Once we have the full data, process the request
+	else if (HttpParser::bigSend(nodePtr, *_instance) || _clientClosedConn == true) // Once we have the full data, process the request
 	{
-		cleanUpFds(nodePtr);
+		killNode(nodePtr);
 	}
 	else if (nodePtr->cgiStarted == false)
 	{
-		_events.events = EPOLLIN;
-		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, nodePtr->fd, &_events) == -1)		
+		if (!safeEpollCtl(E_IN, nodePtr, MOD, -1))
 		{
-			Logger::log("Failed to mod epoll", ERROR, false);
-			cleanUpFds(nodePtr);
-			return false; 
+			Logger::log("handle-write: failed to mod epoll", ERROR, false);
+			return false;
 		}
 		resetNode(nodePtr);
 	}
@@ -133,7 +127,7 @@ bool HttpServer::handle_write(fdNode* nodePtr)
 bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived)
 {
     std::string requestStr(data.begin(), data.end());
-	//std::cout << requestStr << std::endl;
+	// std::cout << requestStr << std::endl;
 	bool isChunked = isChunkedTransferEncoding(requestStr);
 	if (isChunked) {
 		if (requestStr.find("0\r\n\r\n") != std::string::npos) {  // End of chunked data
@@ -178,12 +172,9 @@ int HttpServer::checkCGI(fdNode *requestNode)
 			{
 				Logger::setErrorAndLog(&requestNode->CGIError, 502, "child process failed");
 				requestNode->CGIReady = true;
-				if (epoll_ctl(epollFd, EPOLL_CTL_DEL, requestNode->pipe_fds[READ_END], &_events) == -1)
-				{
-					Logger::log("epoll_ctl: failed to delete fd from epoll", ERROR, false);
-					close(requestNode->pipe_fds[READ_END]);
-					close(requestNode->pipe_fds[WRITE_END]);
-				}
+				safeEpollCtl(EMPTY, requestNode, DEL, requestNode->pipe_fds[READ_END]);
+				if (!safeEpollCtl(EMPTY, requestNode, DEL, -1))
+					Logger::log("check-cgi: failed to delete fd from epoll", ERROR, false);
 				close(requestNode->pipe_fds[READ_END]);
 				return (1);
 			}
@@ -204,16 +195,8 @@ int HttpServer::checkCGI(fdNode *requestNode)
 			break ;
 		}
 	}
-	if (requestNode != nullptr || requestNode->fd != -1)
-	{
-		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, requestNode->pipe_fds[READ_END], &_events) == -1)
-		{
-			Logger::setErrorAndLog(&requestNode->CGIError, 500, "epoll_ctl: failed to delete fd from epoll");
-			close(requestNode->pipe_fds[READ_END]);
-			close(requestNode->pipe_fds[WRITE_END]);
-		}
-		close(requestNode->pipe_fds[READ_END]);
-	}
+	safeEpollCtl(EMPTY, requestNode, DEL, requestNode->pipe_fds[READ_END]);
+	close(requestNode->pipe_fds[READ_END]);
 	return (1);
 
 }

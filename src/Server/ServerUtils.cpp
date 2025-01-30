@@ -97,61 +97,47 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 				// kill(node->second->pid, SIGKILL);
 				close(node->second->pipe_fds[READ_END]);
 				close(node->second->pipe_fds[WRITE_END]);
-				HttpRequest request(node->second->serverPtr, epollFd, _events);
+				HttpRequest request(node->second->serverPtr);
 				Logger::setErrorAndLog(&request.errorFlag, 504, "Child is deeeeeeead!");
 				ServerHandler response(node->second->fd, request);
 			}
-			cleanUpFds(node->second);
+			killNode(node->second.get());
         } 
 		else 
 			++it;
     }
 }
 
-void	HttpServer::cleanUpFds(fdNode *nodePtr)
+void	HttpServer::killNode(fdNode *nodePtr)
 {
-	if (nodePtr == nullptr)
-		return;
 	_connections--;
 	if (_connections < 4)
 		_connections = 4;
-	if (!nodePtr->_clientDataBuffer.empty())
-		nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
-	if (!nodePtr->CGIBody.empty())
-		nodePtr->CGIBody.clear();	
-	int temp = nodePtr->fd;
-	if (epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events))
+	if (nodePtr)
 	{
-		Logger::setErrorAndLog(&nodePtr->_error, 500, "clean-up-fds: fd cannot be deleted");
+		int temp = nodePtr->fd;
+		// safeEpollCtl(EMPTY, nodePtr, DEL, nodePtr->pipe_fds[READ_END]);
+		// safeEpollCtl(EMPTY, nodePtr, DEL, nodePtr->pipe_fds[WRITE_END]);
 		_fd_activity_map.erase(temp);
 		client_nodes.erase(temp);
+		_clientClosedConn = false;
+		if (!safeEpollCtl(EMPTY, nodePtr, DEL, -1))
+			Logger::log("kill-node: fd not found in epoll event array", ERROR, false);
 		close(temp);
-		return ;
 	}
-	_fd_activity_map.erase(temp);
-	client_nodes.erase(temp);
-	_clientClosedConn = false;
-	// nodePtr->~fdNode();
-	delete nodePtr;
-	nodePtr = nullptr;
 }
 
-void	HttpServer::createClientNode(fdNode* nodePtr)
+//take the current event data settings and add them to a node
+void	HttpServer::createClientNode(ServerSettings* settingsPtr)
 {
 	_connections++;
 	if (_connections > MAX_CONNECTIONS)
 		_connections = MAX_CONNECTIONS;
-	fdNode* client_node = new fdNode(*nodePtr);
+	std::shared_ptr<fdNode> client_node = std::make_shared<fdNode>();
 	client_node->fd = _clientSocket;
+	client_node->serverPtr = settingsPtr;
 	client_nodes[_clientSocket] = client_node;
-	client_node->serverPtr = nodePtr->serverPtr;
-	_events.data.ptr = client_node;
-	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, client_node->fd, &_events) == -1)
-	{
-		Logger::log("Failed to add to epoll", ERROR, false);
-		client_nodes.erase(_clientSocket);
-		close(_clientSocket);
-	}
+	safeEpollCtl(E_IN, client_node.get(), ADD, -1);
 }
 
 bool	HttpServer::checkSystemMemory(fdNode* node)
@@ -167,11 +153,9 @@ bool	HttpServer::checkSystemMemory(fdNode* node)
 		Logger::log("Total memory available: " + std::to_string(total_mem) + "MB", INFO, false);
 		Logger::setErrorAndLog(&node->_error, 507, "error: system memory critically low, retry later");
 		node->_readyToSend = true;
-		_events.events = EPOLLOUT;
-		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, node->fd, &_events) == -1)		
+		if (!safeEpollCtl(E_OUT, node, MOD, -1))	
 		{
-			Logger::log("Failed to mod epoll", ERROR, false);
-			cleanUpFds(node);
+			Logger::log("check-system-memory: Failed to mod epoll", ERROR, false);
 		}
 		return true;
 	}
@@ -180,18 +164,18 @@ bool	HttpServer::checkSystemMemory(fdNode* node)
 
 bool	HttpServer::resetCGI(fdNode* nodePtr)
 {
+	if (nodePtr == NULL)
+		return false;
 	nodePtr->cgiStarted = false;
 	nodePtr->CGIReady = false;
 	nodePtr->pid = 0;
 	nodePtr->CGIBody.erase();
-	_events.events = EPOLLIN;
-	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, nodePtr->fd, &_events) == -1)		
+	if (!safeEpollCtl(E_IN, nodePtr, MOD, -1))
 	{
-		Logger::log("Failed to mod epoll", ERROR, false);
-		cleanUpFds(nodePtr);
+		Logger::log("reset-cgi: Failed to mod epoll", ERROR, false);
+		killNode(nodePtr);
 		return false; 
 	}
-	resetNode(nodePtr);
 	return true;
 }
 
@@ -216,8 +200,6 @@ void	HttpServer::validateHeaders(const std::vector<char>& data, int *errorFlag)
 
 void	HttpServer::cleanUpChild(fdNode *nodePtr)
 {
-	if (nodePtr == nullptr)
-		return ;
 	if (!nodePtr->_clientDataBuffer.empty())
 		nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
 	for (auto it = settings_vec.begin(); it != settings_vec.end(); it++)
@@ -232,9 +214,6 @@ void	HttpServer::cleanUpChild(fdNode *nodePtr)
 	_ip_port_list.clear();
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
-	// nodePtr->~fdNode();
 	close(nodePtr->fd);
-	delete nodePtr;
-	nodePtr = nullptr;
 	_instance->~HttpServer();
 }

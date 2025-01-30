@@ -40,10 +40,8 @@ struct HttpRequest {
 	bool closeConnection = false;
 	int errorFlag = 0;
 	ServerSettings* settings;
-	HttpRequest(ServerSettings *, int, epoll_event&);
+	HttpRequest(ServerSettings *);
 	bool isCGI;
-	int epollFd;
-	epoll_event& events;
 	~HttpRequest();
 };
 
@@ -61,7 +59,7 @@ private:
 public:
 	HttpParser();
 	~HttpParser();
-	static int	bigSend(fdNode*, int, epoll_event&, HttpServer&);
+	static int	bigSend(fdNode*, HttpServer&);
 	void parseClientRequest(const std::vector<char>& clientData, HttpRequest& request, ServerSettings *);
 	void parseBody(HttpRequest&, std::istringstream&);
 	void parseRegularBody(std::istringstream&, HttpRequest&);

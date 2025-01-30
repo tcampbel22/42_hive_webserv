@@ -76,7 +76,7 @@ bool	setToNonBlocking(int socket)
 	return true;
 }
 
-void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events, HttpServer& server, fdNode *requestNode, HttpParser& parser) 
+void CGIparsing::execute(HttpRequest& request, HttpServer& server, fdNode *requestNode, HttpParser& parser) 
 {
     // Create a pipe
 	if (pipe(requestNode->pipe_fds) == -1) 
@@ -84,19 +84,17 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
         Logger::log("pipe: failed to open", ERROR, false);
 		return ;
     }
-	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, requestNode->pipe_fds[WRITE_END], &_events) == -1)
+	if (!server.safeEpollCtl(E_IN, requestNode, ADD, requestNode->pipe_fds[WRITE_END]))
 	{
 		Logger::setErrorAndLog(&requestNode->CGIError, 504, "epoll_ctl: failed to add to epoll");
 		requestNode->CGIReady = true;
 		return ;
-		
 	}
-	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, requestNode->pipe_fds[READ_END], &_events) == -1)
+	if (!server.safeEpollCtl(E_OUT, requestNode, ADD, requestNode->pipe_fds[READ_END]))
 	{
 		Logger::setErrorAndLog(&requestNode->CGIError, 504, "epoll_ctl: failed to add to epoll");
 		requestNode->CGIReady = true;
 		return ;
-		
 	}
 	if (!setToNonBlocking(requestNode->pipe_fds[WRITE_END]) || !setToNonBlocking(requestNode->pipe_fds[READ_END]))
 	{
@@ -109,7 +107,7 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
     requestNode->pid = fork();
     if (requestNode->pid == -1) 
 	{
-        Logger::log("fork: failed to fork", ERROR, true);
+        Logger::setErrorAndLog(&requestNode->CGIError, 504, "fork: failed to fork");
         return ;
     }
     // Child process
@@ -120,13 +118,13 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
         if (dup2(requestNode->pipe_fds[WRITE_END], STDOUT_FILENO) == -1) 
 		{
             Logger::log("dup2: failed", ERROR, false);
-			server.cleanUpChild(requestNode);
+			// server.cleanUpChild(requestNode);
             exit(1);
         }
 		if (dup2(requestNode->pipe_fds[READ_END], STDIN_FILENO) == -1) 
 		{
             Logger::log("dup2: failed", ERROR, false);
-			server.cleanUpChild(requestNode);
+			// server.cleanUpChild(requestNode);
             exit(1);
         }
         close(requestNode->pipe_fds[READ_END]);
@@ -138,7 +136,7 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
 			close(requestNode->pipe_fds[WRITE_END]);
             if (bytesRecieved == -1 || bytesRecieved == 0)
 			{
-				server.cleanUpChild(requestNode);
+				// server.cleanUpChild(requestNode);
 				exit(1);
 			}
         }
@@ -159,14 +157,12 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
 	{
 		requestNode->cgiStarted = true;
         // Parent process
-		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, requestNode->pipe_fds[WRITE_END], &_events) == -1)
+		if (!server.safeEpollCtl(EMPTY, requestNode, DEL, requestNode->pipe_fds[WRITE_END]))
 		{
-			Logger::log("epoll_ctl: failed to delete fd", ERROR, false);
-			close(requestNode->pipe_fds[READ_END]);
+			Logger::log("execute: failed to delete fd", ERROR, false);
 			close(requestNode->pipe_fds[WRITE_END]);
 		}
         // Close the write end of the pipe since the parent will only read from the pipe
-        
 		close(requestNode->pipe_fds[WRITE_END]);
     }
 }

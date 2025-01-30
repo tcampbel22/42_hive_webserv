@@ -21,8 +21,9 @@ HttpParser::HttpParser() : _contentLength(0), cgiflag(false), query(""), pathInf
 
 HttpParser::~HttpParser() {}
 
-HttpRequest::HttpRequest(ServerSettings *serverPtr, int fd, epoll_event& _event) : closeConnection(false), errorFlag(0), settings(serverPtr), isCGI(false), epollFd(fd), events(_event)  {
-	this->path = "";
+HttpRequest::HttpRequest(ServerSettings *serverPtr) : closeConnection(false), errorFlag(0), settings(serverPtr), isCGI(false)
+{
+	path = "";
 }
 
 //Empty the vector to the requestMap, needs to be parsed in the response.
@@ -165,10 +166,10 @@ void checkHeaderError(const std::vector<char> clientData, HttpRequest& request) 
 	}
 }
 
-int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, HttpServer& server) 
+int	HttpParser::bigSend(fdNode *requestNode, HttpServer& server) 
 {
 	HttpParser parser;
-	HttpRequest request(requestNode->serverPtr, epollFd, _events);
+	HttpRequest request(requestNode->serverPtr);
 	request.errorFlag = requestNode->_error;
 	if (requestNode->CGIReady == true)
 	{
@@ -201,7 +202,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 				requestNode->path = request.path;
 				requestNode->method = request.method;
 				myCgi.setCGIenvironment(request, parser, *cgiBlock);
-				myCgi.execute(request, epollFd, _events, server, requestNode, parser);
+				myCgi.execute(request, server, requestNode, parser);
 				return (0);
 			}
 			else {
