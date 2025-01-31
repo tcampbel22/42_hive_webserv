@@ -12,19 +12,19 @@
 
 #include "HttpServer.hpp"
 
-bool	HttpServer::handle_read(fdNode* nodePtr)
+bool	HttpServer::handle_read(std::shared_ptr<fdNode> nodePtr)
 {
 	readRequest(nodePtr);
 	if (requestComplete)
 	{
-		if (nodePtr->_clientDataBuffer.empty())
+		if (nodePtr->_clientDataBuffer.empty()) //Either recv error or client closes connection or both
 			killNode(nodePtr);
 		else
 		{
-			if (nodePtr == nullptr)
+			if (!nodePtr)
 				return false;
 			nodePtr->_readyToSend = true;
-			safeEpollCtl(E_OUT, nodePtr, MOD, -1);
+			safeEpollCtl(E_OUT, nodePtr, MOD, -1); //Modify epoll event to epollin, kill node on failure
 		}
 		return true;
 	}
@@ -36,7 +36,7 @@ bool	HttpServer::handle_read(fdNode* nodePtr)
 }
 
 //Read data from client stream
-void	HttpServer::readRequest(fdNode *nodePtr)
+void	HttpServer::readRequest(std::shared_ptr<fdNode>nodePtr)
 {
 	int _fd_out = nodePtr->fd;
 
@@ -44,38 +44,38 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 	ssize_t bytes = 1024;
 	requestComplete = false;
 
-		nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes);
-		bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0);
+		nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() + bytes); //resize buffer to current size + amount of bytes to be read
+		bytesReceived = recv(_fd_out, &nodePtr->_clientDataBuffer[nodePtr->_clientDataBuffer.size() - bytes], bytes, 0); //Add bytes read to buffer starting from where last read
 		Logger::log("Bytes recieved: " + std::to_string(bytesReceived), INFO, false);
-		if (nodePtr->_clientDataBuffer.size() >= MAX_HEADER_SIZE) 
+		if (nodePtr->_clientDataBuffer.size() >= MAX_HEADER_SIZE) // Check if current buffer exceeds max header size
 		{
-			if (!nodePtr->headerCorrect && nodePtr->_clientDataBuffer.size() >= MAX_HEADER_SIZE) 
+			if (!nodePtr->headerCorrect && nodePtr->_clientDataBuffer.size() >= MAX_HEADER_SIZE) // Check if header exceeds max header size
 			{
-				validateHeaders(nodePtr->_clientDataBuffer, &nodePtr->_error);
+				validateHeaders(nodePtr->_clientDataBuffer, &nodePtr->_error); // Check if header has finshed, if not throw 431 error
 				if (nodePtr->_error != 0) 
 				{
 					requestComplete = true;
-					nodePtr->headerCorrect = true;
+					nodePtr->headerCorrect = true; // Why set it to true?
 					_clientClosedConn = true;
 					return ;
 				}
 				nodePtr->headerCorrect = true;
 			}
 		}
-		if (bytesReceived < bytes) 
+		if (bytesReceived < bytes)  // Resize buffer if amount of bytes read is less than the read amount, check if request is complete
 		{
 			int temp = bytesReceived;
-			if (bytesReceived < 0)
+			if (bytesReceived < 0) //Prevent overflow if recv returns -1
 				temp = 0;
 			nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - temp));
-			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
+			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size(), nodePtr);
 		}
-		if (bytesReceived < 0)
+		if (bytesReceived < 0) // Check is recv returns -1, check if request is complete
 		{
 			if (isNonBlockingSocket(nodePtr->fd)) //check if there is an error with recv
 			{
 				Logger::log("recv: failed to read, better check ERRNO :/", ERROR, false);
-				requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
+				requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size(), nodePtr);
 			}
 		}
 		else if (bytesReceived == 0) //read is successful and client closes connection
@@ -85,18 +85,19 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 			_clientClosedConn = true;
 		}
 		else
-			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
+			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size(), nodePtr);
 }
 
-bool HttpServer::handle_write(fdNode* nodePtr)
+bool HttpServer::handle_write(std::shared_ptr<fdNode> nodePtr)
 {
-	if (nodePtr && nodePtr->cgiStarted == true)
+	if (nodePtr && nodePtr->cgiStarted == true) //if request is CGI amd node still in scope
 	{	
-		if (HttpServer::checkCGI(nodePtr) == 1)
+		if (HttpServer::checkCGI(nodePtr) == 1) // monitor cgi child process
 		{
 			if (HttpParser::bigSend(nodePtr, *_instance) || _clientClosedConn == true)
 			{ 
 				killNode(nodePtr);
+				return false;
 			}
 			else
 			{
@@ -118,15 +119,18 @@ bool HttpServer::handle_write(fdNode* nodePtr)
 		}
 		resetNode(nodePtr);
 	}
-	// nodePtr->headerCorrect = false;
-	// nodePtr->_error = 0;
+	// if (nodePtr)
+	// {
+	// 	nodePtr->headerCorrect = false;
+	// 	nodePtr->_error = 0;
+	// }
 	return true;
 }
 
 // Function to check if the request is fully received (for chunked encoding or complete body)
-bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived)
+bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived, std::shared_ptr<fdNode> node)
 {
-    std::string requestStr(data.begin(), data.end());
+    std::string requestStr(data.begin(), data.end()); //Convert buffer to string
 	// std::cout << requestStr << std::endl;
 	bool isChunked = isChunkedTransferEncoding(requestStr);
 	if (isChunked) {
@@ -139,7 +143,7 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
 	bool hasBody = isRequestWithBody(requestStr);
 	if (hasBody) {
 		int complete = getContentLength(requestStr);
-		if (complete < 0)
+		if (complete < 0 || !validateContentLength(node, complete))
 			return true;
 		size_t test = requestStr.find("\r\n\r\n") + 4;
 		if ((requestStr.find("\r\n\r\n", test) != std::string::npos) || (bytesReceived - test == (size_t)complete))
@@ -157,7 +161,7 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
     return false;
 }
 
-int HttpServer::checkCGI(fdNode *requestNode)
+int HttpServer::checkCGI(std::shared_ptr<fdNode>requestNode)
 {
 	char 	buffer[1024]; //CGI buffer
 	ssize_t bytesRead = 0; //for CGI reading
@@ -173,8 +177,8 @@ int HttpServer::checkCGI(fdNode *requestNode)
 				Logger::setErrorAndLog(&requestNode->CGIError, 502, "child process failed");
 				requestNode->CGIReady = true;
 				safeEpollCtl(EMPTY, requestNode, DEL, requestNode->pipe_fds[READ_END]);
-				if (!safeEpollCtl(EMPTY, requestNode, DEL, -1))
-					Logger::log("check-cgi: failed to delete fd from epoll", ERROR, false);
+				// if (!safeEpollCtl(EMPTY, requestNode, DEL, -1))
+				// 	Logger::log("check-cgi: failed to delete fd from epoll", ERROR, false);
 				close(requestNode->pipe_fds[READ_END]);
 				return (1);
 			}
@@ -195,7 +199,7 @@ int HttpServer::checkCGI(fdNode *requestNode)
 			break ;
 		}
 	}
-	safeEpollCtl(EMPTY, requestNode, DEL, requestNode->pipe_fds[READ_END]);
+	// safeEpollCtl(EMPTY, requestNode, DEL, requestNode->pipe_fds[READ_END]);
 	close(requestNode->pipe_fds[READ_END]);
 	return (1);
 

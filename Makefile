@@ -13,7 +13,7 @@ SRCS	:= 	$(SRCS_DIR)/Server/main.cpp $(SRCS_DIR)/HttpParsing/HttpParser.cpp \
 			$(SRCS_DIR)/Response/Response.cpp $(SRCS_DIR)/Config/ConfigParser.cpp $(SRCS_DIR)/Config/ServerSettings.cpp \
 			$(SRCS_DIR)/Config/LocationSettings.cpp $(SRCS_DIR)/Response/ServerHandler.cpp $(SRCS_DIR)/Config/ConfigUtilities.cpp \
 			$(SRCS_DIR)/CGI/CGIparsing.cpp $(SRCS_DIR)/Config/ServerSettingsUtils.cpp $(SRCS_DIR)/Logger/Logger.cpp \
-			$(SRCS_DIR)/Server/ServerUtils.cpp $(SRCS_DIR)/Server/ReadAndWrite.cpp
+			$(SRCS_DIR)/Server/ServerUtils.cpp $(SRCS_DIR)/Server/ReadAndWrite.cpp $(SRCS_DIR)/Server/ParseAndRespond.cpp
 		
 OBJS	:= $(addprefix $(OBJ_DIR)/, $(notdir ${SRCS:.cpp=.o}))
 

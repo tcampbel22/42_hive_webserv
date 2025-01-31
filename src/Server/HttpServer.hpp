@@ -46,6 +46,7 @@ enum e_poll
 	E_IN,
 	E_OUT,
 	EMPTY,
+	E_IO,
 };
 
 enum e_ctl
@@ -68,12 +69,12 @@ struct fdNode
 	int				pipe_fds[2];
 	bool			cgiStarted = false;
 	pid_t 			pid = 0;
+	std::string		childBody;
 	std::string 	CGIBody;
 	bool 			CGIReady = false;
 	int				CGIError = 0;
 	int				method = -1;
 	std::string		path;
-	// ~fdNode();
 };
 
 class HttpServer
@@ -104,7 +105,7 @@ public:
 	//methods
 	static void signalHandler(int signal);
 	void	fdActivityLoop(const time_t);
-	bool	isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived);
+	bool	isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived, std::shared_ptr<fdNode> node);
 	bool	isChunkedTransferEncoding(const std::string& requestStr);
 	bool	isRequestWithBody(std::string requestStr);
 	bool	isMultiPart(std::string requestStr);
@@ -114,18 +115,19 @@ public:
 	void	acceptNewClient(ServerSettings* settingsPtr, int eventFd, time_t current_time);
 	void	addServerToEpoll();
 	void	fillHostPortPairs();
-	void	readRequest(fdNode *nodePtr);
+	void	readRequest(std::shared_ptr<fdNode> nodePtr);
 	void	setNonBlocking(int socket);
 	bool	isNonBlockingSocket(int fd);
-	void	killNode(fdNode *nodePtr);
+	void	killNode(std::shared_ptr<fdNode> nodePtr);
 	void	createClientNode(ServerSettings* settingsPtr);
-	bool	checkSystemMemory(fdNode* node);
-	int		checkCGI(fdNode *requestNode);
-	bool	resetCGI(fdNode* nodePtr);
-	void	resetNode(fdNode* nodePtr);
-	bool	handle_read(fdNode* nodePtr);
-	bool	handle_write(fdNode* nodePtr);
+	bool	checkSystemMemory(std::shared_ptr<fdNode> node);
+	int		checkCGI(std::shared_ptr<fdNode>requestNode);
+	bool	resetCGI(std::shared_ptr<fdNode> nodePtr);
+	void	resetNode(std::shared_ptr<fdNode> nodePtr);
+	bool	handle_read(std::shared_ptr<fdNode> nodePtr);
+	bool	handle_write(std::shared_ptr<fdNode> nodePtr);
 	void	validateHeaders(const std::vector<char>& data, int *errorFlag);
-	void	cleanUpChild(fdNode *nodePtr);
-	bool	safeEpollCtl(e_poll event_type, fdNode* node, e_ctl ctl, int fd);
+	void	cleanUpChild(std::shared_ptr<fdNode> nodePtr);
+	bool	safeEpollCtl(e_poll event_type, std::shared_ptr<fdNode> node, e_ctl ctl, int fd);
+	bool	validateContentLength(std::shared_ptr<fdNode> node, int length);
 };

@@ -17,6 +17,7 @@
 #include "../CGI/CGIparsing.hpp"
 #include "../Response/Response.hpp"
 
+
 HttpParser::HttpParser() : _contentLength(0), cgiflag(false), query(""), pathInfo("") {}
 
 HttpParser::~HttpParser() {}
@@ -41,7 +42,9 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 				Logger::log("parseClientRequest: request line is invalid", ERROR, false);
 			return;
 		}
-		isBlockCGI(request);
+		// isBlockCGI(request);
+		if (!request.errorFlag)
+			parseCGI(request);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
@@ -68,7 +71,7 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		}
 }
 
-//tries to get the location settings by using location bloccgi-bin/cgitester.pyk matching rules, defaults to / if unsuccessful
+// tries to get the location settings by using location bloccgi-bin/cgitester.pyk matching rules, defaults to / if unsuccessful
 int HttpParser::isBlockCGI(HttpRequest& request)
 {
 	std::string key = request.path;
@@ -119,6 +122,7 @@ void HttpParser::checkForCgi(HttpRequest& request, LocationSettings& cgibloc)
 		cgiflag = false;
 		return ;
 	}
+	//Add check for bad file input, to avoid triggering the cgi 
 	currentCGI = cgibloc.getPath();
 	cgiflag = true;
 }
@@ -166,7 +170,7 @@ void checkHeaderError(const std::vector<char> clientData, HttpRequest& request) 
 	}
 }
 
-int	HttpParser::bigSend(fdNode *requestNode, HttpServer& server) 
+int	HttpParser::bigSend(std::shared_ptr<fdNode>requestNode, HttpServer& server) 
 {
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr);
@@ -201,8 +205,8 @@ int	HttpParser::bigSend(fdNode *requestNode, HttpServer& server)
 				CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
 				requestNode->path = request.path;
 				requestNode->method = request.method;
-				myCgi.setCGIenvironment(request, parser, *cgiBlock);
-				myCgi.execute(request, server, requestNode, parser);
+				myCgi.setCGIenvironment(request, parser);
+				myCgi.execute(server, requestNode);
 				return (0);
 			}
 			else {

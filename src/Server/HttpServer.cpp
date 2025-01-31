@@ -62,7 +62,7 @@ void HttpServer::startServer()
 	}
 }
 
-bool	HttpServer::safeEpollCtl(e_poll event_type, fdNode* node, e_ctl ctl, int fd)
+bool	HttpServer::safeEpollCtl(e_poll event_type, std::shared_ptr<fdNode> node, e_ctl ctl, int fd)
 {
 	if (!node)
 		return false;
@@ -71,9 +71,12 @@ bool	HttpServer::safeEpollCtl(e_poll event_type, fdNode* node, e_ctl ctl, int fd
 		event.events = EPOLLIN;
 	else if (event_type == E_OUT)
 		event.events = EPOLLOUT;
+	else if (event_type == E_IO)
+		event.events = EPOLLOUT | EPOLLIN;
 	else
 		event.events = 0;
-	event.data.ptr = node;
+	std::weak_ptr<fdNode>* weakPtr = new std::weak_ptr<fdNode>(node);
+	event.data.ptr = weakPtr;
 	if (fd == -1)
 		fd = node->fd;
 	if (ctl == DEL)
@@ -81,20 +84,20 @@ bool	HttpServer::safeEpollCtl(e_poll event_type, fdNode* node, e_ctl ctl, int fd
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr) == -1)
 		{
 			Logger::log("epoll-ctl: Failed to delete from epoll", ERROR, false);
-			client_nodes.erase(node->fd);
-			_fd_activity_map.erase(node->fd);
-			close(node->fd);
+			delete weakPtr;
 			return false ;
 		}
+		delete weakPtr;
 	}
 	else if (ctl == ADD)
 	{
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &event) == -1)
 		{
 			Logger::log("epoll-ctl: Failed to add event to epoll", ERROR, false);
-			client_nodes.erase(node->fd);
-			_fd_activity_map.erase(node->fd);
-			close(node->fd);
+			delete weakPtr;
+			// client_nodes.erase(node->fd);
+			// _fd_activity_map.erase(node->fd);
+			// close(node->fd);
 			return false ;
 		}
 	}
@@ -103,9 +106,10 @@ bool	HttpServer::safeEpollCtl(e_poll event_type, fdNode* node, e_ctl ctl, int fd
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &event) == -1)
 		{
 			Logger::log("epoll-ctl: Failed to mod event to epoll", ERROR, false);
-			client_nodes.erase(node->fd);
-			_fd_activity_map.erase(node->fd);
-			close(node->fd);
+			delete weakPtr;
+			// client_nodes.erase(node->fd);
+			// _fd_activity_map.erase(node->fd);
+			// close(node->fd);
 			return false ;
 		}
 	}
@@ -129,18 +133,24 @@ void HttpServer::startListening()
 		time_t current_time = std::time(nullptr);
 		for (int i = 0; i < numEvents; i++)
 		{
-			fdNode *nodePtr = static_cast <fdNode*>(_eventsArr[i].data.ptr);  //retrieving current serversettings and client fd
+			std::weak_ptr<fdNode>* weakNodePtr = static_cast<std::weak_ptr<fdNode>*>(_eventsArr[i].data.ptr);
+			if (!weakNodePtr) 
+				continue;
+			std::shared_ptr<fdNode> nodePtr = weakNodePtr->lock();
+			if (!nodePtr) 
+				continue;
+			// std::shared_ptr<fdNode*nodePtr = static_cast <std::shared_ptr<fdNode>*>(_eventsArr[i].data.ptr);  //retrieving current serversettings and client fd
 			if (std::find(_server_fds.begin(), _server_fds.end(), nodePtr->fd) != _server_fds.end()) //eventFd is a server_socket meaning a new request is incoming
 				acceptNewClient(nodePtr->serverPtr, nodePtr->fd, current_time); //Send in server socket settings to create new node
 			else if (nodePtr && !checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLIN) //client socket has data to read from
 			{
 				if (!handle_read(nodePtr))
-					continue;
+					continue; // Node has been deleted already and removed from activity map and epoll
             }
 			else if (nodePtr && !checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLOUT && nodePtr->_readyToSend)
 			{
 				if (!handle_write(nodePtr))
-					continue;
+					continue; // Node has been deleted already and removed from activity map and epoll
 			}
 		fdActivityLoop(current_time);
 		}
@@ -159,22 +169,13 @@ void	HttpServer::addServerToEpoll()
 	}
 	for (u_long i = 0 ; i < settings_vec.size() ; i++)  //iterate through fd vector and add to epoll
 	 {
-		epoll_event event;
-		
 		auto it = settings_vec[i];
 		std::shared_ptr<fdNode> server_node = std::make_shared<fdNode>();
 		server_node->fd = settings_vec[i]._fd;
 		server_node->serverPtr = &settings_vec[i];
 		server_nodes.push_back(server_node);
-		
 		setNonBlocking(server_node->fd);
-		event.data.ptr = server_node.get();
-		event.events = EPOLLIN | EPOLLOUT;
-		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, settings_vec[i]._fd, &event) == -1)		
-		{
-			Logger::log("epoll_ctl: failed to add to epoll", ERROR, false);
-			continue; 
-		}
+		safeEpollCtl(E_IO, server_node, ADD, -1);
 	 }
 }
 
@@ -224,7 +225,9 @@ HttpServer::~HttpServer()
 		it.second.reset();
 	}
 	for (auto it : server_nodes)
+	{
 		close(it->fd);
+	}
 	pipe_vec.clear();
 	client_nodes.clear();
 	settings_vec.clear();

@@ -101,14 +101,14 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 				Logger::setErrorAndLog(&request.errorFlag, 504, "Child is deeeeeeead!");
 				ServerHandler response(node->second->fd, request);
 			}
-			killNode(node->second.get());
+			killNode(node->second);
         } 
 		else 
 			++it;
     }
 }
 
-void	HttpServer::killNode(fdNode *nodePtr)
+void	HttpServer::killNode(std::shared_ptr<fdNode>nodePtr)
 {
 	_connections--;
 	if (_connections < 4)
@@ -137,10 +137,10 @@ void	HttpServer::createClientNode(ServerSettings* settingsPtr)
 	client_node->fd = _clientSocket;
 	client_node->serverPtr = settingsPtr;
 	client_nodes[_clientSocket] = client_node;
-	safeEpollCtl(E_IN, client_node.get(), ADD, -1);
+	safeEpollCtl(E_IN, client_node, ADD, -1);
 }
 
-bool	HttpServer::checkSystemMemory(fdNode* node)
+bool	HttpServer::checkSystemMemory(std::shared_ptr<fdNode> node)
 {
 	struct sysinfo sys_data;
 	if (sysinfo(&sys_data) != 0) {
@@ -156,13 +156,15 @@ bool	HttpServer::checkSystemMemory(fdNode* node)
 		if (!safeEpollCtl(E_OUT, node, MOD, -1))	
 		{
 			Logger::log("check-system-memory: Failed to mod epoll", ERROR, false);
+			if (!safeEpollCtl(EMPTY, node, DEL, -1))
+				Logger::log("kill-node: fd not found in epoll event array", ERROR, false);
 		}
 		return true;
 	}
 	return false;
 }
 
-bool	HttpServer::resetCGI(fdNode* nodePtr)
+bool	HttpServer::resetCGI(std::shared_ptr<fdNode> nodePtr)
 {
 	if (nodePtr == NULL)
 		return false;
@@ -173,13 +175,14 @@ bool	HttpServer::resetCGI(fdNode* nodePtr)
 	if (!safeEpollCtl(E_IN, nodePtr, MOD, -1))
 	{
 		Logger::log("reset-cgi: Failed to mod epoll", ERROR, false);
-		killNode(nodePtr);
+		if (!safeEpollCtl(EMPTY, nodePtr, DEL, -1))
+				Logger::log("kill-node: fd not found in epoll event array", ERROR, false);
 		return false; 
 	}
 	return true;
 }
 
-void	HttpServer::resetNode(fdNode* nodePtr)
+void	HttpServer::resetNode(std::shared_ptr<fdNode> nodePtr)
 {
 	nodePtr->headerCorrect = false;
 	nodePtr->_error = 0;
@@ -198,7 +201,7 @@ void	HttpServer::validateHeaders(const std::vector<char>& data, int *errorFlag)
 		*errorFlag = 431;
 }
 
-void	HttpServer::cleanUpChild(fdNode *nodePtr)
+void	HttpServer::cleanUpChild(std::shared_ptr<fdNode>nodePtr)
 {
 	if (!nodePtr->_clientDataBuffer.empty())
 		nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
@@ -216,4 +219,14 @@ void	HttpServer::cleanUpChild(fdNode *nodePtr)
 	settings_vec.shrink_to_fit();
 	close(nodePtr->fd);
 	_instance->~HttpServer();
+}
+
+bool	HttpServer::validateContentLength(std::shared_ptr<fdNode> node, int length)
+{
+	if (node->serverPtr->getMaxClientBody() < length)
+	{
+		Logger::setErrorAndLog(&node->_error, 413, "Content length exceeds max body limit");
+		return false;
+	}
+	return true;
 }
