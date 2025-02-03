@@ -86,17 +86,13 @@ void HttpServer::startListening()
 			else if (!checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLIN) //client socket has data to read from
 			{
 				handle_read(nodePtr);
-				// if (!handle_read(nodePtr))
-				// 	continue;
             }
-			else if (_eventsArr[i].events & EPOLLOUT && nodePtr && nodePtr->_readyToSend)
+			else if (!checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLOUT && nodePtr && nodePtr->_readyToSend)
 			{
 				handle_write(nodePtr);
-				// if (!handle_write(nodePtr))
-				// 	continue;
 			}
-		fdActivityLoop(current_time);
 		}
+		fdActivityLoop(current_time);
 	}
 	close(epollFd);
 }

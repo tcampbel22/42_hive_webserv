@@ -100,7 +100,8 @@ bool HttpServer::handle_write(fdNode* nodePtr)
 		{
 			if (HttpParser::bigSend(nodePtr, epollFd, _events, *_instance) || _clientClosedConn == true)
 			{ 
-				cleanUpFds(nodePtr);
+				if (nodePtr)
+					cleanUpFds(nodePtr);
 			}
 			else
 			{
@@ -111,7 +112,8 @@ bool HttpServer::handle_write(fdNode* nodePtr)
 	}
 	else if (HttpParser::bigSend(nodePtr, epollFd, _events, *_instance) || _clientClosedConn == true) // Once we have the full data, process the request
 	{
-		cleanUpFds(nodePtr);
+		if (nodePtr)
+			cleanUpFds(nodePtr);
 	}
 	else if (nodePtr->cgiStarted == false)
 	{
@@ -124,8 +126,11 @@ bool HttpServer::handle_write(fdNode* nodePtr)
 		}
 		resetNode(nodePtr);
 	}
-	// nodePtr->headerCorrect = false;
-	// nodePtr->_error = 0;
+	// if (nodePtr)
+	// {
+	// 	nodePtr->headerCorrect = false;
+	// 	nodePtr->_error = 0;
+	// }
 	return true;
 }
 
@@ -133,7 +138,6 @@ bool HttpServer::handle_write(fdNode* nodePtr)
 bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived, fdNode* node)
 {
     std::string requestStr(data.begin(), data.end());
-	//std::cout << requestStr << std::endl;
 	bool isChunked = isChunkedTransferEncoding(requestStr);
 	if (isChunked) {
 		if (requestStr.find("0\r\n\r\n") != std::string::npos) {  // End of chunked data
@@ -170,6 +174,8 @@ int HttpServer::checkCGI(fdNode *requestNode)
 
 	int status;
 	pid_t result = waitpid(requestNode->pid, &status, WNOHANG);
+	if (!requestNode)
+	 return 0;
 	if (result == requestNode->pid)
 	{
 		if (WIFEXITED(status))
@@ -182,7 +188,6 @@ int HttpServer::checkCGI(fdNode *requestNode)
 				{
 					Logger::log("epoll_ctl: failed to delete fd from epoll", ERROR, false);
 					close(requestNode->pipe_fds[READ_END]);
-					close(requestNode->pipe_fds[WRITE_END]);
 				}
 				close(requestNode->pipe_fds[READ_END]);
 				return (1);

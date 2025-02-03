@@ -47,9 +47,6 @@ def handle_post():
 def main():
     # Get the request method (GET or POST)
     request_method = os.getenv("REQUEST_METHOD")
-    # i = 0
-    # while (True):
-    #     i+=1
     if request_method == "GET":
         handle_get()  # Handle GET request
     elif request_method == "POST":
