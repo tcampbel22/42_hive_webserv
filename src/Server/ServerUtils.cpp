@@ -93,7 +93,7 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 			it = _fd_activity_map.erase(it);
 			if (node->second->cgiStarted == true)
 			{
-				// kill(node->second->pid, SIGKILL);
+				kill(node->second->pid, SIGKILL);
 				close(node->second->pipe_fds[READ_END]);
 				close(node->second->pipe_fds[WRITE_END]);
 				HttpRequest request(node->second->serverPtr, epollFd, _events);
