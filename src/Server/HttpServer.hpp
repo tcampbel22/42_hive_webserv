@@ -83,7 +83,6 @@ private:
 	bool			requestComplete = false;
 public:
 	std::vector<ServerSettings> settings_vec;
-	std::vector<std::pair<int, int>> pipe_vec;
 	//constructors & destructors
 	HttpServer(std::vector<ServerSettings> vec);
 	~HttpServer();
@@ -91,7 +90,7 @@ public:
 	//methods
 	static void signalHandler(int signal);
 	void	fdActivityLoop(const time_t);
-	bool	isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived);
+	bool	isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived, fdNode* node);
 	bool	isChunkedTransferEncoding(const std::string& requestStr);
 	bool	isRequestWithBody(std::string requestStr);
 	bool	isMultiPart(std::string requestStr);
@@ -115,4 +114,5 @@ public:
 	bool	handle_write(fdNode* nodePtr);
 	void	validateHeaders(const std::vector<char>& data, int *errorFlag);
 	void	cleanUpChild(fdNode *nodePtr);
+	bool	validateContentLength(fdNode* node, int length);
 };

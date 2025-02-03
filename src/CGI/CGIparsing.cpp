@@ -103,7 +103,6 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
 		requestNode->CGIReady = true;
 		return ;
 	}
-	server.pipe_vec.emplace_back(requestNode->pipe_fds[WRITE_END], requestNode->pipe_fds[READ_END]); //probably not needed
     // Fork the child process
     requestNode->pid = fork();
     if (requestNode->pid == -1) 
@@ -144,14 +143,11 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
 		const char *const argv[] = {_scriptName.c_str(), nullptr};
 		if (execve(_execInfo->c_str(), (char *const *)argv, environ) == -1) 
 		{
-			// delete requestNode;
             Logger::log("execve: failed to execute command", ERROR, false);
 			delete _execInfo;
-			(void)parser;
 			request.~HttpRequest();
+			parser.~HttpParser();
 			server.cleanUpChild(requestNode);
-			// parser.~HttpParser();
-			// delete requestNode;
 			exit(1);
         }
 

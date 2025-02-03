@@ -72,14 +72,14 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 			if (bytesReceived < 0)
 				temp = 0;
 			nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - temp));
-			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
+			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size(), nodePtr);
 		}
 		if (bytesReceived < 0)
 		{
 			if (isNonBlockingSocket(nodePtr->fd)) //check if there is an error with recv
 			{
 				Logger::log("recv: failed to read, better check ERRNO :/", ERROR, false);
-				requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
+				requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size(), nodePtr);
 			}
 		}
 		else if (bytesReceived == 0) //read is successful and client closes connection
@@ -89,7 +89,7 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 			_clientClosedConn = true;
 		}
 		else
-			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
+			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size(), nodePtr);
 }
 
 bool HttpServer::handle_write(fdNode* nodePtr)
@@ -100,7 +100,8 @@ bool HttpServer::handle_write(fdNode* nodePtr)
 		{
 			if (HttpParser::bigSend(nodePtr, epollFd, _events, *_instance) || _clientClosedConn == true)
 			{ 
-				cleanUpFds(nodePtr);
+				if (nodePtr)
+					cleanUpFds(nodePtr);
 			}
 			else
 			{
@@ -111,7 +112,8 @@ bool HttpServer::handle_write(fdNode* nodePtr)
 	}
 	else if (HttpParser::bigSend(nodePtr, epollFd, _events, *_instance) || _clientClosedConn == true) // Once we have the full data, process the request
 	{
-		cleanUpFds(nodePtr);
+		if (nodePtr)
+			cleanUpFds(nodePtr);
 	}
 	else if (nodePtr->cgiStarted == false)
 	{
@@ -124,16 +126,18 @@ bool HttpServer::handle_write(fdNode* nodePtr)
 		}
 		resetNode(nodePtr);
 	}
-	// nodePtr->headerCorrect = false;
-	// nodePtr->_error = 0;
+	// if (nodePtr)
+	// {
+	// 	nodePtr->headerCorrect = false;
+	// 	nodePtr->_error = 0;
+	// }
 	return true;
 }
 
 // Function to check if the request is fully received (for chunked encoding or complete body)
-bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived)
+bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived, fdNode* node)
 {
     std::string requestStr(data.begin(), data.end());
-	//std::cout << requestStr << std::endl;
 	bool isChunked = isChunkedTransferEncoding(requestStr);
 	if (isChunked) {
 		if (requestStr.find("0\r\n\r\n") != std::string::npos) {  // End of chunked data
@@ -145,7 +149,7 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
 	bool hasBody = isRequestWithBody(requestStr);
 	if (hasBody) {
 		int complete = getContentLength(requestStr);
-		if (complete < 0)
+		if (complete < 0 || !validateContentLength(node, complete))
 			return true;
 		size_t test = requestStr.find("\r\n\r\n") + 4;
 		if ((requestStr.find("\r\n\r\n", test) != std::string::npos) || (bytesReceived - test == (size_t)complete))
@@ -172,6 +176,8 @@ int HttpServer::checkCGI(fdNode *requestNode)
 		return (0);
 	int status;
 	pid_t result = waitpid(requestNode->pid, &status, WNOHANG);
+	if (!requestNode)
+	 return 0;
 	if (result == requestNode->pid)
 	{
 		if (WIFEXITED(status))
@@ -184,7 +190,6 @@ int HttpServer::checkCGI(fdNode *requestNode)
 				{
 					Logger::log("epoll_ctl: failed to delete fd from epoll", ERROR, false);
 					close(requestNode->pipe_fds[READ_END]);
-					close(requestNode->pipe_fds[WRITE_END]);
 				}
 				close(requestNode->pipe_fds[READ_END]);
 				return (1);

@@ -86,14 +86,10 @@ void HttpServer::startListening()
 			else if (!checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLIN) //client socket has data to read from
 			{
 				handle_read(nodePtr);
-				// if (!handle_read(nodePtr))
-				// 	continue;
             }
-			else if (_eventsArr[i].events & EPOLLOUT && nodePtr && nodePtr->_readyToSend)
+			else if (!checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLOUT && nodePtr && nodePtr->_readyToSend)
 			{
 				handle_write(nodePtr);
-				// if (!handle_write(nodePtr))
-				// 	continue;
 			}
 		}
 		fdActivityLoop(current_time);
@@ -162,11 +158,6 @@ std::string getBoundary(std::string requestString) {
 HttpServer::~HttpServer()
 {
 	close(epollFd);
-	for (const auto& it : pipe_vec)
-	{
-		close(it.first);
-		close(it.second);
-	}
 	_ip_port_list.clear();
 	for (auto it = settings_vec.begin(); it != settings_vec.end(); it++)
 		close(it->_fd);
@@ -178,14 +169,9 @@ HttpServer::~HttpServer()
 	}
 	for (auto it : server_nodes)
 		close(it->fd);
-	pipe_vec.clear();
 	client_nodes.clear();
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
 	_server_fds.clear();
 }
 
-// fdNode::~fdNode() 
-// {
-// 	close(fd);
-// }

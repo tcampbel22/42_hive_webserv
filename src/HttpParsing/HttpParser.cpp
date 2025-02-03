@@ -42,7 +42,6 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		}
 		if (!request.errorFlag)
 			parseCGI(request);
-		// isBlockCGI(request);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
@@ -67,61 +66,6 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 		} catch (std::exception& e) {
 			Logger::log(e.what(), ERROR, false);
 		}
-}
-
-//tries to get the location settings by using location bloccgi-bin/cgitester.pyk matching rules, defaults to / if unsuccessful
-int HttpParser::isBlockCGI(HttpRequest& request)
-{
-	std::string key = request.path;
-	int len = key.length();
-	LocationSettings *locSettings;
-	while (42)
-	{
-		locSettings = request.settings->getLocationBlock(key);
-		if (locSettings != nullptr || len < 2)
-			break ;
-		len--;
-		if (len < 1)
-			len = 1;
-		key = key.substr(0, len);
-	}
-	if (!locSettings)
-		locSettings = request.settings->getLocationBlock("/");
-	if (!locSettings)
-		return 0;
-	if (locSettings->isCgiBlock() == true)
-		checkForCgi(request, *locSettings);
-	return 0;
-}
-
-void HttpParser::checkForCgi(HttpRequest& request, LocationSettings& cgibloc) 
-{
-	cgiPath.append(request.path);
-	cgiPath.erase(0, cgibloc.getPath().length());
-	if (cgiPath.front() != '/' && cgibloc.getCgiPath().back() != '/')
-		cgiPath.insert(0, "/");
-	cgiPath.insert(0, cgibloc.getCgiPath());
-	size_t pos = cgiPath.find('?');
-	if (pos != std::string::npos)
-	{
-		if (std::count(cgiPath.begin(), cgiPath.end(), '?') != 1)
-			Logger::setErrorAndLog(&request.errorFlag, 400, "cgi: Bad query string");
-		query = cgiPath.substr(cgiPath.find('?') + 1);
-		cgiPath.erase(pos);
-	}
-	if (cgibloc.getCgiScript().length() != cgiPath.length())
-	{
-		pathInfo = cgiPath;
-		if (cgiPath[cgiPath.find(".py") + 3] == '/')
-			cgiPath.erase(cgiPath.find(".py") + 3);
-	}
-	if (cgiPath.back() == '/')
-	{
-		cgiflag = false;
-		return ;
-	}
-	currentCGI = cgibloc.getPath();
-	cgiflag = true;
 }
 
 void HttpParser::parseBody(HttpRequest& request, std::istringstream& stream) {
@@ -210,15 +154,6 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 				Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
 				return (1);
 			}
-			//might be not needed
-			if (request.errorFlag == 0) 
-			{
-				Response response(200, request.body.size(), request.body, request.closeConnection, false);
-				response.sendResponse(requestNode->fd);
-				return (0);
-			}
-			else
-				request.closeConnection = true;
 		}
 	}
 	if (requestNode->cgiStarted == false)
@@ -231,12 +166,6 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 		return (0);
 }
 
-std::string HttpParser::getQuery() { return query; }
-std::string HttpParser::getPathInfo() { return pathInfo; }
-uint HttpParser::getContentLength() { return _contentLength; }
-std::string HttpParser::getCgiPath() { return cgiPath; }
-
-HttpRequest::~HttpRequest() {}
 
 
 void	HttpParser::validateCGIPath(LocationSettings& block, int* error)
@@ -317,3 +246,10 @@ void	HttpParser::parseCGI(HttpRequest& request)
 	if (locSettings->isCgiBlock())
 		formatCGIPath(request.path, *locSettings, request);
 }
+
+std::string HttpParser::getQuery() { return query; }
+std::string HttpParser::getPathInfo() { return pathInfo; }
+uint HttpParser::getContentLength() { return _contentLength; }
+std::string HttpParser::getCgiPath() { return cgiPath; }
+
+HttpRequest::~HttpRequest() {}

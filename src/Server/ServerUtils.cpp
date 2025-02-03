@@ -79,9 +79,9 @@ bool HttpServer::isChunkedTransferEncoding(const std::string& requestStr) { retu
 // If the client has been inactive for too long, close the socket
 void HttpServer::fdActivityLoop(const time_t current_time)
 {
-	// if (_connections > 100)
-	// 	_timeoutScale = 1.0 - ((float)_connections * TIME_OUT_MOD);
-	// else
+	if (_connections > 100)
+		_timeoutScale = 1.0 - ((float)_connections * TIME_OUT_MOD);
+	else
 		_timeoutScale = 1.0;
 	_timeoutScale *= TIME_OUT_PERIOD;
 	for (auto it = _fd_activity_map.begin(); it != _fd_activity_map.end();) 
@@ -93,7 +93,6 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 			it = _fd_activity_map.erase(it);
 			if (node->second->cgiStarted == true)
 			{
-				// kill(node->second->pid, SIGTERM);
 				kill(node->second->pid, SIGKILL);
 				close(node->second->pipe_fds[READ_END]);
 				close(node->second->pipe_fds[WRITE_END]);
@@ -120,14 +119,15 @@ void	HttpServer::cleanUpFds(fdNode *nodePtr)
 	if (!nodePtr->CGIBody.empty())
 		nodePtr->CGIBody.clear();	
 	int temp = nodePtr->fd;
-	if (epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events))
+	if (epoll_ctl(epollFd, EPOLL_CTL_DEL, temp, &_events))
 	{
-		Logger::setErrorAndLog(&nodePtr->_error, 500, "clean-up-fds: fd cannot be deleted");
+		Logger::log("clean-up-fds: fd cannot be deleted", ERROR, false);
 		_fd_activity_map.erase(temp);
 		client_nodes.erase(temp);
 		close(temp);
 		return ;
 	}
+	close(temp);
 	_fd_activity_map.erase(temp);
 	client_nodes.erase(temp);
 	close(temp);
@@ -214,6 +214,16 @@ void	HttpServer::validateHeaders(const std::vector<char>& data, int *errorFlag)
 		*errorFlag = 431;
 }
 
+bool	HttpServer::validateContentLength(fdNode* node, int length)
+{
+	if (node->serverPtr->getMaxClientBody() < length)
+	{
+		Logger::setErrorAndLog(&node->_error, 413, "Content length exceeds max body limit");
+		return false;
+	}
+	return true;
+}
+
 void	HttpServer::cleanUpChild(fdNode *nodePtr)
 {
 	if (nodePtr == nullptr)
@@ -232,7 +242,6 @@ void	HttpServer::cleanUpChild(fdNode *nodePtr)
 	_ip_port_list.clear();
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
-	// nodePtr->~fdNode();
 	close(nodePtr->fd);
 	delete nodePtr;
 	nodePtr = nullptr;
