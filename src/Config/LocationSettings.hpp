@@ -35,7 +35,6 @@ private:
 	bool									isCgi;
 	std::string								cgi_path;
 	std::string								cgi_script;
-	std::string								upload_path;
 
 public:
 	LocationSettings();
@@ -66,7 +65,6 @@ public:
 	bool							isCgiBlock();
 	std::string&					getCgiPath();
 	std::string&					getCgiScript();
-	std::string&					getCgiUploadPath();
 	std::string						getErrorPagePath(int key);
 	bool							hasDelete();
 };

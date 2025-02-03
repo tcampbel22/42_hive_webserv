@@ -15,16 +15,15 @@
 
 CGIparsing::CGIparsing(std::string& root, std::string& script) 
 {
-	_scriptName = script.substr(script.find_last_of('/'));
+	_scriptName = script;
 	_execInfo = new std::string("." + root);
 }
 
-void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser, LocationSettings& cgiBlock) {
+void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser) {
 	setenv("REQUEST_METHOD", getMethod(request.method).c_str(), 1);
 	setenv("QUERY_STRING", parser.getQuery().c_str(), 1);
 	if (request.headers.find("Content-Type") != request.headers.end())
 		setenv("CONTENT_TYPE", request.headers.at("Content-Type").c_str(), 1); //default text, needs parsing for images etc.
-	setenv("UPLOAD_DIR", cgiBlock.getCgiUploadPath().c_str(), 1);
 	if (request.headers.find("Content-Length") != request.headers.end())
 		setenv("CONTENT_LENGTH", request.headers.at("Content-Length").c_str(), 1);
 	setenv("PATH_INFO", parser.getPathInfo().c_str(), 1);
