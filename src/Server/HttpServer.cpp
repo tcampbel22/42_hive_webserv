@@ -95,8 +95,8 @@ void HttpServer::startListening()
 				// if (!handle_write(nodePtr))
 				// 	continue;
 			}
-		fdActivityLoop(current_time);
 		}
+		fdActivityLoop(current_time);
 	}
 	close(epollFd);
 }

@@ -168,6 +168,8 @@ int HttpServer::checkCGI(fdNode *requestNode)
 	char 	buffer[1024]; //CGI buffer
 	ssize_t bytesRead = 0; //for CGI reading
 
+	if (requestNode == nullptr)
+		return (0);
 	int status;
 	pid_t result = waitpid(requestNode->pid, &status, WNOHANG);
 	if (result == requestNode->pid)
