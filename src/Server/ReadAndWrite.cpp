@@ -72,14 +72,14 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 			if (bytesReceived < 0)
 				temp = 0;
 			nodePtr->_clientDataBuffer.resize(nodePtr->_clientDataBuffer.size() - (bytes - temp));
-			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
+			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size(), nodePtr);
 		}
 		if (bytesReceived < 0)
 		{
 			if (isNonBlockingSocket(nodePtr->fd)) //check if there is an error with recv
 			{
 				Logger::log("recv: failed to read, better check ERRNO :/", ERROR, false);
-				requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
+				requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size(), nodePtr);
 			}
 		}
 		else if (bytesReceived == 0) //read is successful and client closes connection
@@ -89,7 +89,7 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 			_clientClosedConn = true;
 		}
 		else
-			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size());
+			requestComplete = isRequestComplete(nodePtr->_clientDataBuffer, nodePtr->_clientDataBuffer.size(), nodePtr);
 }
 
 bool HttpServer::handle_write(fdNode* nodePtr)
@@ -130,7 +130,7 @@ bool HttpServer::handle_write(fdNode* nodePtr)
 }
 
 // Function to check if the request is fully received (for chunked encoding or complete body)
-bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived)
+bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesReceived, fdNode* node)
 {
     std::string requestStr(data.begin(), data.end());
 	//std::cout << requestStr << std::endl;
@@ -145,7 +145,7 @@ bool HttpServer::isRequestComplete(const std::vector<char>& data, ssize_t bytesR
 	bool hasBody = isRequestWithBody(requestStr);
 	if (hasBody) {
 		int complete = getContentLength(requestStr);
-		if (complete < 0)
+		if (complete < 0 || !validateContentLength(node, complete))
 			return true;
 		size_t test = requestStr.find("\r\n\r\n") + 4;
 		if ((requestStr.find("\r\n\r\n", test) != std::string::npos) || (bytesReceived - test == (size_t)complete))

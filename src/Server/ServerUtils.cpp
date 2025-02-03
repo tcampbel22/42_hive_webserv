@@ -93,7 +93,6 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 			it = _fd_activity_map.erase(it);
 			if (node->second->cgiStarted == true)
 			{
-				kill(node->second->pid, SIGTERM);
 				// kill(node->second->pid, SIGKILL);
 				close(node->second->pipe_fds[READ_END]);
 				close(node->second->pipe_fds[WRITE_END]);
@@ -213,6 +212,16 @@ void	HttpServer::validateHeaders(const std::vector<char>& data, int *errorFlag)
 		*errorFlag = 431;
 }
 
+bool	HttpServer::validateContentLength(fdNode* node, int length)
+{
+	if (node->serverPtr->getMaxClientBody() < length)
+	{
+		Logger::setErrorAndLog(&node->_error, 413, "Content length exceeds max body limit");
+		return false;
+	}
+	return true;
+}
+
 void	HttpServer::cleanUpChild(fdNode *nodePtr)
 {
 	if (nodePtr == nullptr)
@@ -231,7 +240,6 @@ void	HttpServer::cleanUpChild(fdNode *nodePtr)
 	_ip_port_list.clear();
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
-	// nodePtr->~fdNode();
 	close(nodePtr->fd);
 	delete nodePtr;
 	nodePtr = nullptr;

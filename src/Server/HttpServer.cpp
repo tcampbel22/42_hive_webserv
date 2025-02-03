@@ -183,7 +183,3 @@ HttpServer::~HttpServer()
 	_server_fds.clear();
 }
 
-// fdNode::~fdNode() 
-// {
-// 	close(fd);
-// }
