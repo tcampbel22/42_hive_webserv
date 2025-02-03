@@ -103,7 +103,6 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
 		requestNode->CGIReady = true;
 		return ;
 	}
-	server.pipe_vec.emplace_back(requestNode->pipe_fds[WRITE_END], requestNode->pipe_fds[READ_END]); //probably not needed
     // Fork the child process
     requestNode->pid = fork();
     if (requestNode->pid == -1) 

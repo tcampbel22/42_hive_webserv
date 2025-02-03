@@ -158,11 +158,6 @@ std::string getBoundary(std::string requestString) {
 HttpServer::~HttpServer()
 {
 	close(epollFd);
-	for (const auto& it : pipe_vec)
-	{
-		close(it.first);
-		close(it.second);
-	}
 	_ip_port_list.clear();
 	for (auto it = settings_vec.begin(); it != settings_vec.end(); it++)
 		close(it->_fd);

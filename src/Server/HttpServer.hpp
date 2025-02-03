@@ -83,7 +83,6 @@ private:
 	bool			requestComplete = false;
 public:
 	std::vector<ServerSettings> settings_vec;
-	std::vector<std::pair<int, int>> pipe_vec;
 	//constructors & destructors
 	HttpServer(std::vector<ServerSettings> vec);
 	~HttpServer();
