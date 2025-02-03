@@ -43,5 +43,6 @@ public:
 	std::string getIp(std::string&);
 	std::string getPort(std::string&);
 	std::string getPath();
+	// void CGIsignalHandler(int signal);
 };
 
