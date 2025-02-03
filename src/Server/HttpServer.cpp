@@ -64,9 +64,9 @@ void HttpServer::startServer()
 
 void HttpServer::startListening()
 {
-	std::signal(SIGINT, signalHandler);
+	std::signal(SIGINT, signalHandler);	
 	std::signal(SIGPIPE, SIG_IGN);
-	
+
 	addServerToEpoll();
 	while (true)
 	{
