@@ -29,7 +29,7 @@ void	HttpParser::validateCGIPath(LocationSettings& block, int* error)
 	}
 	if (!cgiPath.compare(block.getCgiScript()) || cgiPath.find(".py") == std::string::npos)
 	{
-		Logger::setErrorAndLog(error, 400, "validate-cgi-path: invalid cgi file " + cgiPath);
+		Logger::setErrorAndLog(error, 404, "validate-cgi-path: invalid cgi file " + cgiPath);
 		return ;
 	}
 	if (cgiPath.back() == '/')
@@ -82,65 +82,69 @@ void	HttpParser::parseCGI(HttpRequest& request)
 			len = 1;
 		key = key.substr(0, len);
 	}
-	if (!locSettings && locSettings->isCgiBlock())
+	if (!locSettings)
+		locSettings = request.settings->getLocationBlock("/");
+	if (!locSettings)
+		return ;
+	if (locSettings->isCgiBlock())
 		formatCGIPath(request.path, *locSettings, request);
 }
 
-int	HttpParser::bigParse(std::shared_ptr<fdNode> requestNode, HttpRequest& request, HttpServer& server)
-{
-	HttpParser parser;
-	if (!request.errorFlag)
-			parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
-	if (parser.cgiflag && !request.errorFlag)
-	{
-		LocationSettings* cgiBlock = request.settings->getLocationBlock(parser.currentCGI);
-		if (cgiBlock && request.method != 3 && requestNode->cgiStarted == false)
-		{
-			CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
-			requestNode->path = request.path;
-			requestNode->method = request.method;
-			requestNode->childBody = request.body;
-			myCgi.setCGIenvironment(request, parser);
-			myCgi.execute(server, requestNode);
-			return (0);
-		}
-		else 
-		{
-			Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
-			return (1);
-		}
-	}
-	return (0);
-}
+// int	HttpParser::bigParse(std::shared_ptr<fdNode> requestNode, HttpRequest& request, HttpServer& server)
+// {
+// 	HttpParser parser;
+// 	if (!request.errorFlag)
+// 			parser.parseClientRequest(requestNode->_clientDataBuffer, request, requestNode->serverPtr);
+// 	if (parser.cgiflag && !request.errorFlag)
+// 	{
+// 		LocationSettings* cgiBlock = request.settings->getLocationBlock(parser.currentCGI);
+// 		if (cgiBlock && request.method != 3 && requestNode->cgiStarted == false)
+// 		{
+// 			CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
+// 			requestNode->path = request.path;
+// 			requestNode->method = request.method;
+// 			requestNode->childBody = request.body;
+// 			myCgi.setCGIenvironment(request, parser);
+// 			myCgi.execute(server, requestNode);
+// 			return (0);
+// 		}
+// 		else 
+// 		{
+// 			Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
+// 			return (1);
+// 		}
+// 	}
+// 	return (0);
+// }
 
 
-bool HttpParser::handleCGIRepsonse(std::shared_ptr<fdNode> requestNode, HttpRequest& request)
-{
-	request.errorFlag = requestNode->CGIError;
-	if (request.errorFlag == 0)
-	{
-		request.body = requestNode->CGIBody;
-		request.method = requestNode->method;
-		request.path = requestNode->path;
-		Response response(200, request.body.size(), request.body, request.closeConnection, false);
-		response.sendResponse(requestNode->fd);
-		return (0);
-	}
-	else
-	{
-		ServerHandler Response(requestNode->fd, request);
-		return (1);
-	}
-}
+// bool HttpParser::handleCGIRepsonse(std::shared_ptr<fdNode> requestNode, HttpRequest& request)
+// {
+// 	request.errorFlag = requestNode->CGIError;
+// 	if (request.errorFlag == 0)
+// 	{
+// 		request.body = requestNode->CGIBody;
+// 		request.method = requestNode->method;
+// 		request.path = requestNode->path;
+// 		Response response(200, request.body.size(), request.body, request.closeConnection, false);
+// 		response.sendResponse(requestNode->fd);
+// 		return (0);
+// 	}
+// 	else
+// 	{
+// 		ServerHandler Response(requestNode->fd, request);
+// 		return (1);
+// 	}
+// }
 
-bool	HttpParser::handleResponse(std::shared_ptr<fdNode> requestNode, HttpRequest& request)
-{
-	if (!requestNode->cgiStarted)
-		ServerHandler response(requestNode->fd, request);
-	else
-		return (0);
-	return (request.closeConnection) ? 1 : 0;
-}
+// bool	HttpParser::handleResponse(std::shared_ptr<fdNode> requestNode, HttpRequest& request)
+// {
+// 	if (!requestNode->cgiStarted)
+// 		ServerHandler response(requestNode->fd, request);
+// 	else
+// 		return (0);
+// 	return (request.closeConnection) ? 1 : 0;
+// }
 
 // bool	HttpParser::bigSend(fdNode *requestNode, HttpServer& server) 
 // {

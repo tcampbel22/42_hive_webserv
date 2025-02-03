@@ -42,7 +42,6 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 				Logger::log("parseClientRequest: request line is invalid", ERROR, false);
 			return;
 		}
-		// isBlockCGI(request);
 		if (!request.errorFlag)
 			parseCGI(request);
 		HttpHeaderParser::parseHeaders(requestStream, request);
@@ -145,7 +144,7 @@ void HttpParser::parseRegularBody(std::istringstream& stream, HttpRequest& reque
 	}
 	if (!stream.eof()) {
 		if (!request.errorFlag)
-			Logger::setErrorAndLog(&request.errorFlag, 400, "body: no eof in body");
+			Logger::setErrorAndLog(&request.errorFlag, 400, "body: no eof in body " + request.body);
 		return ;
 	}
 	if (_contentLength != (int)request.body.size())
@@ -170,7 +169,7 @@ void checkHeaderError(const std::vector<char> clientData, HttpRequest& request) 
 	}
 }
 
-int	HttpParser::bigSend(std::shared_ptr<fdNode>requestNode, HttpServer& server) 
+int	HttpParser::bigSend(std::shared_ptr<fdNode> requestNode, HttpServer& server) 
 {
 	HttpParser parser;
 	HttpRequest request(requestNode->serverPtr);
@@ -202,26 +201,18 @@ int	HttpParser::bigSend(std::shared_ptr<fdNode>requestNode, HttpServer& server)
 			LocationSettings* cgiBlock = request.settings->getLocationBlock(parser.currentCGI);
 			if (cgiBlock && request.method != 3 && requestNode->cgiStarted == false)
 			{
-				CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
 				requestNode->path = request.path;
 				requestNode->method = request.method;
-				myCgi.setCGIenvironment(request, parser);
-				myCgi.execute(server, requestNode);
+				CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
+				myCgi.setCGIenvironment(request, parser, cgiBlock->getCgiUploadPath());
+				myCgi.execute(server, requestNode, request);
 				return (0);
 			}
-			else {
+			else 
+			{
 				Logger::setErrorAndLog(&request.errorFlag, 400, "big send: cgi path not found");
 				return (1);
 			}
-			//might be not needed
-			if (request.errorFlag == 0) 
-			{
-				Response response(200, request.body.size(), request.body, request.closeConnection, false);
-				response.sendResponse(requestNode->fd);
-				return (0);
-			}
-			else
-				request.closeConnection = true;
 		}
 	}
 	if (requestNode->cgiStarted == false)

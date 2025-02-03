@@ -166,7 +166,7 @@ bool	HttpServer::checkSystemMemory(std::shared_ptr<fdNode> node)
 
 bool	HttpServer::resetCGI(std::shared_ptr<fdNode> nodePtr)
 {
-	if (nodePtr == NULL)
+	if (!nodePtr)
 		return false;
 	nodePtr->cgiStarted = false;
 	nodePtr->CGIReady = false;
@@ -175,8 +175,6 @@ bool	HttpServer::resetCGI(std::shared_ptr<fdNode> nodePtr)
 	if (!safeEpollCtl(E_IN, nodePtr, MOD, -1))
 	{
 		Logger::log("reset-cgi: Failed to mod epoll", ERROR, false);
-		if (!safeEpollCtl(EMPTY, nodePtr, DEL, -1))
-				Logger::log("kill-node: fd not found in epoll event array", ERROR, false);
 		return false; 
 	}
 	return true;

@@ -38,8 +38,8 @@ private:
 public:
 	CGIparsing(std::string&, std::string&);
 	~CGIparsing();
-	void setCGIenvironment(HttpRequest&, HttpParser&);
-	void execute(HttpServer&, std::shared_ptr<fdNode> requestNode);
+	void setCGIenvironment(HttpRequest&, HttpParser&, std::string);
+	void execute(HttpServer&, std::shared_ptr<fdNode> requestNode, HttpRequest& request);
 	std::string getMethod(int);
 	std::string getIp(std::string&);
 	std::string getPort(std::string&);

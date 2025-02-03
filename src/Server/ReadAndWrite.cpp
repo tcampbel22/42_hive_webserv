@@ -108,6 +108,7 @@ bool HttpServer::handle_write(std::shared_ptr<fdNode> nodePtr)
 	}
 	else if (HttpParser::bigSend(nodePtr, *_instance) || _clientClosedConn == true) // Once we have the full data, process the request
 	{
+		std::cout << "Heloo\n";
 		killNode(nodePtr);
 	}
 	else if (nodePtr->cgiStarted == false)
@@ -186,6 +187,8 @@ int HttpServer::checkCGI(std::shared_ptr<fdNode>requestNode)
 	}
 	else
 		return (0);
+	if (!nodePtr)
+		return (0);
 	requestNode->CGIReady = true;
 	// Read the output from the child process
 	requestNode->CGIBody.clear();
@@ -199,7 +202,7 @@ int HttpServer::checkCGI(std::shared_ptr<fdNode>requestNode)
 			break ;
 		}
 	}
-	// safeEpollCtl(EMPTY, requestNode, DEL, requestNode->pipe_fds[READ_END]);
+	safeEpollCtl(EMPTY, requestNode, DEL, requestNode->pipe_fds[READ_END]);
 	close(requestNode->pipe_fds[READ_END]);
 	return (1);
 

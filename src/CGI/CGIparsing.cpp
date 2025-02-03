@@ -19,11 +19,12 @@ CGIparsing::CGIparsing(std::string& root, std::string& script)
 	_execInfo = new std::string("." + root);
 }
 
-void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser) {
+void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser, std::string upload) {
 	setenv("REQUEST_METHOD", getMethod(request.method).c_str(), 1);
 	setenv("QUERY_STRING", parser.getQuery().c_str(), 1);
 	if (request.headers.find("Content-Type") != request.headers.end())
 		setenv("CONTENT_TYPE", request.headers.at("Content-Type").c_str(), 1); //default text, needs parsing for images etc.
+	setenv("UPLOAD_DIR", upload.c_str(), 1);
 	if (request.headers.find("Content-Length") != request.headers.end())
 		setenv("CONTENT_LENGTH", request.headers.at("Content-Length").c_str(), 1);
 	setenv("PATH_INFO", parser.getPathInfo().c_str(), 1);
@@ -75,7 +76,7 @@ bool	setToNonBlocking(int socket)
 	return true;
 }
 
-void CGIparsing::execute(HttpServer& server, std::shared_ptr<fdNode> requestNode) 
+void CGIparsing::execute(HttpServer& server, std::shared_ptr<fdNode> requestNode, HttpRequest& request)
 {
     // Create a pipe
 	if (pipe(requestNode->pipe_fds) == -1) 
@@ -131,10 +132,11 @@ void CGIparsing::execute(HttpServer& server, std::shared_ptr<fdNode> requestNode
         // Close the write end of the pipe now that it's duplicated
 		if (requestNode->method == 2) 
 		{  
-			ssize_t bytesRecieved = write(requestNode->pipe_fds[WRITE_END], requestNode->childBody.c_str(), requestNode->childBody.size());
+			ssize_t bytesRecieved = write(requestNode->pipe_fds[WRITE_END], request.body.c_str(), request.body.size());
 			close(requestNode->pipe_fds[WRITE_END]);
             if (bytesRecieved == -1 || bytesRecieved == 0)
 			{
+				Logger::log("cgi-parsing: write failed in child", ERROR, false);
 				// server.cleanUpChild(requestNode);
 				exit(1);
 			}
@@ -146,6 +148,7 @@ void CGIparsing::execute(HttpServer& server, std::shared_ptr<fdNode> requestNode
 		{
             Logger::log("execve: failed to execute command", ERROR, false);
 			delete _execInfo;
+			request.~HttpRequest();
 			server.~HttpServer();
 			server.cleanUpChild(requestNode);
 			exit(1);
