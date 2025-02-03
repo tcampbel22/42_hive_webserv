@@ -169,7 +169,6 @@ HttpServer::~HttpServer()
 	}
 	for (auto it : server_nodes)
 		close(it->fd);
-	pipe_vec.clear();
 	client_nodes.clear();
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
