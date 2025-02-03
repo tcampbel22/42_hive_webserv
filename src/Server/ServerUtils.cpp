@@ -130,6 +130,7 @@ void	HttpServer::cleanUpFds(fdNode *nodePtr)
 	}
 	_fd_activity_map.erase(temp);
 	client_nodes.erase(temp);
+	close(temp);
 	_clientClosedConn = false;
 	delete nodePtr;
 	nodePtr = nullptr;
