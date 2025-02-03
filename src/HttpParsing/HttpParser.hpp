@@ -71,4 +71,8 @@ public:
 	std::string getQuery();
 	std::string getPathInfo();
 	std::string getCgiPath();
+	void	validateCGIPath(LocationSettings& block, int* error);
+	void	parseQueryString(std::string& path, int *error);
+	void	formatCGIPath(std::string& request_path, LocationSettings& block, HttpRequest& request);
+	void	parseCGI(HttpRequest& request);
 };

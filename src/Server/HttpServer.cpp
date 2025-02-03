@@ -172,8 +172,9 @@ HttpServer::~HttpServer()
 		close(it->_fd);
 	for (auto it : client_nodes)
 	{
+		if (it.second != nullptr)
+			delete it.second;
 		close(it.first);
-		delete it.second;
 	}
 	for (auto it : server_nodes)
 		close(it->fd);
@@ -184,7 +185,7 @@ HttpServer::~HttpServer()
 	_server_fds.clear();
 }
 
-fdNode::~fdNode() 
-{
-	close(fd);
-}
+// fdNode::~fdNode() 
+// {
+// 	close(fd);
+// }

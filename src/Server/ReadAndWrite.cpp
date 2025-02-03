@@ -94,9 +94,7 @@ void	HttpServer::readRequest(fdNode *nodePtr)
 
 bool HttpServer::handle_write(fdNode* nodePtr)
 {
-	if (!nodePtr)
-		return false;
-	if (nodePtr->cgiStarted == true)
+	if (nodePtr && nodePtr->cgiStarted == true)
 	{	
 		if (HttpServer::checkCGI(nodePtr) == 1)
 		{
@@ -206,13 +204,16 @@ int HttpServer::checkCGI(fdNode *requestNode)
 			break ;
 		}
 	}
-	if (epoll_ctl(epollFd, EPOLL_CTL_DEL, requestNode->pipe_fds[READ_END], &_events) == -1)
+	if (requestNode != nullptr || requestNode->fd != -1)
 	{
-		Logger::setErrorAndLog(&requestNode->CGIError, 500, "epoll_ctl: failed to delete fd from epoll");
+		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, requestNode->pipe_fds[READ_END], &_events) == -1)
+		{
+			Logger::setErrorAndLog(&requestNode->CGIError, 500, "epoll_ctl: failed to delete fd from epoll");
+			close(requestNode->pipe_fds[READ_END]);
+			close(requestNode->pipe_fds[WRITE_END]);
+		}
 		close(requestNode->pipe_fds[READ_END]);
-		close(requestNode->pipe_fds[WRITE_END]);
 	}
-	close(requestNode->pipe_fds[READ_END]);
 	return (1);
 
 }

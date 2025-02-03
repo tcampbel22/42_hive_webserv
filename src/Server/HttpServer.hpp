@@ -59,7 +59,7 @@ struct fdNode
 	int				CGIError = 0;
 	int				method = -1;
 	std::string		path;
-	~fdNode();
+	// ~fdNode();
 };
 
 class HttpServer

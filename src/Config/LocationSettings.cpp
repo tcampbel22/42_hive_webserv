@@ -29,7 +29,6 @@ LocationSettings::LocationSettings()
 	redirect.second = "";
 	cgi_path = "";
 	cgi_script = "";
-	upload_path = "";
 }
 
 
@@ -50,7 +49,6 @@ LocationSettings::LocationSettings(const std::string& new_path)
 	redirect.second = "";
 	cgi_path = "";
 	cgi_script = "";
-	upload_path = "";
 }
 
 LocationSettings::~LocationSettings() 
@@ -78,7 +76,7 @@ void	LocationSettings::checkLocationValues(std::vector<std::string>::iterator& i
 	if (!std::next(it)->compare("}"))
 	{
 
-		if (isCgi && (cgi_script.empty() || upload_path.empty() || cgi_path.empty()))
+		if (isCgi && (cgi_script.empty() || cgi_path.empty()))
 			throw std::runtime_error("location: missing directives in cgi block: " + getPath());
 		if (isCgi && (!methods.empty() || !default_file.empty()))
 			throw std::runtime_error("location: extra directives in cgi block: " + getPath());
@@ -231,18 +229,6 @@ void	LocationSettings::parseCgiScript(std::vector<std::string>& location, std::v
 	checkLocationValues(it);
 }
 
-void	LocationSettings::parseCgiUpload(std::vector<std::string>& location, std::vector<std::string>::iterator& it) 
-{
-	ConfigUtilities::checkDuplicates(upload_path, "upload:");
-	ConfigUtilities::checkVectorEnd(location, it, "location: upload: invalid syntax");
-	ConfigUtilities::checkSemiColon(location, it, "location: upload: syntax error");
-	upload_path = *it;
-	if (isCgi == false)
-		isCgi = true;
-	ConfigUtilities::checkVectorEnd(location, it, "location: upload: invalid syntax");
-	checkLocationValues(it);
-}
-
 void	LocationSettings::addLocationErrorPage(int status, std::string path) 
 { 
 	if (location_error_pages.find(status) != location_error_pages.end())
@@ -262,7 +248,6 @@ bool						LocationSettings::isRedirect() { return is_redirect; }
 bool						LocationSettings::isCgiBlock() { return isCgi; }
 std::string&				LocationSettings::getCgiPath() { return  cgi_path; }
 std::string&				LocationSettings::getCgiScript() { return cgi_script; }
-std::string&				LocationSettings::getCgiUploadPath() { return upload_path; }
 std::string					LocationSettings::getErrorPagePath(int key) 
 { 
 	if (location_error_pages.find(key) != location_error_pages.end())
