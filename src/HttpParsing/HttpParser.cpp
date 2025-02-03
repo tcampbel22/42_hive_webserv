@@ -40,7 +40,9 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 				Logger::log("parseClientRequest: request line is invalid", ERROR, false);
 			return;
 		}
-		isBlockCGI(request);
+		if (!request.errorFlag)
+			parseCGI(request);
+		// isBlockCGI(request);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
 		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
@@ -172,12 +174,12 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 	request.errorFlag = requestNode->_error;
 	if (requestNode->CGIReady == true)
 	{
-		request.body = requestNode->CGIBody;
 		request.errorFlag = requestNode->CGIError;
-		request.method = requestNode->method;
-		request.path = requestNode->path;
 		if (request.errorFlag == 0)
 		{
+			request.body = requestNode->CGIBody;
+			request.method = requestNode->method;
+			request.path = requestNode->path;
 			Response response(200, request.body.size(), request.body, request.closeConnection, false);
 			response.sendResponse(requestNode->fd);
 			return (0);
@@ -200,7 +202,7 @@ int	HttpParser::bigSend(fdNode *requestNode, int epollFd, epoll_event &_events, 
 				CGIparsing myCgi(parser.cgiPath, cgiBlock->getCgiScript());
 				requestNode->path = request.path;
 				requestNode->method = request.method;
-				myCgi.setCGIenvironment(request, parser, *cgiBlock);
+				myCgi.setCGIenvironment(request, parser);
 				myCgi.execute(request, epollFd, _events, server, requestNode, parser);
 				return (0);
 			}
@@ -235,3 +237,83 @@ uint HttpParser::getContentLength() { return _contentLength; }
 std::string HttpParser::getCgiPath() { return cgiPath; }
 
 HttpRequest::~HttpRequest() {}
+
+
+void	HttpParser::validateCGIPath(LocationSettings& block, int* error)
+{
+	std::string abs_path;
+	if (block.getCgiPath().back() != '/')
+		abs_path = block.getCgiPath() + "/" + block.getCgiScript();
+	else
+		abs_path = block.getCgiPath() + block.getCgiScript();
+	if (block.getCgiScript().length() != cgiPath.length()) // Check if there is more in the URI
+	{
+		pathInfo = cgiPath; //Preserves original path
+		if (cgiPath[cgiPath.find(".py") + 3] == '/') 
+			cgiPath.erase(cgiPath.find(".py") + 3); //Isolates the path up until the script
+	}
+	if (cgiPath.back() != '/' && (cgiPath.compare(abs_path) || cgiPath.find(".py") == std::string::npos))
+	{
+		Logger::setErrorAndLog(error, 404, "validate-cgi-path: invalid cgi file " + cgiPath);
+		return ;
+	}
+	if (cgiPath.back() == '/')
+		cgiflag = false;
+	else
+	{
+		currentCGI = block.getPath();
+		cgiflag = true;
+	}
+}
+
+void	HttpParser::parseQueryString(std::string& path, int *error)
+{
+	size_t pos = path.find('?');
+	if (pos != std::string::npos)
+	{
+		if (std::count(path.begin(), path.end(), '?') != 1)
+			Logger::setErrorAndLog(error, 400, "cgi: Bad query string: " + path);
+		query = path.substr(path.find('?') + 1);
+		path.erase(pos);
+	}
+}
+
+void	HttpParser::formatCGIPath(std::string& request_path, LocationSettings& block, HttpRequest& request)
+{
+	if (request_path.compare(block.getCgiScript()))
+	{
+		cgiPath = request_path;
+		cgiPath.erase(0, block.getPath().length()); //extract the file
+		if (cgiPath.front() != '/' && block.getCgiPath().back() != '/') //Add slash too beginning of path
+			cgiPath.insert(0, "/");
+		cgiPath.insert(0, block.getCgiPath()); // add path from config to get full path
+	}
+	else
+		cgiPath = block.getCgiScript();
+	parseQueryString(cgiPath, &request.errorFlag);
+	if (!request.errorFlag)
+		validateCGIPath(block, &request.errorFlag);
+}
+
+void	HttpParser::parseCGI(HttpRequest& request)
+{
+	std::string key = request.path; //Request path eg cgi-bin/pytester.py
+	int len = key.length();
+	LocationSettings *locSettings = nullptr;
+	while (1) // Check URI against location block to see if it matches a cgi block
+	{
+		locSettings = request.settings->getLocationBlock(key);
+		if (locSettings != nullptr || len < 2)
+			break ;
+		len--;
+		if (len < 1)
+			len = 1;
+		key = key.substr(0, len);
+	}
+	if (!locSettings)
+		locSettings = request.settings->getLocationBlock("/");
+	if (!locSettings)
+		return ;
+	if (locSettings->isCgiBlock())
+		formatCGIPath(request.path, *locSettings, request);
+}

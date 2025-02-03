@@ -37,11 +37,12 @@ private:
 public:
 	CGIparsing(std::string&, std::string&);
 	~CGIparsing();
-	void setCGIenvironment(HttpRequest&, HttpParser&, LocationSettings&);
+	void setCGIenvironment(HttpRequest&, HttpParser&);
 	void execute(HttpRequest&, int, epoll_event&, HttpServer&, fdNode *requestNode, HttpParser&);
 	std::string getMethod(int);
 	std::string getIp(std::string&);
 	std::string getPort(std::string&);
 	std::string getPath();
+	// void CGIsignalHandler(int signal);
 };
 

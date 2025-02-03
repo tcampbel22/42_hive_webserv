@@ -153,10 +153,6 @@ void	ConfigUtilities::printLocationBlock(LocationSettings location)
 		std::cout << "CGI script: " << location.getCgiScript() << '\n';
 	else
 		std::cout << "CGI script: no cgi_script\n";
-	if (!location.getCgiUploadPath().empty())
-		std::cout << "CGI upload: " << location.getCgiUploadPath() << '\n';
-	else
-		std::cout << "CGI upload: no upload\n";
 	std::cout << '\n';
 }
 

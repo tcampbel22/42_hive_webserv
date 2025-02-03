@@ -36,8 +36,8 @@
 
 # define MAX_EVENTS 200 //Can define this in config file or create a funct based on cpu load or leave it
 # define TIME_OUT_PERIOD 10
-# define MAX_CONNECTIONS 1024
-# define TIME_OUT_MOD 0.0011
+# define MAX_CONNECTIONS 500
+# define TIME_OUT_MOD 0.011
 #define READ_END 0
 #define WRITE_END 1
 
@@ -59,6 +59,7 @@ struct fdNode
 	int				CGIError = 0;
 	int				method = -1;
 	std::string		path;
+	// ~fdNode();
 };
 
 class HttpServer
@@ -70,7 +71,7 @@ private:
 	std::vector<std::pair<std::string, int>> _ip_port_list;
 	std::vector<int> _server_fds;
 	std::vector<std::shared_ptr<fdNode>> server_nodes;
-	std::map<int, std::shared_ptr<fdNode>> client_nodes;
+	std::map<int, fdNode*> client_nodes;
 	int 			_clientSocket;
 	sockaddr_in 	_socketInfo; //reusable
 	int				epollFd;

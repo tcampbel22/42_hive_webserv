@@ -92,7 +92,7 @@ void	Logger::log(std::string msg, e_log log_code, bool print)
 		if (log_code == INFO)
 		{
 			if (print)
-				std::cout << msg << std::endl;
+				std::cerr << msg << std::endl;
 			checkLoop(msg, "INFO");
 			if (checkFileSize())
 			{

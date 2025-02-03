@@ -15,16 +15,15 @@
 
 CGIparsing::CGIparsing(std::string& root, std::string& script) 
 {
-	_scriptName = script.substr(script.find_last_of('/'));
+	_scriptName = script;
 	_execInfo = new std::string("." + root);
 }
 
-void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser, LocationSettings& cgiBlock) {
+void CGIparsing::setCGIenvironment(HttpRequest& request, HttpParser& parser) {
 	setenv("REQUEST_METHOD", getMethod(request.method).c_str(), 1);
 	setenv("QUERY_STRING", parser.getQuery().c_str(), 1);
 	if (request.headers.find("Content-Type") != request.headers.end())
 		setenv("CONTENT_TYPE", request.headers.at("Content-Type").c_str(), 1); //default text, needs parsing for images etc.
-	setenv("UPLOAD_DIR", cgiBlock.getCgiUploadPath().c_str(), 1);
 	if (request.headers.find("Content-Length") != request.headers.end())
 		setenv("CONTENT_LENGTH", request.headers.at("Content-Length").c_str(), 1);
 	setenv("PATH_INFO", parser.getPathInfo().c_str(), 1);
@@ -86,12 +85,24 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
     }
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, requestNode->pipe_fds[WRITE_END], &_events) == -1)
 	{
-		Logger::log("epoll_ctl: failed to add fd to epoll", ERROR, false);
+		Logger::setErrorAndLog(&requestNode->CGIError, 504, "epoll_ctl: failed to add to epoll");
+		requestNode->CGIReady = true;
+		return ;
+		
+	}
+	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, requestNode->pipe_fds[READ_END], &_events) == -1)
+	{
+		Logger::setErrorAndLog(&requestNode->CGIError, 504, "epoll_ctl: failed to add to epoll");
+		requestNode->CGIReady = true;
 		return ;
 		
 	}
 	if (!setToNonBlocking(requestNode->pipe_fds[WRITE_END]) || !setToNonBlocking(requestNode->pipe_fds[READ_END]))
+	{
+		Logger::setErrorAndLog(&requestNode->CGIError, 504, "setToNonBlocking: ");
+		requestNode->CGIReady = true;
 		return ;
+	}
 	server.pipe_vec.emplace_back(requestNode->pipe_fds[WRITE_END], requestNode->pipe_fds[READ_END]); //probably not needed
     // Fork the child process
     requestNode->pid = fork();
@@ -131,14 +142,16 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
 			}
         }
 		const char *const argv[] = {_scriptName.c_str(), nullptr};
-        if (execve(_execInfo->c_str(), (char *const *)argv, environ) == -1) 
+		if (execve(_execInfo->c_str(), (char *const *)argv, environ) == -1) 
 		{
+			// delete requestNode;
             Logger::log("execve: failed to execute command", ERROR, false);
 			delete _execInfo;
+			(void)parser;
 			request.~HttpRequest();
-			parser.~HttpParser();
-			close(requestNode->pipe_fds[WRITE_END]);
 			server.cleanUpChild(requestNode);
+			// parser.~HttpParser();
+			// delete requestNode;
 			exit(1);
         }
 
@@ -149,7 +162,7 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
         // Parent process
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, requestNode->pipe_fds[WRITE_END], &_events) == -1)
 		{
-			Logger::log("epll_ctl: failed to delete fd", ERROR, false);
+			Logger::log("epoll_ctl: failed to delete fd", ERROR, false);
 			close(requestNode->pipe_fds[READ_END]);
 			close(requestNode->pipe_fds[WRITE_END]);
 		}

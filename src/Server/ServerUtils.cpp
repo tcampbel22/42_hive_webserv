@@ -16,12 +16,9 @@
 void HttpServer::signalHandler(int signal)
 {
 	(void)signal;
-	pid_t pid;
-    int status;
-    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-        // Handle child process exit status if needed
-    }
+	Logger::log("\nExit signal received, server shutting down.. ", INFO, true);
 	_instance->~HttpServer();
+	Logger::closeLogger();
 	exit(0);
 }
 
@@ -82,9 +79,9 @@ bool HttpServer::isChunkedTransferEncoding(const std::string& requestStr) { retu
 // If the client has been inactive for too long, close the socket
 void HttpServer::fdActivityLoop(const time_t current_time)
 {
-	if (_connections > 100)
-		_timeoutScale = 1.0 - ((float)_connections * TIME_OUT_MOD);
-	else
+	// if (_connections > 100)
+	// 	_timeoutScale = 1.0 - ((float)_connections * TIME_OUT_MOD);
+	// else
 		_timeoutScale = 1.0;
 	_timeoutScale *= TIME_OUT_PERIOD;
 	for (auto it = _fd_activity_map.begin(); it != _fd_activity_map.end();) 
@@ -96,16 +93,15 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 			it = _fd_activity_map.erase(it);
 			if (node->second->cgiStarted == true)
 			{
-				kill(node->second->pid, SIGINT);
+				// kill(node->second->pid, SIGTERM);
+				kill(node->second->pid, SIGKILL);
 				close(node->second->pipe_fds[READ_END]);
 				close(node->second->pipe_fds[WRITE_END]);
-				// Response response(504);
-				// response.sendResponse(node->second->fd);
 				HttpRequest request(node->second->serverPtr, epollFd, _events);
-				request.errorFlag = 504;
+				Logger::setErrorAndLog(&request.errorFlag, 504, "Child is deeeeeeead!");
 				ServerHandler response(node->second->fd, request);
 			}
-			cleanUpFds(node->second.get());
+			cleanUpFds(node->second);
         } 
 		else 
 			++it;
@@ -114,6 +110,8 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 
 void	HttpServer::cleanUpFds(fdNode *nodePtr)
 {
+	if (nodePtr == nullptr)
+		return;
 	_connections--;
 	if (_connections < 4)
 		_connections = 4;
@@ -121,13 +119,21 @@ void	HttpServer::cleanUpFds(fdNode *nodePtr)
 		nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
 	if (!nodePtr->CGIBody.empty())
 		nodePtr->CGIBody.clear();	
-	if (nodePtr->fd != -1)
+	int temp = nodePtr->fd;
+	if (epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events))
 	{
-		epoll_ctl(epollFd, EPOLL_CTL_DEL, nodePtr->fd, &_events);  // Remove client socket from epoll
-		_fd_activity_map.erase(nodePtr->fd);
-		close(nodePtr->fd);
+		Logger::setErrorAndLog(&nodePtr->_error, 500, "clean-up-fds: fd cannot be deleted");
+		_fd_activity_map.erase(temp);
+		client_nodes.erase(temp);
+		close(temp);
+		return ;
 	}
+	_fd_activity_map.erase(temp);
+	client_nodes.erase(temp);
+	close(temp);
 	_clientClosedConn = false;
+	delete nodePtr;
+	nodePtr = nullptr;
 }
 
 void	HttpServer::createClientNode(fdNode* nodePtr)
@@ -135,14 +141,15 @@ void	HttpServer::createClientNode(fdNode* nodePtr)
 	_connections++;
 	if (_connections > MAX_CONNECTIONS)
 		_connections = MAX_CONNECTIONS;
-	std::shared_ptr<fdNode> client_node = std::make_shared<fdNode>();
+	fdNode* client_node = new fdNode(*nodePtr);
 	client_node->fd = _clientSocket;
 	client_nodes[_clientSocket] = client_node;
 	client_node->serverPtr = nodePtr->serverPtr;
-	_events.data.ptr = client_node.get();
-	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _clientSocket, &_events) == -1)
+	_events.data.ptr = client_node;
+	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, client_node->fd, &_events) == -1)
 	{
 		Logger::log("Failed to add to epoll", ERROR, false);
+		client_nodes.erase(_clientSocket);
 		close(_clientSocket);
 	}
 }
@@ -209,6 +216,8 @@ void	HttpServer::validateHeaders(const std::vector<char>& data, int *errorFlag)
 
 void	HttpServer::cleanUpChild(fdNode *nodePtr)
 {
+	if (nodePtr == nullptr)
+		return ;
 	if (!nodePtr->_clientDataBuffer.empty())
 		nodePtr->_clientDataBuffer.clear(); //empty data buffer read from client
 	for (auto it = settings_vec.begin(); it != settings_vec.end(); it++)
@@ -217,10 +226,15 @@ void	HttpServer::cleanUpChild(fdNode *nodePtr)
 		close(it.second->fd);
 	for (auto it : server_nodes)
 		close(it->fd);
+	close(nodePtr->pipe_fds[WRITE_END]);
+	close(nodePtr->pipe_fds[READ_END]);
 	close(epollFd);
-	close(nodePtr->fd);
 	_ip_port_list.clear();
 	settings_vec.clear();
 	settings_vec.shrink_to_fit();
+	// nodePtr->~fdNode();
+	close(nodePtr->fd);
+	delete nodePtr;
+	nodePtr = nullptr;
 	_instance->~HttpServer();
 }
