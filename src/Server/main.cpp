@@ -50,9 +50,9 @@ int	main(int ac, char **av)
 		return 1;
 	}
 	//start server class, calls the socket creation function in constructor, closes the socket in the destructor.
-	HttpServer server(config.settings_vec);
-	config.~ConfigParser();
-	server.startListening();
-	Logger::closeLogger();
+	// HttpServer server(config.settings_vec);
+	// config.~ConfigParser();
+	// server.startListening();
+	// Logger::closeLogger();
 	return (0);
 }

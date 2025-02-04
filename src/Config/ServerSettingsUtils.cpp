@@ -76,4 +76,14 @@ void	ServerSettings::checkServerBlock()
 {
 	if (locations.find("/") == locations.end())
 			throw std::runtime_error("root directory missing from server block: " + getKey());
+	std::filesystem::path block_root;
+	std::filesystem::path server_root = std::filesystem::current_path().relative_path() / getLocationBlock("/")->getRoot();
+	std::cout << "[" << server_root << "]\n";
+
+	// for (auto loc : locations)
+	// {
+	// 	block_root = std::filesystem::weakly_canonical(loc.second.getRoot());
+	// 	if (!block_root.string().find(server_root.string()))
+	// 		throw std::invalid_argument("location block: root directive does not exist within server hierachy: " + block_root.string());
+	// }
 }
