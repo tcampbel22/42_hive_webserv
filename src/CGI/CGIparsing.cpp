@@ -80,7 +80,7 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
     // Create a pipe
 	if (pipe(requestNode->pipe_fds) == -1) 
 	{
-        Logger::log("pipe: failed to open", ERROR, false);
+        Logger::setErrorAndLog(&requestNode->CGIError, 500, "pipe: failed to create pipe");
 		return ;
     }
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, requestNode->pipe_fds[WRITE_END], &_events) == -1)
@@ -107,7 +107,7 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
     requestNode->pid = fork();
     if (requestNode->pid == -1) 
 	{
-        Logger::log("fork: failed to fork", ERROR, true);
+        Logger::setErrorAndLog(&requestNode->CGIError, 500, "fork: failed to fork");
         return ;
     }
     // Child process

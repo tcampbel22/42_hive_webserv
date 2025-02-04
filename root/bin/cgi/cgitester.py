@@ -42,7 +42,7 @@ def handle_post():
         print("<a href='/checkbox.html'><button>Back</button></a>")
         print("<a href='/index.html'><button>Front-Page</button></a>")
     else:
-        print("<html><body><h1>No POST data received</h1></body></html>")
+        print("<html><body><h1>Cuck old</h1></body></html>")
 
 def main():
     # Get the request method (GET or POST)

@@ -40,10 +40,10 @@ void HttpParser::parseClientRequest(const std::vector<char>& clientData, HttpReq
 				Logger::log("parseClientRequest: request line is invalid", ERROR, false);
 			return;
 		}
-		if (!request.errorFlag)
-			parseCGI(request);
 		HttpHeaderParser::parseHeaders(requestStream, request);
 		HttpHeaderParser::procesHeaderFields(request, this->_contentLength);
+		if (!request.errorFlag)
+			parseCGI(request);
 		if (!HttpHeaderParser::HostParse(serverPtr, request) && !request.errorFlag) {
 		 	Logger::setErrorAndLog(&request.errorFlag, 400, "header: host name error");
 		 	request.closeConnection = true;
@@ -226,6 +226,16 @@ void	HttpParser::formatCGIPath(std::string& request_path, LocationSettings& bloc
 
 void	HttpParser::parseCGI(HttpRequest& request)
 {
+	if (request.method == 2 && _contentLength == 0) {
+		Logger::setErrorAndLog(&request.errorFlag, 411, "cgi: no contetent for POST");
+		return ;
+	}
+	if (request.headers.find("Content-Type") != request.headers.end()) {
+		if (request.headers.at("Content-Type") != "application/x-www-form-urlencoded") {
+			Logger::setErrorAndLog(&request.errorFlag, 415, "cgi: invalid type");
+			return ;
+		}
+	}
 	std::string key = request.path; //Request path eg cgi-bin/pytester.py
 	int len = key.length();
 	LocationSettings *locSettings = nullptr;
