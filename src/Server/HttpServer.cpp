@@ -80,6 +80,8 @@ void HttpServer::startListening()
 		for (int i = 0; i < numEvents; i++)
 		{
 			fdNode *nodePtr = static_cast <fdNode*>(_eventsArr[i].data.ptr);  //retrieving current serversettings and client fd
+			if (nodePtr->isDead)
+				continue;
 			_events.data.ptr = nodePtr; //store event data in a temp variable for use in epoll functions
 			if (std::find(_server_fds.begin(), _server_fds.end(), nodePtr->fd) != _server_fds.end()) //eventFd is a server_socket meaning a new request is incoming
 				acceptNewClient(nodePtr, nodePtr->fd, current_time);
@@ -116,7 +118,6 @@ void	HttpServer::addServerToEpoll()
 		_events.data.ptr = server_node.get();
 		server_nodes.push_back(server_node);
 		setNonBlocking(server_node->fd);
-		
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, settings_vec[i]._fd, &_events) == -1)		
 		{
 			Logger::log("epoll_ctl: failed to add to epoll", ERROR, false);

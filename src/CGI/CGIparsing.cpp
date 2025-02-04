@@ -156,14 +156,12 @@ void CGIparsing::execute(HttpRequest& request, int epollFd, epoll_event& _events
 	{
 		requestNode->cgiStarted = true;
         // Parent process
-		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, requestNode->pipe_fds[WRITE_END], &_events) == -1)
+		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, requestNode->pipe_fds[WRITE_END], nullptr) == -1)
 		{
 			Logger::log("epoll_ctl: failed to delete fd", ERROR, false);
 			close(requestNode->pipe_fds[READ_END]);
-			close(requestNode->pipe_fds[WRITE_END]);
 		}
         // Close the write end of the pipe since the parent will only read from the pipe
-        
 		close(requestNode->pipe_fds[WRITE_END]);
     }
 }

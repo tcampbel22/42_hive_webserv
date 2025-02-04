@@ -35,7 +35,7 @@
 #include <sys/wait.h>
 
 # define MAX_EVENTS 200 //Can define this in config file or create a funct based on cpu load or leave it
-# define TIME_OUT_PERIOD 100
+# define TIME_OUT_PERIOD 30
 # define MAX_CONNECTIONS 500
 # define TIME_OUT_MOD 0.011
 #define READ_END 0
@@ -59,7 +59,7 @@ struct fdNode
 	int				CGIError = 0;
 	int				method = -1;
 	std::string		path;
-	// ~fdNode();
+	bool			isDead = false;
 };
 
 class HttpServer
