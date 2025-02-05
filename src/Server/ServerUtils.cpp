@@ -109,7 +109,7 @@ void HttpServer::fdActivityLoop(const time_t current_time)
 
 void	HttpServer::cleanUpFds(fdNode *nodePtr)
 {
-	if (nodePtr == nullptr)
+	if (nodePtr == nullptr || nodePtr->isDead)
 		return;
 	_connections--;
 	if (_connections < 4)
@@ -119,21 +119,18 @@ void	HttpServer::cleanUpFds(fdNode *nodePtr)
 	if (!nodePtr->CGIBody.empty())
 		nodePtr->CGIBody.clear();	
 	int temp = nodePtr->fd;
-	if (epoll_ctl(epollFd, EPOLL_CTL_DEL, temp, &_events))
+	if (epoll_ctl(epollFd, EPOLL_CTL_DEL, temp, nullptr))
 	{
 		Logger::log("clean-up-fds: fd cannot be deleted", ERROR, false);
-		_fd_activity_map.erase(temp);
-		client_nodes.erase(temp);
-		close(temp);
 		return ;
 	}
-	close(temp);
+	Logger::log("fd [" + std::to_string(nodePtr->fd) + "] deleted from epoll event list", INFO, false);
 	_fd_activity_map.erase(temp);
 	client_nodes.erase(temp);
-	close(temp);
 	_clientClosedConn = false;
+	close(temp);
+	nodePtr->isDead = true;
 	delete nodePtr;
-	nodePtr = nullptr;
 }
 
 void	HttpServer::createClientNode(fdNode* nodePtr)
