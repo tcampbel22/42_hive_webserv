@@ -226,16 +226,6 @@ void	HttpParser::formatCGIPath(std::string& request_path, LocationSettings& bloc
 
 void	HttpParser::parseCGI(HttpRequest& request)
 {
-	if (request.method == 2 && _contentLength == 0) {
-		Logger::setErrorAndLog(&request.errorFlag, 411, "cgi: no contetent for POST");
-		return ;
-	}
-	if (request.headers.find("Content-Type") != request.headers.end()) {
-		if (request.headers.at("Content-Type") != "application/x-www-form-urlencoded") {
-			Logger::setErrorAndLog(&request.errorFlag, 415, "cgi: invalid type");
-			return ;
-		}
-	}
 	std::string key = request.path; //Request path eg cgi-bin/pytester.py
 	int len = key.length();
 	LocationSettings *locSettings = nullptr;
@@ -253,8 +243,19 @@ void	HttpParser::parseCGI(HttpRequest& request)
 		locSettings = request.settings->getLocationBlock("/");
 	if (!locSettings)
 		return ;
-	if (locSettings->isCgiBlock())
+	if (locSettings->isCgiBlock()) {
 		formatCGIPath(request.path, *locSettings, request);
+		if (request.method == 2 && _contentLength == 0) {
+			Logger::setErrorAndLog(&request.errorFlag, 411, "cgi: no contetent for POST");
+			return ;
+		}
+		if (request.headers.find("Content-Type") != request.headers.end()) {
+			if (request.headers.at("Content-Type") != "application/x-www-form-urlencoded") {
+				Logger::setErrorAndLog(&request.errorFlag, 415, "cgi: invalid type");
+				return ;
+			}
+		}
+	}
 }
 
 std::string HttpParser::getQuery() { return query; }
