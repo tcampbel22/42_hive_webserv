@@ -25,14 +25,14 @@ int	main(int ac, char **av)
 		Logger::log("expecting only configuration file as argument",  ERROR, true);
 		return 1;
 	}
-	if (std::filesystem::exists((std::string)av[1]) && std::filesystem::file_size((std::string)av[1]) == 0) 
-	{
-        Logger::log("config file is empty",  ERROR, true);
-		return 1;
-	}
 	try {
 		if (opendir(av[1]) != NULL)
 			throw std::invalid_argument("argument is a directory");
+		if (std::filesystem::exists((std::string)av[1]) && std::filesystem::file_size((std::string)av[1]) == 0) 
+		{
+			Logger::log("config file is empty",  ERROR, true);
+			return 1;
+		}
 	} 
 	catch (std::exception& e)
 	{
@@ -51,8 +51,15 @@ int	main(int ac, char **av)
 	}
 	//start server class, calls the socket creation function in constructor, closes the socket in the destructor.
 	HttpServer server(config.settings_vec);
-	config.~ConfigParser();
-	server.startListening();
+	try
+	{
+		config.~ConfigParser();
+		server.startListening();
+	}
+	catch(const std::exception& e)
+	{
+		Logger::log(e.what(), ERROR, true);
+	}
 	Logger::closeLogger();
 	return (0);
 }

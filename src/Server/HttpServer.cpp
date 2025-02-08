@@ -70,31 +70,39 @@ void HttpServer::startListening()
 	addServerToEpoll();
 	while (true)
 	{
-		numEvents = epoll_wait(epollFd, _eventsArr, MAX_EVENTS, 0);
-		if (numEvents < 0)
+		try
 		{
-			Logger::log("epoll_wait failed", ERROR, false);
-			break ;
-		}
-		time_t current_time = std::time(nullptr);
-		for (int i = 0; i < numEvents; i++)
-		{
-			fdNode *nodePtr = static_cast <fdNode*>(_eventsArr[i].data.ptr);  //retrieving current serversettings and client fd
-			if (nodePtr->isDead)
-				continue;
-			_events.data.ptr = nodePtr; //store event data in a temp variable for use in epoll functions
-			if (std::find(_server_fds.begin(), _server_fds.end(), nodePtr->fd) != _server_fds.end()) //eventFd is a server_socket meaning a new request is incoming
-				acceptNewClient(nodePtr, nodePtr->fd, current_time);
-			else if (!checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLIN) //client socket has data to read from
+			numEvents = epoll_wait(epollFd, _eventsArr, MAX_EVENTS, 0);
+			if (numEvents < 0)
 			{
-				handle_read(nodePtr);
-            }
-			else if (!checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLOUT && nodePtr && nodePtr->_readyToSend)
-			{
-				handle_write(nodePtr);
+				Logger::log("epoll_wait failed", ERROR, false);
+				break ;
 			}
+			time_t current_time = std::time(nullptr);
+			for (int i = 0; i < numEvents; i++)
+			{
+				fdNode *nodePtr = static_cast <fdNode*>(_eventsArr[i].data.ptr);  //retrieving current serversettings and client fd
+				if (nodePtr->isDead)
+					continue;
+				_events.data.ptr = nodePtr; //store event data in a temp variable for use in epoll functions
+				if (std::find(_server_fds.begin(), _server_fds.end(), nodePtr->fd) != _server_fds.end()) //eventFd is a server_socket meaning a new request is incoming
+					acceptNewClient(nodePtr, nodePtr->fd, current_time);
+				else if (!checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLIN) //client socket has data to read from
+				{
+					handle_read(nodePtr);
+				}
+				else if (!checkSystemMemory(nodePtr) && _eventsArr[i].events & EPOLLOUT && nodePtr && nodePtr->_readyToSend)
+				{
+					handle_write(nodePtr);
+				}
+			}
+			fdActivityLoop(current_time);
 		}
-		fdActivityLoop(current_time);
+		catch(const std::exception& e)
+		{
+			Logger::log(e.what(), ERROR, false);
+		}
+		
 	}
 	close(epollFd);
 }
